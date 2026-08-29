@@ -266,10 +266,28 @@ class OKJ_Admin {
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
-            $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM " . OKJ_DB::get_table('reseller_products') . " r WHERE {$where}");
+            $t_reseller = OKJ_DB::get_table('reseller_products');
+            $t_sellers = OKJ_DB::get_table('sellers');
+            $t_active = OKJ_DB::get_table('active_products');
+
+            $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM {$t_reseller} r WHERE {$where}");
             $total_pages = ceil($total_rows / $per_page);
 
-            $rows = $wpdb->get_results($wpdb->prepare("SELECT r.*, s.name as seller_name FROM " . OKJ_DB::get_table('reseller_products') . " r LEFT JOIN " . OKJ_DB::get_table('sellers') . " s ON r.seller_id = s.id WHERE {$where} ORDER BY r.product_name ASC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
+            $sql = "SELECT r.*, 
+                           s.name as seller_name,
+                           (SELECT GROUP_CONCAT(DISTINCT ap.customer_name ORDER BY ap.created_at DESC SEPARATOR ', ') 
+                            FROM {$t_active} ap 
+                            WHERE ap.reseller_product_id = r.id) as in_use_customers,
+                           (SELECT COUNT(*) 
+                            FROM {$t_active} ap 
+                            WHERE ap.reseller_product_id = r.id) as in_use_count
+                    FROM {$t_reseller} r 
+                    LEFT JOIN {$t_sellers} s ON r.seller_id = s.id 
+                    WHERE {$where} 
+                    ORDER BY r.purchase_date DESC, r.product_name ASC 
+                    LIMIT %d OFFSET %d";
+
+            $rows = $wpdb->get_results($wpdb->prepare($sql, $per_page, $offset), ARRAY_A);
             $this->render_template('reseller-products', [
                 'action' => 'list', 
                 'rows' => $rows,

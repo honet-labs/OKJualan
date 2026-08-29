@@ -185,6 +185,7 @@
                                 <th>Tanggal Beli</th>
                                 <th>Masa Expired</th>
                                 <th>Harga Beli</th>
+                                <th>In Use (Customer)</th>
                                 <th>Status Bayar</th>
                                 <th>Bukti Bayar</th>
                                 <th>Aksi</th>
@@ -199,6 +200,18 @@
                                     <td><?php echo esc_html($r['purchase_date']); ?></td>
                                     <td><?php echo esc_html($r['expires_at'] ?: '-'); ?></td>
                                     <td>Rp <?php echo number_format_i18n($r['price'], 0); ?></td>
+                                    <td>
+                                        <?php if (!empty($r['in_use_customers'])): ?>
+                                            <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; font-size: 12px;" title="Sedang digunakan oleh customer">
+                                                <span class="dashicons dashicons-admin-users" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                                                <?php echo esc_html($r['in_use_customers']); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="okj-badge" style="background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; font-weight: 500; padding: 2px 6px; border-radius: 4px; font-size: 11px;" title="Stok pembelian ini belum dialokasikan ke customer">
+                                                - Belum Digunakan -
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <?php if ($r['payment_status'] === 'paid'): ?>
                                             <span class="okj-badge okj-badge-success">Paid</span>
