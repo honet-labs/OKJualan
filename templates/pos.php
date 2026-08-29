@@ -17,6 +17,11 @@ $company_name = !empty($settings['pdf_company_name']) ? $settings['pdf_company_n
 $qr_url = home_url('/?okj_order=1');
 ?>
 <div class="okj-wrap okj-pos-container">
+    <?php if (isset($_GET['deleted'])): ?>
+        <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #10b981; background: #ecfdf5; color: #065f46; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-weight: 600;">Data transaksi berhasil dihapus.</p>
+        </div>
+    <?php endif; ?>
 
     <!-- Tabbed Navigation Header -->
     <div class="okj-pos-header" style="flex-direction: column; align-items: stretch; gap: 16px; margin-bottom: 20px;">
@@ -256,18 +261,23 @@ $qr_url = home_url('/?okj_order=1');
                                         </select>
                                     </td>
                                     <td style="text-align: right;">
-                                        <button type="button" class="okj-btn okj-btn-secondary okj-btn-struk" 
-                                            data-id="<?php echo esc_attr($tx['id']); ?>" 
-                                            data-no="<?php echo esc_attr($tx['transaction_no']); ?>" 
-                                            data-date="<?php echo esc_attr($tx['created_at']); ?>" 
-                                            data-cust="<?php echo esc_attr($tx['customer_name']); ?>" 
-                                            data-subtotal="<?php echo esc_attr($tx['subtotal']); ?>" 
-                                            data-discount="<?php echo esc_attr($tx['discount']); ?>" 
-                                            data-total="<?php echo esc_attr($tx['total']); ?>" 
-                                            data-method="<?php echo esc_attr($tx['payment_method']); ?>" 
-                                            style="padding: 4px 8px; font-size: 11px;">
-                                            <span class="dashicons dashicons-printer" style="font-size: 14px; width: 14px; height: 14px;"></span> Nota
-                                        </button>
+                                        <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end;">
+                                            <button type="button" class="okj-btn okj-btn-secondary okj-btn-struk" 
+                                                data-id="<?php echo esc_attr($tx['id']); ?>" 
+                                                data-no="<?php echo esc_attr($tx['transaction_no']); ?>" 
+                                                data-date="<?php echo esc_attr($tx['created_at']); ?>" 
+                                                data-cust="<?php echo esc_attr($tx['customer_name']); ?>" 
+                                                data-subtotal="<?php echo esc_attr($tx['subtotal']); ?>" 
+                                                data-discount="<?php echo esc_attr($tx['discount']); ?>" 
+                                                data-total="<?php echo esc_attr($tx['total']); ?>" 
+                                                data-method="<?php echo esc_attr($tx['payment_method']); ?>" 
+                                                style="padding: 4px 8px; font-size: 11px;">
+                                                <span class="dashicons dashicons-printer" style="font-size: 14px; width: 14px; height: 14px;"></span> Nota
+                                            </button>
+                                            <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id']), 'okj_delete_pos_transaction_' . $tx['id']); ?>" onclick="return confirm('Hapus riwayat transaksi ini?');" title="Hapus Transaksi" style="padding: 4px 6px;">
+                                                <span class="dashicons dashicons-trash" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

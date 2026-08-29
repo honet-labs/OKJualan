@@ -1,5 +1,10 @@
-﻿<?php if (!defined('ABSPATH')) { exit; } ?>
+<?php if (!defined('ABSPATH')) { exit; } ?>
 <div class="okj-wrap">
+    <?php if (isset($_GET['deleted'])): ?>
+        <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #10b981; background: #ecfdf5; color: #065f46; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-weight: 600;">Data antrean reminder berhasil dihapus.</p>
+        </div>
+    <?php endif; ?>
     <div class="okj-header">
         <div>
             <h1>Antrean Pengiriman Reminder</h1>
@@ -106,9 +111,14 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <a class="okj-btn okj-btn-secondary okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_send_reminder_manual&id=' . $r['id']), 'okj_send_reminder_' . $r['id']); ?>" onclick="return confirm('Kirim reminder secara manual sekarang juga?');">
-                                        <span class="dashicons dashicons-share-alt2"></span> Trigger Now
-                                    </a>
+                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                        <a class="okj-btn okj-btn-secondary okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_send_reminder_manual&id=' . $r['id']), 'okj_send_reminder_' . $r['id']); ?>" onclick="return confirm('Kirim reminder secara manual sekarang juga?');">
+                                            <span class="dashicons dashicons-share-alt2"></span> Trigger Now
+                                        </a>
+                                        <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_reminder&id=' . $r['id']), 'okj_delete_reminder_' . $r['id']); ?>" onclick="return confirm('Hapus antrean reminder ini?');" title="Hapus Reminder">
+                                            <span class="dashicons dashicons-trash"></span>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

@@ -387,4 +387,40 @@ jQuery(document).ready(function($) {
     $('.okj-history-modal-close, .okj-history-modal-close-btn').on('click', function() {
         $('#okjRenewalHistoryModal').css('display', 'none');
     });
+
+    // 1-Click Update Handler
+    $('#okj-btn-trigger-update').on('click', function(e) {
+        e.preventDefault();
+        if (!confirm('Apakah Anda yakin ingin memperbarui plugin OKJualin sekarang? Berkas plugin dan skema database akan disinkronkan ke rilis terbaru secara otomatis.')) {
+            return;
+        }
+
+        var $btn = $(this);
+        var $box = $('#okj-update-progress-box');
+        var $msg = $('#okj-update-status-msg');
+
+        $btn.prop('disabled', true).css('opacity', '0.6');
+        $box.slideDown(200);
+        $msg.text('Menghubungi GitHub dan mengunduh paket pembaruan...');
+
+        var nonce = typeof okjAdmin !== 'undefined' ? okjAdmin.nonce : '';
+
+        $.post(safeAjaxUrl, {
+            action: 'okj_trigger_1click_update',
+            nonce: nonce
+        }, function(response) {
+            if (response.success) {
+                $msg.css('color', '#15803d').html('✅ ' + (response.data.message || 'Pembaruan berhasil! Memuat ulang halaman...'));
+                setTimeout(function() {
+                    window.location.href = window.location.pathname + '?page=okj-settings&updated=1';
+                }, 1500);
+            } else {
+                $btn.prop('disabled', false).css('opacity', '1');
+                $msg.css('color', '#ef4444').html('❌ Gagal: ' + (response.data.message || 'Terjadi kesalahan saat memperbarui.'));
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).css('opacity', '1');
+            $msg.css('color', '#ef4444').html('❌ Terjadi kesalahan jaringan saat mencoba memperbarui.');
+        });
+    });
 });

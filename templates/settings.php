@@ -1,5 +1,5 @@
 <?php if (!defined('ABSPATH')) { exit; } ?>
-<div class="wrap okj-wrap">
+<div class="okj-wrap">
     <div class="okj-header">
         <div>
             <h1>Pengaturan OKJualin</h1>
@@ -7,6 +7,16 @@
         </div>
     </div>
 
+    <?php if (isset($_GET['updated'])): ?>
+        <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #10b981; background: #ecfdf5; color: #065f46; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-weight: 600;">Plugin OKJualin berhasil diperbarui ke versi terbaru dan database telah disinkronkan!</p>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_GET['checked'])): ?>
+        <div class="notice notice-info is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #6366f1; background: #eff6ff; color: #1e40af; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-weight: 600;">Status rilis terbaru berhasil diperiksa dari GitHub.</p>
+        </div>
+    <?php endif; ?>
     <?php if (!empty($_GET['msg'])): ?>
         <div class="notice notice-info is-dismissible okj-mt-1" style="margin-left:0; padding:10px; border-left:4px solid #6366f1; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-radius:4px;">
             <p style="margin:0; font-weight:500; color:#374151;"><?php echo esc_html(urldecode($_GET['msg'])); ?></p>
@@ -15,7 +25,7 @@
 
     <div class="okj-grid okj-grid-3 okj-mt-2">
         <!-- Settings Form Column -->
-        <div class="okj-col-span-2">
+        <div class="okj-settings-main">
             <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                 <?php wp_nonce_field('okj_save_settings'); ?>
                 <input type="hidden" name="action" value="okj_save_settings" />
@@ -619,6 +629,27 @@ jQuery(document).ready(function($) {
                                     <?php endif; ?>
                                 </div>
                             </div>
+
+                            <!-- 1-Click Update Action Area -->
+                            <?php if ($latest_gh_ver && $latest_gh_ver !== 'unknown' && version_compare($installed_ver, $latest_gh_ver, '<')): ?>
+                                <div style="margin-top: 15px; padding: 16px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                                        <div>
+                                            <strong style="color: #1e40af; font-size: 14px; display: block; margin-bottom: 2px;">Versi v<?php echo esc_html($latest_gh_ver); ?> telah tersedia untuk diinstal!</strong>
+                                            <small style="color: #3b82f6;">Klik tombol di samping untuk mengunduh dan memperbarui plugin secara otomatis.</small>
+                                        </div>
+                                        <button type="button" id="okj-btn-trigger-update" class="okj-btn okj-btn-primary" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 9px 18px; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
+                                            <span class="dashicons dashicons-update" style="font-size: 16px; width: 16px; height: 16px;"></span> Perbarui Sekarang (1-Click)
+                                        </button>
+                                    </div>
+                                    <div id="okj-update-progress-box" style="display: none; margin-top: 12px; padding: 12px 14px; background: #ffffff; border: 1px solid #93c5fd; border-radius: 6px;">
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <span class="okj-spinner" style="display: inline-block; border: 2.5px solid #e2e8f0; border-top: 2.5px solid #2563eb; border-radius: 50%; width: 18px; height: 18px; animation: wrpmSpin 1s linear infinite;"></span>
+                                            <span id="okj-update-status-msg" style="font-size: 13px; font-weight: 600; color: #1e3a8a;">Sedang mengunduh dan memasang rilis terbaru dari GitHub...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div> <!-- End #okj-tab-global-content -->

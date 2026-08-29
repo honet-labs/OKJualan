@@ -1,5 +1,10 @@
-﻿<?php if (!defined('ABSPATH')) { exit; } ?>
+<?php if (!defined('ABSPATH')) { exit; } ?>
 <div class="okj-wrap">
+    <?php if (isset($_GET['deleted'])): ?>
+        <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #10b981; background: #ecfdf5; color: #065f46; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-weight: 600;">Data shortlink berhasil dihapus.</p>
+        </div>
+    <?php endif; ?>
     <?php if ($action === 'add' || $action === 'edit'): ?>
         <!-- Add / Edit Page -->
         <div class="okj-header">
