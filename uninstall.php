@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if (!defined('WP_UNINSTALL_PLUGIN')) { exit; }
 
 // Load plugin main to access uninstall_schema.

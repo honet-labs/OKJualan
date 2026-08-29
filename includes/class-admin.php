@@ -122,6 +122,18 @@ class OKJ_Admin {
         }
     }
 
+    /**
+     * Bulletproof redirection helper (handles both normal headers and headers_sent fallback)
+     */
+    private function redirect($url) {
+        if (!headers_sent()) {
+            wp_redirect($url);
+            exit;
+        }
+        echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=' . esc_url($url) . '"><script>window.location.href=' . wp_json_encode($url) . ';</script></head><body><p>Mengalihkan... Jika halaman tidak berpindah otomatis, <a href="' . esc_url($url) . '">klik di sini</a>.</p></body></html>';
+        exit;
+    }
+
     // views implementation
     public function view_dashboard() {
         global $wpdb;
@@ -473,8 +485,7 @@ class OKJ_Admin {
         if (isset($_GET['check_release'])) {
             OKJ_Updater::get_latest_version_cached(true);
             delete_site_transient('update_plugins');
-            wp_redirect(admin_url('admin.php?page=okj-settings&checked=1'));
-            exit;
+            $this->redirect(admin_url('admin.php?page=okj-settings&checked=1'));
         }
 
         $settings = get_option('okj_settings_v1', []);
@@ -565,8 +576,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('product_prices'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'product_price', $id, "Deleted product price: " . $name);
 
-        wp_redirect(admin_url('admin.php?page=okj-product-prices&deleted=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-product-prices&deleted=1'));
     }
 
     public function save_seller() {
@@ -618,8 +628,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('sellers'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'seller', $id, "Deleted seller: " . $name);
 
-        wp_redirect(admin_url('admin.php?page=okj-sellers&deleted=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-sellers&deleted=1'));
     }
 
     public function save_customer() {
@@ -671,8 +680,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('customers'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'customer', $id, "Deleted customer: " . $name);
 
-        wp_redirect(admin_url('admin.php?page=okj-customers&deleted=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-customers&deleted=1'));
     }
 
     public function save_shortlink() {
@@ -734,8 +742,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('shortlinks'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'shortlink', $id, "Deleted shortlink: " . $title);
 
-        wp_redirect(admin_url('admin.php?page=okj-shortlinks&deleted=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-shortlinks&deleted=1'));
     }
 
     public function save_reseller_product() {
@@ -823,8 +830,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('reseller_products'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'reseller_product', $id, "Deleted reseller product: " . $name);
 
-        wp_redirect(admin_url('admin.php?page=okj-reseller-products&deleted=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-reseller-products&deleted=1'));
     }
 
     public function save_active_product() {
@@ -933,8 +939,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('active_product_renewals'), ['active_product_id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'active_product', $id, "Deleted active product, reminders & renewals: " . $label);
 
-        wp_redirect(admin_url('admin.php?page=okj-active-products&deleted=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-active-products&deleted=1'));
     }
 
     public function delete_pos_transaction() {
@@ -955,8 +960,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('pos_transaction_items'), ['transaction_id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'pos_transaction', $id, "Deleted POS transaction: " . $tx_no);
 
-        wp_redirect(admin_url('admin.php?page=okj-pos&deleted=1#tab-history'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-pos&deleted=1#tab-history'));
     }
 
     public function delete_reminder() {
@@ -973,8 +977,7 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('active_reminders'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'reminder', $id, "Deleted reminder queue ID: " . $id);
 
-        wp_redirect(admin_url('admin.php?page=okj-reminders&deleted=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-reminders&deleted=1'));
     }
 
     public function renew_active_product() {
@@ -2175,8 +2178,7 @@ class OKJ_Admin {
             wp_die(esc_html($res->get_error_message()), 'Pembaruan Gagal', ['back_link' => true]);
         }
 
-        wp_redirect(admin_url('admin.php?page=okj-settings&updated=1'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-settings&updated=1'));
     }
 
     /**
