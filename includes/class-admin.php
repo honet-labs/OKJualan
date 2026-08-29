@@ -94,6 +94,9 @@ class OKJ_Admin {
     public function enqueue_assets($hook) {
         if (empty($_GET['page']) || strpos($_GET['page'], 'okj-') !== 0) return;
 
+        // Ensure Dashicons are always loaded
+        wp_enqueue_style('dashicons');
+
         // Enqueue Google Font: Plus Jakarta Sans for uniform typography across all menus
         wp_enqueue_style('okj-google-font', 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap', [], null);
 
@@ -107,7 +110,7 @@ class OKJ_Admin {
         // Load visual styling assets
         $css_ver = file_exists(dirname(dirname(__FILE__)) . '/assets/css/admin.css') ? filemtime(dirname(dirname(__FILE__)) . '/assets/css/admin.css') : time();
         $js_ver = file_exists(dirname(dirname(__FILE__)) . '/assets/js/admin.js') ? filemtime(dirname(dirname(__FILE__)) . '/assets/js/admin.js') : time();
-        wp_enqueue_style('okj-admin-css', plugins_url('assets/css/admin.css', dirname(__FILE__)), [], $css_ver);
+        wp_enqueue_style('okj-admin-css', plugins_url('assets/css/admin.css', dirname(__FILE__)), ['dashicons'], $css_ver);
         wp_enqueue_script('okj-admin-js', plugins_url('assets/js/admin.js', dirname(__FILE__)), ['jquery', 'select2', 'chartjs'], $js_ver, true);
 
         wp_localize_script('okj-admin-js', 'okjAdmin', [
