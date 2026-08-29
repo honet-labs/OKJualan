@@ -94,6 +94,9 @@ class OKJ_Admin {
     public function enqueue_assets($hook) {
         if (empty($_GET['page']) || strpos($_GET['page'], 'okj-') !== 0) return;
 
+        // Enqueue Google Font: Plus Jakarta Sans for uniform typography across all menus
+        wp_enqueue_style('okj-google-font', 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap', [], null);
+
         // Modern Visuals & Chart libraries
         wp_enqueue_style('select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css', [], '4.1.0');
         wp_enqueue_script('select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', ['jquery'], '4.1.0', true);
