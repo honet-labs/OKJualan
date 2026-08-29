@@ -42,6 +42,7 @@ class OKJ_App {
         require_once OKJ_PLUGIN_DIR . 'includes/class-pdf-invoice.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-backup.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-updater.php';
+        require_once OKJ_PLUGIN_DIR . 'includes/class-woocommerce-sync.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-reseller-manager.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-admin.php';
     }
@@ -54,6 +55,9 @@ class OKJ_App {
         add_action('admin_init', function() {
             OKJ_DB::ensure_caps();
         });
+
+        // Initialize WooCommerce synchronization engine
+        OKJ_WC_Sync::init();
 
         // Listen to shortlink redirects
         add_action('parse_request', [$this, 'handle_shortlink_redirect']);

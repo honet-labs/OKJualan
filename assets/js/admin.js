@@ -423,4 +423,79 @@ jQuery(document).ready(function($) {
             $msg.css('color', '#ef4444').html('❌ Terjadi kesalahan jaringan saat mencoba memperbarui.');
         });
     });
+
+    // WooCommerce Bulk Sync Handler
+    $('#okjSyncAllWcBtn').on('click', function(e) {
+        e.preventDefault();
+        if (!confirm('Sinkronkan seluruh master harga produk ke katalog WooCommerce sekarang?')) {
+            return;
+        }
+
+        var $btn = $(this);
+        var $icon = $btn.find('.okj-sync-wc-spinner');
+        var originalText = $btn.find('span:last').text();
+
+        $btn.prop('disabled', true).css('opacity', '0.7');
+        $icon.addClass('okj-spin-animation');
+        $btn.find('span:last').text('Mensinkronkan...');
+
+        var nonce = typeof okjAdmin !== 'undefined' ? okjAdmin.nonce : '';
+
+        $.post(safeAjaxUrl, {
+            action: 'okj_sync_woocommerce_all',
+            nonce: nonce
+        }, function(response) {
+            $icon.removeClass('okj-spin-animation');
+            if (response.success) {
+                var d = response.data;
+                alert('✅ Berhasil mensinkronkan ' + d.synced + ' produk ke WooCommerce (' + d.created + ' baru, ' + d.updated + ' diperbarui).');
+                window.location.reload();
+            } else {
+                $btn.prop('disabled', false).css('opacity', '1');
+                $btn.find('span:last').text(originalText);
+                alert('❌ Gagal sinkronisasi: ' + (response.data ? response.data.message : 'Unknown error'));
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).css('opacity', '1');
+            $icon.removeClass('okj-spin-animation');
+            $btn.find('span:last').text(originalText);
+            alert('❌ Terjadi kesalahan jaringan saat mensinkronkan ke WooCommerce.');
+        });
+    });
+
+    // WooCommerce Single Product Sync Handler
+    $('.okj-sync-single-wc').on('click', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var priceId = $btn.data('id');
+        var priceName = $btn.data('name');
+
+        if (!priceId) return;
+
+        var $icon = $btn.find('.dashicons');
+        $icon.addClass('okj-spin-animation');
+        $btn.css('pointer-events', 'none');
+
+        var nonce = typeof okjAdmin !== 'undefined' ? okjAdmin.nonce : '';
+
+        $.post(safeAjaxUrl, {
+            action: 'okj_sync_woocommerce_single',
+            price_id: priceId,
+            nonce: nonce
+        }, function(response) {
+            $icon.removeClass('okj-spin-animation');
+            $btn.css('pointer-events', 'auto');
+
+            if (response.success) {
+                alert('✅ Produk "' + priceName + '" berhasil disinkronkan ke WooCommerce (Product ID #' + response.data.wc_product_id + ').');
+                window.location.reload();
+            } else {
+                alert('❌ Gagal sinkronisasi: ' + (response.data ? response.data.message : 'Unknown error'));
+            }
+        }).fail(function() {
+            $icon.removeClass('okj-spin-animation');
+            $btn.css('pointer-events', 'auto');
+            alert('❌ Terjadi kesalahan jaringan saat mensinkronkan produk.');
+        });
+    });
 });

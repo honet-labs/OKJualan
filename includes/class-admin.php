@@ -27,11 +27,14 @@ class OKJ_Admin {
         add_action('admin_post_okj_delete_pos_transaction', [$this, 'delete_pos_transaction']);
         add_action('admin_post_okj_delete_reminder', [$this, 'delete_reminder']);
         add_action('admin_post_okj_trigger_update', [$this, 'post_trigger_update']);
+        add_action('admin_post_okj_sync_woocommerce_all', [$this, 'post_sync_woocommerce_all']);
 
         // Manual reminder triggers
         add_action('admin_post_okj_send_reminder_manual', [$this, 'send_reminder_manual']);
 
-        // AJAX hooks for quick add and connection testing
+        // AJAX hooks for quick add, sync and connection testing
+        add_action('wp_ajax_okj_sync_woocommerce_all', [$this, 'ajax_sync_woocommerce_all']);
+        add_action('wp_ajax_okj_sync_woocommerce_single', [$this, 'ajax_sync_woocommerce_single']);
         add_action('wp_ajax_okj_quick_add_seller', [$this, 'quick_add_seller']);
         add_action('wp_ajax_okj_quick_add_customer', [$this, 'quick_add_customer']);
         add_action('wp_ajax_okj_get_renewal_history', [$this, 'ajax_get_renewal_history']);
@@ -550,6 +553,8 @@ class OKJ_Admin {
         $id = !empty($_POST['id']) ? sanitize_text_field($_POST['id']) : wp_generate_uuid4();
         $is_edit = !empty($_POST['id']);
 
+        $sync_to_wc = isset($_POST['sync_to_wc']) ? 1 : 0;
+
         $data = [
             'id' => $id,
             'name' => sanitize_text_field($_POST['name']),
@@ -561,6 +566,7 @@ class OKJ_Admin {
             'duration_days' => (int)$_POST['duration_days'],
             'affiliate_url' => !empty($_POST['affiliate_url']) ? esc_url_raw($_POST['affiliate_url']) : '',
             'show_in_pos' => isset($_POST['show_in_pos']) ? 1 : 0,
+            'sync_to_wc' => $sync_to_wc,
             'description' => wp_kses_post($_POST['description']),
             'notes' => wp_kses_post($_POST['notes']),
             'updated_at' => current_time('mysql'),
@@ -574,6 +580,11 @@ class OKJ_Admin {
             $data['created_at'] = current_time('mysql');
             $wpdb->insert(OKJ_DB::get_table('product_prices'), $data);
             OKJ_Reseller_Manager::log('create', 'product_price', $id, "Created product price: " . $data['name']);
+        }
+
+        // Auto Sync to WooCommerce if checked
+        if ($sync_to_wc && OKJ_WC_Sync::is_active()) {
+            OKJ_WC_Sync::sync_product($id);
         }
 
         if (!empty($_POST['affiliate_url']) && !empty($_POST['auto_create_shortlink'])) {
@@ -604,8 +615,7 @@ class OKJ_Admin {
             }
         }
 
-        wp_safe_redirect(admin_url('admin.php?page=okj-product-prices'));
-        exit;
+        $this->redirect(admin_url('admin.php?page=okj-product-prices'));
     }
 
     public function delete_product_price() {
@@ -622,10 +632,60 @@ class OKJ_Admin {
         $row = $wpdb->get_row($wpdb->prepare("SELECT name FROM " . OKJ_DB::get_table('product_prices') . " WHERE id = %s", $id), ARRAY_A);
         $name = $row ? $row['name'] : $id;
 
+        // Trash synced WooCommerce product if exists
+        if (OKJ_WC_Sync::is_active()) {
+            OKJ_WC_Sync::delete_synced_product($id);
+        }
+
         $wpdb->delete(OKJ_DB::get_table('product_prices'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'product_price', $id, "Deleted product price: " . $name);
 
         $this->redirect(admin_url('admin.php?page=okj-product-prices&deleted=1'));
+    }
+
+    public function post_sync_woocommerce_all() {
+        check_admin_referer('okj_sync_wc_all');
+        if (!current_user_can('okj_manage')) wp_die('Forbidden');
+
+        $result = OKJ_WC_Sync::sync_all_products();
+        if (is_wp_error($result)) {
+            $this->redirect(admin_url('admin.php?page=okj-product-prices&wc_error=' . urlencode($result->get_error_message())));
+        } else {
+            $this->redirect(admin_url('admin.php?page=okj-product-prices&wc_synced=' . intval($result['synced'])));
+        }
+    }
+
+    public function ajax_sync_woocommerce_all() {
+        check_ajax_referer('okj_admin_nonce', 'nonce');
+        if (!current_user_can('okj_manage')) {
+            wp_send_json_error(['message' => 'Akses ditolak.']);
+        }
+
+        $result = OKJ_WC_Sync::sync_all_products();
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success($result);
+    }
+
+    public function ajax_sync_woocommerce_single() {
+        check_ajax_referer('okj_admin_nonce', 'nonce');
+        if (!current_user_can('okj_manage')) {
+            wp_send_json_error(['message' => 'Akses ditolak.']);
+        }
+
+        $price_id = !empty($_POST['price_id']) ? sanitize_text_field($_POST['price_id']) : '';
+        if (empty($price_id)) {
+            wp_send_json_error(['message' => 'ID Produk tidak valid.']);
+        }
+
+        $result = OKJ_WC_Sync::sync_product($price_id);
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success($result);
     }
 
     public function save_seller() {

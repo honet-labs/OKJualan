@@ -862,3 +862,14 @@ span.dashicons,
     background: #4338ca !important;
 }
 
+/* Spinner and Sync Animation */
+.okj-spin-animation {
+    animation: okjSpin 0.8s linear infinite !important;
+    display: inline-block !important;
+}
+
+@keyframes okjSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+

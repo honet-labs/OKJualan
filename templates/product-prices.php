@@ -5,6 +5,16 @@
             <p style="margin: 0; font-weight: 600;">Data master harga produk berhasil dihapus.</p>
         </div>
     <?php endif; ?>
+    <?php if (isset($_GET['wc_synced'])): ?>
+        <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #7c3aed; background: #f5f3ff; color: #5b21b6; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-weight: 600;"><span class="dashicons dashicons-yes-alt" style="color: #7c3aed; vertical-align: middle;"></span> Berhasil mensinkronkan <strong><?php echo intval($_GET['wc_synced']); ?></strong> produk ke katalog WooCommerce.</p>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_GET['wc_error'])): ?>
+        <div class="notice notice-error is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #ef4444; background: #fef2f2; color: #991b1b; border-radius: 8px; border-left-width: 4px;">
+            <p style="margin: 0; font-weight: 600;"><?php echo esc_html(urldecode($_GET['wc_error'])); ?></p>
+        </div>
+    <?php endif; ?>
     <?php if ($action === 'add' || $action === 'edit'): ?>
         <!-- Add / Edit Page -->
         <div class="okj-header">
@@ -128,6 +138,23 @@
                                 </label>
                             </div>
                         </div>
+
+                        <div class="okj-form-group">
+                            <label class="okj-label">Integrasi Katalog WooCommerce</label>
+                            <div style="margin-top: 8px; display: flex; align-items: center;">
+                                <label class="okj-label" style="display: flex; align-items: center; font-weight: 500; cursor: pointer; margin-bottom: 0; font-size: 13.5px; color: #1e293b;">
+                                    <input type="checkbox" name="sync_to_wc" value="1" style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;" <?php echo !$row || !isset($row['sync_to_wc']) || $row['sync_to_wc'] == 1 ? 'checked' : ''; ?> />
+                                    Sinkronkan & Publikasikan ke Toko WooCommerce
+                                </label>
+                            </div>
+                            <?php if ($row && !empty($row['wc_product_id']) && function_exists('wc_get_product') && wc_get_product($row['wc_product_id'])): ?>
+                                <div style="margin-top: 6px; font-size: 12px; color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span class="dashicons dashicons-cart" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                                    Terhubung ke Produk WC <strong>#<?php echo esc_html($row['wc_product_id']); ?></strong> — 
+                                    <a href="<?php echo admin_url('post.php?post=' . $row['wc_product_id'] . '&action=edit'); ?>" target="_blank" style="color: #7c3aed; text-decoration: underline; font-weight: 600;">Lihat di WooCommerce &rarr;</a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
 
                     <div class="okj-form-group okj-mt-1">
@@ -154,7 +181,13 @@
                 <h1>Daftar Harga Produk</h1>
                 <p class="okj-subtitle">Daftar harga retail, reseller, dan masa durasi aktif produk.</p>
             </div>
-            <div class="okj-actions">
+            <div class="okj-actions" style="display: flex; gap: 8px; align-items: center;">
+                <?php if (class_exists('WooCommerce')): ?>
+                    <button type="button" id="okjSyncAllWcBtn" class="okj-btn" style="display: inline-flex; align-items: center; gap: 6px; background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; font-weight: 600; cursor: pointer; padding: 8px 14px; border-radius: 6px;" title="Sinkronkan seluruh master harga ke katalog produk WooCommerce">
+                        <span class="dashicons dashicons-update okj-sync-wc-spinner" style="font-size: 16px; width: 16px; height: 16px;"></span>
+                        <span>Sync ke WooCommerce</span>
+                    </button>
+                <?php endif; ?>
                 <a class="okj-btn okj-btn-primary" href="<?php echo admin_url('admin.php?page=okj-product-prices&action=add'); ?>">
                     <span class="dashicons dashicons-plus"></span> Tambah Baru
                 </a>
@@ -198,6 +231,14 @@
                                                 <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; border: 1.5px solid #bae6fd; font-size: 10px; padding: 2px 6px; font-weight: 700; border-radius: 4px;">POS</span>
                                             <?php else: ?>
                                                 <span class="okj-badge" style="background: #f1f5f9; color: #64748b; border: 1.5px solid #e2e8f0; font-size: 10px; padding: 2px 6px; font-weight: 700; border-radius: 4px;">Hanya Reseller</span>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($r['wc_product_id']) && (int)$r['wc_product_id'] > 0): ?>
+                                                <a href="<?php echo admin_url('post.php?post=' . $r['wc_product_id'] . '&action=edit'); ?>" target="_blank" class="okj-badge" style="background: #f5f3ff; color: #6d28d9; border: 1.5px solid #ddd6fe; font-size: 10px; padding: 2px 6px; font-weight: 700; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" title="Lihat/Edit produk di WooCommerce">
+                                                    <span class="dashicons dashicons-cart" style="font-size: 12px; width: 12px; height: 12px;"></span> WC #<?php echo esc_html($r['wc_product_id']); ?>
+                                                </a>
+                                            <?php elseif (isset($r['sync_to_wc']) && $r['sync_to_wc'] == 1): ?>
+                                                <span class="okj-badge" style="background: #fdf4ff; color: #a21caf; border: 1.5px solid #f5d0fe; font-size: 10px; padding: 2px 6px; font-weight: 700; border-radius: 4px;">WC Ready</span>
                                             <?php endif; ?>
                                             
                                             <?php if (!empty($r['affiliate_url'])): ?>
@@ -251,13 +292,20 @@
                                     <td>Rp <?php echo number_format_i18n($r['reseller_price'], 0); ?></td>
                                     <td>Rp <?php echo number_format_i18n($r['sale_price'], 0); ?></td>
                                     <td>
-                                        <div class="okj-row-actions">
-                                            <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-product-prices&action=edit&id=' . $r['id']); ?>">
-                                                <span class="dashicons dashicons-edit"></span> Edit
-                                            </a>
-                                            <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_price&id=' . $r['id']), 'okj_delete_price_' . $r['id']); ?>" onclick="return confirm('Hapus master harga ini?');">
-                                                <span class="dashicons dashicons-trash"></span> Hapus
-                                            </a>
+                                        <div class="okj-row-actions" style="display: flex; flex-direction: column; gap: 4px;">
+                                            <?php if (class_exists('WooCommerce')): ?>
+                                                <a class="okj-btn-link okj-sync-single-wc" href="#" data-id="<?php echo esc_attr($r['id']); ?>" data-name="<?php echo esc_attr($r['name']); ?>" style="color: #7c3aed; font-weight: 600;">
+                                                    <span class="dashicons dashicons-update" style="font-size: 14px; width: 14px; height: 14px;"></span> Sync WC
+                                                </a>
+                                            <?php endif; ?>
+                                            <div style="display: flex; gap: 8px; margin-top: 2px;">
+                                                <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-product-prices&action=edit&id=' . $r['id']); ?>">
+                                                    <span class="dashicons dashicons-edit"></span> Edit
+                                                </a>
+                                                <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_price&id=' . $r['id']), 'okj_delete_price_' . $r['id']); ?>" onclick="return confirm('Hapus master harga ini?');">
+                                                    <span class="dashicons dashicons-trash"></span> Hapus
+                                                </a>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>

@@ -69,6 +69,8 @@ class OKJ_DB {
             duration_days INT(11) NOT NULL DEFAULT 0,
             affiliate_url TEXT NULL,
             show_in_pos TINYINT(1) NOT NULL DEFAULT 1,
+            sync_to_wc TINYINT(1) NOT NULL DEFAULT 0,
+            wc_product_id BIGINT(20) NOT NULL DEFAULT 0,
             description LONGTEXT NULL,
             notes LONGTEXT NULL,
             created_at DATETIME NOT NULL,
@@ -77,7 +79,9 @@ class OKJ_DB {
             PRIMARY KEY (id),
             KEY name (name(80)),
             KEY category (category(40)),
-            KEY seller_id (seller_id)
+            KEY seller_id (seller_id),
+            KEY sync_to_wc (sync_to_wc),
+            KEY wc_product_id (wc_product_id)
         ) {$charset};";
 
         $sql_shortlinks = "CREATE TABLE {$t_shortlinks} (
@@ -276,6 +280,16 @@ class OKJ_DB {
         dbDelta($sql_pos_transactions);
         dbDelta($sql_pos_items);
         dbDelta($sql_renewals);
+
+        // Auto-migration check for existing tables
+        $col_sync = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'sync_to_wc'");
+        if (empty($col_sync)) {
+            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN sync_to_wc TINYINT(1) NOT NULL DEFAULT 0 AFTER show_in_pos");
+        }
+        $col_wc_id = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'wc_product_id'");
+        if (empty($col_wc_id)) {
+            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN wc_product_id BIGINT(20) NOT NULL DEFAULT 0 AFTER sync_to_wc");
+        }
 
         // Ensure capabilities and settings are initialized
         self::ensure_caps();
