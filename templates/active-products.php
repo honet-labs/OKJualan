@@ -167,6 +167,7 @@
                                 <th>Produk Terjual</th>
                                 <th>Customer</th>
                                 <th>Catatan</th>
+                                <th>Harga Jual</th>
                                 <th>Tanggal Mulai</th>
                                 <th>Tanggal Expired</th>
                                 <th>Status Keaktifan</th>
@@ -180,7 +181,14 @@
                             <?php foreach ($rows as $r): ?>
                                 <tr>
                                     <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
-                                    <td><strong><?php echo esc_html($r['product_label']); ?></strong></td>
+                                    <td>
+                                        <strong><?php echo esc_html($r['product_label']); ?></strong>
+                                        <?php if (!empty($r['duration_days'])): ?>
+                                            <div style="margin-top: 2px;">
+                                                <span class="okj-badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 10px; padding: 1px 6px; font-weight: 600;"><?php echo esc_html($r['duration_days']); ?> Hari</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                          <?php if (!empty($r['customer_name'])): ?>
                                              <a href="#" class="okj-view-customer-detail" 
@@ -211,6 +219,7 @@
                                             <span class="okj-text-muted">-</span>
                                         <?php endif; ?>
                                     </td>
+                                    <td><strong>Rp <?php echo number_format_i18n((float)$r['price'], 0); ?></strong></td>
                                     <td><?php echo esc_html($r['start_date']); ?></td>
                                     <td><span class="dashicons dashicons-calendar-alt okj-text-muted"></span> <?php echo esc_html($r['expires_at']); ?></td>
                                     <td>

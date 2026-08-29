@@ -101,7 +101,20 @@
                             <?php foreach ($rows as $r): ?>
                                 <tr>
                                     <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
-                                    <td><strong><?php echo esc_html($r['name']); ?></strong></td>
+                                    <td>
+                                        <strong><?php echo esc_html($r['name']); ?></strong>
+                                        <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center;">
+                                            <?php if (!empty($r['active_services_count']) && $r['active_services_count'] > 0): ?>
+                                                <span class="okj-badge okj-badge-success" style="font-size: 10px; padding: 1px 6px;">
+                                                    <?php echo (int)$r['active_services_count']; ?> Layanan Aktif
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="okj-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; font-size: 10px; padding: 1px 6px;">
+                                                    Tidak ada layanan aktif
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
                                     <td><?php echo esc_html($r['email'] ?: '-'); ?></td>
                                     <td><?php echo esc_html($r['phone'] ?: '-'); ?></td>
                                     <td><code><?php echo esc_html($r['telegram'] ?: '-'); ?></code></td>

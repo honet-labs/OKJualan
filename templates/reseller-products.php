@@ -181,6 +181,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Produk</th>
+                                <th>Catatan / Akun</th>
                                 <th>Seller/Supplier/Provider</th>
                                 <th>Tanggal Beli</th>
                                 <th>Masa Expired</th>
@@ -195,11 +196,63 @@
                             <?php foreach ($rows as $r): ?>
                                 <tr>
                                     <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
-                                    <td><strong><?php echo esc_html($r['product_name']); ?></strong></td>
-                                    <td><strong><?php echo esc_html($r['seller_name'] ?: '-'); ?></strong></td>
+                                    <td>
+                                        <strong><?php echo esc_html($r['product_name']); ?></strong>
+                                        <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                                            <?php if (!empty($r['category'])): ?>
+                                                <span class="okj-badge okj-badge-secondary" style="font-size: 10px; padding: 1px 6px;"><?php echo esc_html($r['category']); ?></span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($r['duration_days'])): ?>
+                                                <span class="okj-badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 10px; padding: 1px 6px; font-weight: 600;"><?php echo esc_html($r['duration_days']); ?> Hari</span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($r['tags'])): 
+                                                $tags_arr = array_map('trim', explode(',', $r['tags']));
+                                                foreach ($tags_arr as $tg):
+                                                    if ($tg !== ''):
+                                            ?>
+                                                <span class="okj-badge" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; font-size: 10px; padding: 1px 6px;"><?php echo esc_html($tg); ?></span>
+                                            <?php 
+                                                    endif;
+                                                endforeach;
+                                            endif; ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($r['notes']) || !empty($r['description'])): ?>
+                                            <a href="#" class="okj-view-detail" 
+                                               data-name="<?php echo esc_attr($r['product_name']); ?>" 
+                                               data-description="<?php echo esc_attr(wp_strip_all_tags($r['description'])); ?>" 
+                                               data-notes="<?php echo esc_attr(wp_strip_all_tags($r['notes'])); ?>" 
+                                               style="text-decoration: none; color: #4338ca; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: #e0e7ff; border-radius: 6px; border: 1px solid #c7d2fe; transition: all 0.2s;"
+                                               title="Lihat Detail & Catatan Akun">
+                                                <span class="dashicons dashicons-visibility" style="font-size: 18px; width: 18px; height: 18px;"></span>
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="okj-text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($r['seller_name'])): ?>
+                                            <a href="#" class="okj-view-seller-detail" 
+                                               data-name="<?php echo esc_attr($r['seller_name']); ?>"
+                                               data-email="<?php echo esc_attr(!empty($r['seller_email']) ? $r['seller_email'] : '-'); ?>"
+                                               data-phone="<?php echo esc_attr(!empty($r['seller_phone']) ? $r['seller_phone'] : '-'); ?>"
+                                               data-telegram="<?php echo esc_attr(!empty($r['seller_telegram']) ? $r['seller_telegram'] : '-'); ?>"
+                                               data-whatsapp="<?php echo esc_attr(!empty($r['seller_whatsapp']) ? $r['seller_whatsapp'] : '-'); ?>"
+                                               style="text-decoration: none; color: #4f46e5; font-weight: 600; border-bottom: 1px dashed #4f46e5; padding-bottom: 2px;"
+                                               title="Lihat Detail Kontak Seller">
+                                                <?php echo esc_html($r['seller_name']); ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="okj-text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo esc_html($r['purchase_date']); ?></td>
-                                    <td><?php echo esc_html($r['expires_at'] ?: '-'); ?></td>
-                                    <td>Rp <?php echo number_format_i18n($r['price'], 0); ?></td>
+                                    <td>
+                                        <span class="dashicons dashicons-calendar-alt okj-text-muted" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle;"></span>
+                                        <?php echo esc_html($r['expires_at'] ?: '-'); ?>
+                                    </td>
+                                    <td><strong>Rp <?php echo number_format_i18n($r['price'], 0); ?></strong></td>
                                     <td>
                                         <?php if (!empty($r['in_use_customers'])): ?>
                                             <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; font-size: 12px;" title="Sedang digunakan oleh customer">
@@ -342,6 +395,69 @@
                 <span class="okj-spinner" style="display: none; border: 2px solid #ffffff; border-top: 2px solid transparent; border-radius: 50%; width: 12px; height: 12px; margin-right: 6px; animation: wrpmSpin 1s linear infinite;"></span>
                 Simpan Seller
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Popup Detail Produk & Catatan Akun -->
+<div id="wrpmDetailModal" class="okj-modal" style="display: none; position: fixed; z-index: 999999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+    <div class="okj-modal-content" style="background-color: #ffffff; border-radius: 12px; max-width: 550px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0; animation: wrpmFadeIn 0.25s ease-out; margin: auto;">
+        <div class="okj-modal-header" style="padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="wrpmModalTitle" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #0f172a;">Detail Produk</h3>
+            <span class="okj-modal-close" style="color: #94a3b8; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; transition: color 0.2s;">&times;</span>
+        </div>
+        <div class="okj-modal-body" style="padding: 24px; color: #334155; font-size: 0.95rem; line-height: 1.6;">
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Deskripsi Produk</h4>
+                <div id="wrpmModalDescription" style="background: #f8fafc; border: 1px solid #f1f5f9; padding: 12px; border-radius: 8px; min-height: 40px; white-space: pre-wrap;">-</div>
+            </div>
+            <div>
+                <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Catatan Akun / Kredensial / Info Supplier</h4>
+                <div id="wrpmModalNotes" style="background: #fffbeb; border: 1px solid #fef3c7; padding: 12px; border-radius: 8px; min-height: 40px; color: #92400e; white-space: pre-wrap; font-family: monospace;">-</div>
+            </div>
+        </div>
+        <div class="okj-modal-footer" style="padding: 12px 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end;">
+            <button class="okj-btn okj-btn-secondary okj-modal-close-btn" style="cursor: pointer; padding: 8px 16px; border-radius: 6px; background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; font-weight: 500;">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Popup Detail Seller -->
+<div id="wrpmSellerModal" class="okj-modal" style="display: none; position: fixed; z-index: 999999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+    <div class="okj-modal-content" style="background-color: #ffffff; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0; animation: wrpmFadeIn 0.25s ease-out; margin: auto;">
+        <div class="okj-modal-header" style="padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #0f172a; display: flex; align-items: center;">
+                <span class="dashicons dashicons-businessman" style="margin-right: 8px; color: #4f46e5; font-size: 20px; width: 20px; height: 20px;"></span>
+                Detail Seller
+            </h3>
+            <span class="okj-seller-modal-close" style="color: #94a3b8; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; transition: color 0.2s;">&times;</span>
+        </div>
+        <div class="okj-modal-body" style="padding: 24px; color: #334155; font-size: 0.95rem; line-height: 1.6;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 0; font-weight: 600; color: #64748b; width: 35%;">Nama Seller</td>
+                    <td id="wrpmSellerName" style="padding: 10px 0; color: #0f172a; font-weight: 600;">-</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 0; font-weight: 600; color: #64748b;">Email</td>
+                    <td id="wrpmSellerEmail" style="padding: 10px 0; color: #0f172a;">-</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 0; font-weight: 600; color: #64748b;">Telepon</td>
+                    <td id="wrpmSellerPhone" style="padding: 10px 0; color: #0f172a;">-</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 0; font-weight: 600; color: #64748b;">Telegram</td>
+                    <td id="wrpmSellerTelegram" style="padding: 10px 0; color: #0f172a;">-</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 0; font-weight: 600; color: #64748b;">WhatsApp</td>
+                    <td id="wrpmSellerWhatsapp" style="padding: 10px 0; color: #0f172a;">-</td>
+                </tr>
+            </table>
+        </div>
+        <div class="okj-modal-footer" style="padding: 12px 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end;">
+            <button class="okj-btn okj-btn-secondary okj-seller-modal-close-btn" style="cursor: pointer; padding: 8px 16px; border-radius: 6px; background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; font-weight: 500;">Tutup</button>
         </div>
     </div>
 </div>

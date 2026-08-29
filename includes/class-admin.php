@@ -275,6 +275,10 @@ class OKJ_Admin {
 
             $sql = "SELECT r.*, 
                            s.name as seller_name,
+                           s.email as seller_email,
+                           s.phone as seller_phone,
+                           s.telegram as seller_telegram,
+                           s.whatsapp as seller_whatsapp,
                            (SELECT GROUP_CONCAT(DISTINCT ap.customer_name ORDER BY ap.created_at DESC SEPARATOR ', ') 
                             FROM {$t_active} ap 
                             WHERE ap.reseller_product_id = r.id) as in_use_customers,
@@ -312,10 +316,20 @@ class OKJ_Admin {
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
-            $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM " . OKJ_DB::get_table('customers'));
+            $t_customers = OKJ_DB::get_table('customers');
+            $t_active = OKJ_DB::get_table('active_products');
+
+            $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM {$t_customers}");
             $total_pages = ceil($total_rows / $per_page);
 
-            $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('customers') . " ORDER BY name ASC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
+            $sql = "SELECT c.*, 
+                           (SELECT COUNT(*) FROM {$t_active} ap WHERE ap.customer_id = c.id AND ap.status = 'active') as active_services_count,
+                           (SELECT COUNT(*) FROM {$t_active} ap WHERE ap.customer_id = c.id) as total_services_count
+                    FROM {$t_customers} c 
+                    ORDER BY c.name ASC 
+                    LIMIT %d OFFSET %d";
+
+            $rows = $wpdb->get_results($wpdb->prepare($sql, $per_page, $offset), ARRAY_A);
             $this->render_template('customers', [
                 'action' => 'list', 
                 'rows' => $rows,
@@ -340,10 +354,21 @@ class OKJ_Admin {
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
-            $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM " . OKJ_DB::get_table('sellers'));
+            $t_sellers = OKJ_DB::get_table('sellers');
+            $t_prices = OKJ_DB::get_table('product_prices');
+            $t_reseller = OKJ_DB::get_table('reseller_products');
+
+            $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM {$t_sellers}");
             $total_pages = ceil($total_rows / $per_page);
 
-            $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('sellers') . " ORDER BY name ASC LIMIT %d OFFSET %d", $per_page, $offset), ARRAY_A);
+            $sql = "SELECT s.*, 
+                           (SELECT COUNT(*) FROM {$t_prices} p WHERE p.seller_id = s.id) as master_products_count,
+                           (SELECT COUNT(*) FROM {$t_reseller} r WHERE r.seller_id = s.id) as total_purchases_count
+                    FROM {$t_sellers} s 
+                    ORDER BY s.name ASC 
+                    LIMIT %d OFFSET %d";
+
+            $rows = $wpdb->get_results($wpdb->prepare($sql, $per_page, $offset), ARRAY_A);
             $this->render_template('sellers', [
                 'action' => 'list', 
                 'rows' => $rows,

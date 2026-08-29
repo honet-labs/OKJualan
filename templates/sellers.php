@@ -101,7 +101,21 @@
                             <?php foreach ($rows as $r): ?>
                                 <tr>
                                     <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
-                                    <td><strong><?php echo esc_html($r['name']); ?></strong></td>
+                                    <td>
+                                        <strong><?php echo esc_html($r['name']); ?></strong>
+                                        <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                                            <?php if (!empty($r['total_purchases_count']) && $r['total_purchases_count'] > 0): ?>
+                                                <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 10px; padding: 1px 6px; font-weight: 600;">
+                                                    <?php echo (int)$r['total_purchases_count']; ?> Pembelian Stok
+                                                </span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($r['master_products_count']) && $r['master_products_count'] > 0): ?>
+                                                <span class="okj-badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 10px; padding: 1px 6px;">
+                                                    <?php echo (int)$r['master_products_count']; ?> Master Produk
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
                                     <td><?php echo esc_html($r['email'] ?: '-'); ?></td>
                                     <td><?php echo esc_html($r['phone'] ?: '-'); ?></td>
                                     <td><code><?php echo esc_html($r['telegram'] ?: '-'); ?></code></td>
