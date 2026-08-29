@@ -15,7 +15,7 @@ class OKJ_Updater {
         $this->repo = !empty($settings['github_repo']) ? trim((string)$settings['github_repo']) : '';
         $this->token = !empty($settings['github_token']) ? trim((string)$settings['github_token']) : '';
 
-        if ($this->repo) {
+        if (!empty($this->repo)) {
             add_filter('pre_set_site_transient_update_plugins', [$this, 'check_update']);
             add_filter('plugins_api', [$this, 'plugin_info'], 20, 3);
             add_filter('upgrader_source_selection', [$this, 'upgrader_source_selection'], 10, 4);
@@ -28,7 +28,10 @@ class OKJ_Updater {
      */
     public function authenticate_github_downloads($args, $url) {
         if (!empty($this->token)) {
-            if (strpos($url, 'api.github.com') !== false || strpos($url, 'codeload.github.com') !== false) {
+            if (is_string($url) && (strpos($url, 'api.github.com') !== false || strpos($url, 'codeload.github.com') !== false)) {
+                if (!isset($args['headers']) || !is_array($args['headers'])) {
+                    $args['headers'] = [];
+                }
                 $args['headers']['Authorization'] = 'token ' . $this->token;
             }
         }
@@ -56,13 +59,18 @@ class OKJ_Updater {
     }
 
     /**
-     * Hook into WordPress transient update checker
+     * Hook into WordPress transient update checker (FAST & 100% CACHED)
      */
     public function check_update($transient) {
-        if (empty($transient->checked)) return $transient;
+        if (empty($transient) || !is_object($transient) || empty($transient->checked)) {
+            return $transient;
+        }
 
-        $remote = self::get_remote_release_info($this->repo, $this->token);
-        if (!$remote || empty($remote['download_url'])) return $transient;
+        // Never make slow synchronous remote HTTP calls on every page load - use cache
+        $remote = self::get_remote_info_cached($this->repo, $this->token);
+        if (!$remote || empty($remote['version']) || empty($remote['download_url'])) {
+            return $transient;
+        }
 
         $current = OKJ_App::VERSION;
         $new_ver = $remote['version'];
@@ -78,6 +86,9 @@ class OKJ_Updater {
             $obj->requires = '5.8';
             $obj->requires_php = '7.4';
 
+            if (!isset($transient->response) || !is_array($transient->response)) {
+                $transient->response = [];
+            }
             $transient->response[$this->slug] = $obj;
         }
 
@@ -91,7 +102,7 @@ class OKJ_Updater {
         if ($action !== 'plugin_information') return $res;
         if (empty($args->slug) || $args->slug !== 'okjualin') return $res;
 
-        $remote = self::get_remote_release_info($this->repo, $this->token);
+        $remote = self::get_remote_info_cached($this->repo, $this->token);
         if (!$remote) return $res;
 
         $res = new stdClass();
@@ -110,22 +121,72 @@ class OKJ_Updater {
     }
 
     /**
-     * Robust GitHub remote release detection (Releases -> Tags -> Main Branch)
+     * Cached remote info getter with transient (prevents API spamming & WSOD timeouts)
      */
-    public static function get_remote_release_info($repo, $token = '') {
+    public static function get_remote_info_cached($repo, $token = '', $force = false) {
+        if (empty($repo)) {
+            return null;
+        }
+
+        $transient_key = 'okj_gh_rel_info_' . md5($repo);
+        if (!$force) {
+            $cached = get_transient($transient_key);
+            if ($cached !== false) {
+                return is_array($cached) ? $cached : null;
+            }
+        }
+
+        $info = self::fetch_remote_info($repo, $token);
+
+        if ($info && !empty($info['version'])) {
+            // Cache valid info for 6 hours
+            set_transient($transient_key, $info, 6 * HOUR_IN_SECONDS);
+            return $info;
+        }
+
+        // Cache failure for 5 minutes so it doesn't retry on every page load
+        set_transient($transient_key, 'none', 5 * MINUTE_IN_SECONDS);
+        return null;
+    }
+
+    /**
+     * Quick fetch for UI version display
+     */
+    public static function get_latest_version_cached($force = false) {
+        $settings = get_option('okj_settings_v1', []);
+        $repo = !empty($settings['github_repo']) ? trim((string)$settings['github_repo']) : '';
+        if (!$repo) {
+            return false;
+        }
+
+        $token = !empty($settings['github_token']) ? trim((string)$settings['github_token']) : '';
+        $info = self::get_remote_info_cached($repo, $token, $force);
+
+        return $info ? $info['version'] : 'unknown';
+    }
+
+    /**
+     * Robust GitHub remote release detection with short timeout (5s)
+     */
+    private static function fetch_remote_info($repo, $token = '') {
         if (empty($repo)) return null;
 
         $headers = [
             'Accept' => 'application/vnd.github.v3+json',
             'User-Agent' => 'WordPress/' . get_bloginfo('version') . '; ' . home_url(),
         ];
-        if ($token) {
+        if (!empty($token)) {
             $headers['Authorization'] = 'token ' . $token;
         }
 
+        $args = [
+            'timeout' => 5,
+            'headers' => $headers,
+        ];
+
         // 1. Try Releases API
         $url = 'https://api.github.com/repos/' . $repo . '/releases/latest';
-        $resp = wp_remote_get($url, ['timeout' => 15, 'headers' => $headers]);
+        $resp = wp_remote_get($url, $args);
 
         if (!is_wp_error($resp) && (int)wp_remote_retrieve_response_code($resp) === 200) {
             $body = wp_remote_retrieve_body($resp);
@@ -134,7 +195,6 @@ class OKJ_Updater {
                 $version = ltrim((string)$data['tag_name'], 'v');
                 $download_url = $data['zipball_url'] ?? ('https://github.com/' . $repo . '/archive/refs/tags/' . $data['tag_name'] . '.zip');
                 
-                // If custom asset attached
                 if (!empty($data['assets'][0]['browser_download_url'])) {
                     $download_url = $data['assets'][0]['browser_download_url'];
                 }
@@ -144,15 +204,13 @@ class OKJ_Updater {
                     'tag_name'     => $data['tag_name'],
                     'download_url' => $download_url,
                     'changelog'    => $data['body'] ?? '',
-                    'published_at' => $data['published_at'] ?? '',
-                    'source'       => 'release',
                 ];
             }
         }
 
         // 2. Try Tags API
         $url_tags = 'https://api.github.com/repos/' . $repo . '/tags';
-        $resp_tags = wp_remote_get($url_tags, ['timeout' => 15, 'headers' => $headers]);
+        $resp_tags = wp_remote_get($url_tags, $args);
 
         if (!is_wp_error($resp_tags) && (int)wp_remote_retrieve_response_code($resp_tags) === 200) {
             $tags = json_decode(wp_remote_retrieve_body($resp_tags), true);
@@ -166,15 +224,13 @@ class OKJ_Updater {
                     'tag_name'     => $tag_name,
                     'download_url' => $download_url,
                     'changelog'    => 'Rilis versi tag ' . $tag_name,
-                    'published_at' => '',
-                    'source'       => 'tag',
                 ];
             }
         }
 
         // 3. Try Raw okjualin.php file from main branch
         $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualin.php';
-        $raw_resp = wp_remote_get($raw_url, ['timeout' => 15, 'headers' => $headers]);
+        $raw_resp = wp_remote_get($raw_url, $args);
 
         if (!is_wp_error($raw_resp) && (int)wp_remote_retrieve_response_code($raw_resp) === 200) {
             $content = wp_remote_retrieve_body($raw_resp);
@@ -185,43 +241,11 @@ class OKJ_Updater {
                     'tag_name'     => 'v' . $version,
                     'download_url' => 'https://github.com/' . $repo . '/archive/refs/heads/main.zip',
                     'changelog'    => 'Pembaruan terkini dari branch main.',
-                    'published_at' => '',
-                    'source'       => 'branch_main',
                 ];
             }
         }
 
         return null;
-    }
-
-    /**
-     * Get cached latest version for UI display
-     */
-    public static function get_latest_version_cached($force_refresh = false) {
-        $settings = get_option('okj_settings_v1', []);
-        $repo = !empty($settings['github_repo']) ? trim((string)$settings['github_repo']) : '';
-        if (!$repo) {
-            return false;
-        }
-
-        $transient_key = 'okj_github_latest_release_' . md5($repo);
-        if (!$force_refresh) {
-            $cached = get_transient($transient_key);
-            if ($cached !== false) {
-                return $cached;
-            }
-        }
-
-        $token = !empty($settings['github_token']) ? trim((string)$settings['github_token']) : '';
-        $info = self::get_remote_release_info($repo, $token);
-
-        if (!$info) {
-            return 'unknown';
-        }
-
-        $version = $info['version'];
-        set_transient($transient_key, $version, HOUR_IN_SECONDS);
-        return $version;
     }
 
     /**
@@ -240,11 +264,8 @@ class OKJ_Updater {
 
         $token = !empty($settings['github_token']) ? trim((string)$settings['github_token']) : '';
 
-        // Clear all update transients
-        delete_transient('okj_github_latest_release_' . md5($repo));
-        delete_site_transient('update_plugins');
-
-        $remote = self::get_remote_release_info($repo, $token);
+        // Force fetch remote release info
+        $remote = self::get_remote_info_cached($repo, $token, true);
         if (!$remote || empty($remote['download_url'])) {
             return new WP_Error('no_package', 'Tidak dapat menemukan paket rilis atau berkas unduhan di GitHub. Pastikan nama repositori dan token valid.');
         }
@@ -309,7 +330,7 @@ class OKJ_Updater {
         OKJ_Reseller_Manager::log('system_update', 'plugin', $plugin_file, "Plugin OKJualin berhasil diperbarui dari v{$current_ver} ke v{$new_ver}");
 
         // Clear transient
-        delete_transient('okj_github_latest_release_' . md5($repo));
+        delete_transient('okj_gh_rel_info_' . md5($repo));
         delete_site_transient('update_plugins');
 
         return [
