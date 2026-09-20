@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_DB')) {
+
 class OKJ_DB {
     public static function get_table($name) {
         global $wpdb;
@@ -9,23 +11,32 @@ class OKJ_DB {
 
     public static function install() {
         if (!function_exists('dbDelta')) {
-            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            if (defined('ABSPATH') && file_exists(ABSPATH . 'wp-admin/includes/upgrade.php')) {
+                require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            }
+        }
+        if (!function_exists('dbDelta')) {
+            return;
         }
 
         global $wpdb;
 
         // Auto migrate old OKJ tables to new OKJ tables
-        $old_prefix = 'wrp' . 'm_';
-        $new_prefix = 'ok' . 'j_';
-        $old_tables = ['product_prices', 'reseller_products', 'customers', 'sellers', 'active_products', 'active_reminders', 'logs', 'shortlinks'];
-        foreach ($old_tables as $t) {
-            $old_table = $wpdb->prefix . $old_prefix . $t;
-            $new_table = $wpdb->prefix . $new_prefix . $t;
-            if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $old_table)) === $old_table) {
-                if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $new_table)) !== $new_table) {
-                    $wpdb->query("RENAME TABLE {$old_table} TO {$new_table}");
+        try {
+            $old_prefix = 'wrp' . 'm_';
+            $new_prefix = 'ok' . 'j_';
+            $old_tables = ['product_prices', 'reseller_products', 'customers', 'sellers', 'active_products', 'active_reminders', 'logs', 'shortlinks'];
+            foreach ($old_tables as $t) {
+                $old_table = $wpdb->prefix . $old_prefix . $t;
+                $new_table = $wpdb->prefix . $new_prefix . $t;
+                if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $old_table)) === $old_table) {
+                    if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $new_table)) !== $new_table) {
+                        $wpdb->query("RENAME TABLE {$old_table} TO {$new_table}");
+                    }
                 }
             }
+        } catch (\Throwable $e) {
+            // Ignore rename exception
         }
 
         // Migrate old settings
@@ -79,7 +90,7 @@ class OKJ_DB {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY name (name(80)),
             KEY category (category(40)),
             KEY seller_id (seller_id),
@@ -96,7 +107,7 @@ class OKJ_DB {
             clicks INT(11) NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             UNIQUE KEY short_key (short_key)
         ) {$charset};";
 
@@ -120,7 +131,7 @@ class OKJ_DB {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY price_id (price_id),
             KEY seller_id (seller_id),
             KEY expires_at (expires_at),
@@ -140,7 +151,7 @@ class OKJ_DB {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY email (email(80)),
             KEY name (name(80)),
             KEY status (status)
@@ -159,7 +170,7 @@ class OKJ_DB {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY email (email(80)),
             KEY name (name(80)),
             KEY status (status)
@@ -185,7 +196,7 @@ class OKJ_DB {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY expires_at (expires_at),
             KEY status (status),
             KEY customer_id (customer_id),
@@ -206,7 +217,7 @@ class OKJ_DB {
             last_error TEXT NULL,
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY active_product_id (active_product_id),
             KEY reminder_date (reminder_date),
             KEY status (status)
@@ -223,7 +234,7 @@ class OKJ_DB {
             message TEXT NULL,
             meta LONGTEXT NULL,
             ip VARCHAR(45) NOT NULL DEFAULT '',
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY happened_at (happened_at),
             KEY action (action(60)),
             KEY entity (entity(40)),
@@ -246,7 +257,7 @@ class OKJ_DB {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             UNIQUE KEY transaction_no (transaction_no),
             KEY customer_id (customer_id),
             KEY seller_id (seller_id)
@@ -262,7 +273,7 @@ class OKJ_DB {
             duration_days INT(11) NOT NULL DEFAULT 0,
             subtotal BIGINT(20) NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY transaction_id (transaction_id),
             KEY product_id (product_id)
         ) {$charset};";
@@ -279,7 +290,7 @@ class OKJ_DB {
             notes LONGTEXT NULL,
             renewed_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
-            PRIMARY KEY (id),
+            PRIMARY KEY  (id),
             KEY active_product_id (active_product_id),
             KEY renewed_at (renewed_at)
         ) {$charset};";
@@ -296,64 +307,83 @@ class OKJ_DB {
         dbDelta($sql_pos_items);
         dbDelta($sql_renewals);
 
-        // Auto-migration check for existing tables
-        $col_sync = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'sync_to_wc'");
-        if (empty($col_sync)) {
-            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN sync_to_wc TINYINT(1) NOT NULL DEFAULT 0 AFTER show_in_pos");
-        }
-        $col_wc_id = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'wc_product_id'");
-        if (empty($col_wc_id)) {
-            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN wc_product_id BIGINT(20) NOT NULL DEFAULT 0 AFTER sync_to_wc");
-        }
-        $col_stock = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'stock'");
-        if (empty($col_stock)) {
-            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN stock INT(11) NOT NULL DEFAULT -1 AFTER sale_price");
-        }
-        $col_p_img = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'image_url'");
-        if (empty($col_p_img)) {
-            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN image_url TEXT NULL AFTER duration_days");
-        }
-        $col_p_stat = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'status'");
-        if (empty($col_p_stat)) {
-            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER image_url");
-        }
+        // Safe auto-migration check for existing tables
+        try {
+            $existing_tables = $wpdb->get_col("SHOW TABLES");
+            if (!is_array($existing_tables)) {
+                $existing_tables = [];
+            }
 
-        // Sellers new columns
-        $col_s_addr = $wpdb->get_results("SHOW COLUMNS FROM {$t_sellers} LIKE 'address'");
-        if (empty($col_s_addr)) {
-            $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN address TEXT NULL AFTER whatsapp");
-        }
-        $col_s_notes = $wpdb->get_results("SHOW COLUMNS FROM {$t_sellers} LIKE 'notes'");
-        if (empty($col_s_notes)) {
-            $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN notes LONGTEXT NULL AFTER address");
-        }
-        $col_s_stat = $wpdb->get_results("SHOW COLUMNS FROM {$t_sellers} LIKE 'status'");
-        if (empty($col_s_stat)) {
-            $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER notes");
-        }
+            // Prices columns
+            if (in_array($t_prices, $existing_tables)) {
+                $cols = $wpdb->get_col("SHOW COLUMNS FROM {$t_prices}");
+                if (is_array($cols)) {
+                    if (!in_array('sync_to_wc', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN sync_to_wc TINYINT(1) NOT NULL DEFAULT 0");
+                    }
+                    if (!in_array('wc_product_id', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN wc_product_id BIGINT(20) NOT NULL DEFAULT 0");
+                    }
+                    if (!in_array('stock', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN stock INT(11) NOT NULL DEFAULT -1");
+                    }
+                    if (!in_array('image_url', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN image_url TEXT NULL");
+                    }
+                    if (!in_array('status', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'");
+                    }
+                }
+            }
 
-        // Customers new columns
-        $col_c_addr = $wpdb->get_results("SHOW COLUMNS FROM {$t_customers} LIKE 'address'");
-        if (empty($col_c_addr)) {
-            $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN address TEXT NULL AFTER whatsapp");
-        }
-        $col_c_notes = $wpdb->get_results("SHOW COLUMNS FROM {$t_customers} LIKE 'notes'");
-        if (empty($col_c_notes)) {
-            $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN notes LONGTEXT NULL AFTER address");
-        }
-        $col_c_stat = $wpdb->get_results("SHOW COLUMNS FROM {$t_customers} LIKE 'status'");
-        if (empty($col_c_stat)) {
-            $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER notes");
-        }
+            // Sellers columns
+            if (in_array($t_sellers, $existing_tables)) {
+                $cols = $wpdb->get_col("SHOW COLUMNS FROM {$t_sellers}");
+                if (is_array($cols)) {
+                    if (!in_array('address', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN address TEXT NULL");
+                    }
+                    if (!in_array('notes', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN notes LONGTEXT NULL");
+                    }
+                    if (!in_array('status', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'");
+                    }
+                }
+            }
 
-        // Active products / purchases new columns
-        $col_ap_prod = $wpdb->get_results("SHOW COLUMNS FROM {$t_active} LIKE 'product_id'");
-        if (empty($col_ap_prod)) {
-            $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN product_id CHAR(36) NULL AFTER reseller_product_id");
-        }
-        $col_ap_qty = $wpdb->get_results("SHOW COLUMNS FROM {$t_active} LIKE 'qty'");
-        if (empty($col_ap_qty)) {
-            $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN qty INT(11) NOT NULL DEFAULT 1 AFTER start_date");
+            // Customers columns
+            if (in_array($t_customers, $existing_tables)) {
+                $cols = $wpdb->get_col("SHOW COLUMNS FROM {$t_customers}");
+                if (is_array($cols)) {
+                    if (!in_array('address', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN address TEXT NULL");
+                    }
+                    if (!in_array('notes', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN notes LONGTEXT NULL");
+                    }
+                    if (!in_array('status', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'");
+                    }
+                }
+            }
+
+            // Active products columns
+            if (in_array($t_active, $existing_tables)) {
+                $cols = $wpdb->get_col("SHOW COLUMNS FROM {$t_active}");
+                if (is_array($cols)) {
+                    if (!in_array('product_id', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN product_id CHAR(36) NULL");
+                    }
+                    if (!in_array('qty', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN qty INT(11) NOT NULL DEFAULT 1");
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('OKJualan DB auto-migration notice: ' . $e->getMessage());
+            }
         }
 
         // Ensure capabilities and settings are initialized
@@ -370,20 +400,27 @@ class OKJ_DB {
     }
 
     public static function ensure_caps() {
-        $admin = get_role('administrator');
-        if ($admin) {
-            $admin->add_cap('okj_manage');
-            $admin->add_cap('okj_view_reports');
-            $admin->add_cap('okj_manage_settings');
-            $admin->add_cap('okj_view_logs');
-        }
+        try {
+            $admin = get_role('administrator');
+            if ($admin) {
+                $admin->add_cap('okj_manage');
+                $admin->add_cap('okj_view_reports');
+                $admin->add_cap('okj_manage_settings');
+                $admin->add_cap('okj_view_logs');
+            }
 
-        if (!get_role('okj_manager')) {
-            add_role('okj_manager', 'OKJualan Manager', [
-                'okj_manage' => true,
-                'okj_view_reports' => true,
-                'okj_view_logs' => true,
-            ]);
+            if (!get_role('okj_manager')) {
+                add_role('okj_manager', 'OKJualan Manager', [
+                    'okj_manage' => true,
+                    'okj_view_reports' => true,
+                    'okj_view_logs' => true,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('OKJualan ensure_caps notice: ' . $e->getMessage());
+            }
         }
     }
+}
 }

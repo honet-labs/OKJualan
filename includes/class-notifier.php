@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_Notifier')) {
+
 class OKJ_Notifier {
     private $settings;
 
@@ -301,5 +303,6 @@ class OKJ_Notifier {
 
         $notifier->send_waha($target_phone, $msg);
     }
+}
 }
 

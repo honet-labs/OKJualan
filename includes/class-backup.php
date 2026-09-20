@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_Backup')) {
+
 class OKJ_Backup {
     public static function export_json() {
         if (!current_user_can('okj_manage_settings')) {
@@ -83,4 +85,5 @@ class OKJ_Backup {
 
         return ['ok' => true];
     }
+}
 }

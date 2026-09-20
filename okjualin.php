@@ -10,13 +10,30 @@
 
 if (!defined('ABSPATH')) { exit; }
 
+// Catch fatal shutdown errors during plugin loading or activation for easier troubleshooting
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        $file = isset($error['file']) ? $error['file'] : '';
+        if (strpos($file, 'okjualin') !== false || strpos($file, 'OKJualin') !== false) {
+            error_log('[OKJualan Fatal Error] ' . ($error['message'] ?? '') . ' in ' . $file . ' on line ' . ($error['line'] ?? 0));
+        }
+    }
+});
+
+if (!class_exists('OKJ_App')) {
+
 class OKJ_App {
     const VERSION = '0.1.3';
 
     private static $instance = null;
     public static function instance() {
         if (self::$instance === null) {
-            self::$instance = new self();
+            try {
+                self::$instance = new self();
+            } catch (\Throwable $e) {
+                error_log('[OKJualan Bootstrap Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            }
         }
         return self::$instance;
     }
@@ -37,56 +54,81 @@ class OKJ_App {
     }
 
     private function includes() {
-        require_once OKJ_PLUGIN_DIR . 'includes/class-security.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-db.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-notifier.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-pdf-invoice.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-payment-gateway.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-backup.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-updater.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-woocommerce-sync.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-reseller-manager.php';
-        require_once OKJ_PLUGIN_DIR . 'includes/class-admin.php';
+        $modules = [
+            'includes/class-security.php',
+            'includes/class-db.php',
+            'includes/class-notifier.php',
+            'includes/class-pdf-invoice.php',
+            'includes/class-payment-gateway.php',
+            'includes/class-backup.php',
+            'includes/class-updater.php',
+            'includes/class-woocommerce-sync.php',
+            'includes/class-reseller-manager.php',
+            'includes/class-admin.php',
+        ];
+
+        foreach ($modules as $mod) {
+            $path = OKJ_PLUGIN_DIR . $mod;
+            if (file_exists($path)) {
+                require_once $path;
+            } else {
+                error_log('[OKJualan] Missing required file: ' . $path);
+            }
+        }
     }
 
     private function init() {
-        // DB Upgrade handler
-        add_action('admin_init', [$this, 'maybe_upgrade_db']);
+        try {
+            // DB Upgrade handler
+            add_action('admin_init', [$this, 'maybe_upgrade_db']);
 
-        // Ensure capabilities are always provisioned (critical after rebranding)
-        add_action('admin_init', function() {
-            OKJ_DB::ensure_caps();
-        });
+            // Ensure capabilities are always provisioned (critical after rebranding)
+            add_action('admin_init', function() {
+                if (class_exists('OKJ_DB')) {
+                    OKJ_DB::ensure_caps();
+                }
+            });
 
-        // Initialize WooCommerce synchronization engine
-        OKJ_WC_Sync::init();
+            // Initialize WooCommerce synchronization engine
+            if (class_exists('OKJ_WC_Sync')) {
+                OKJ_WC_Sync::init();
+            }
 
-        // Listen to payment gateway webhooks (e.g. SumoPod, Midtrans, Tripay)
-        add_action('init', [OKJ_Payment_Gateway::class, 'handle_webhook']);
+            // Listen to payment gateway webhooks (e.g. SumoPod, Midtrans, Tripay)
+            if (class_exists('OKJ_Payment_Gateway')) {
+                add_action('init', ['OKJ_Payment_Gateway', 'handle_webhook']);
+            }
 
-        // Listen to shortlink redirects
-        add_action('parse_request', [$this, 'handle_shortlink_redirect']);
+            // Listen to shortlink redirects
+            add_action('parse_request', [$this, 'handle_shortlink_redirect']);
 
-        // Initialize modules
-        if (is_admin()) {
-            new OKJ_Admin();
+            // Initialize modules
+            if (is_admin() && class_exists('OKJ_Admin')) {
+                new OKJ_Admin();
+            }
+
+            // Initialize GitHub auto-updater
+            if (class_exists('OKJ_Updater')) {
+                new OKJ_Updater(__FILE__);
+            }
+
+            // Cron Scheduling
+            if (class_exists('OKJ_Reseller_Manager')) {
+                add_action('okj_daily_cron', ['OKJ_Reseller_Manager', 'process_daily_cron']);
+                if (!wp_next_scheduled('okj_daily_cron')) {
+                    wp_schedule_event(time(), 'daily', 'okj_daily_cron');
+                }
+            }
+
+            // Listen to self-service public order requests
+            add_action('template_redirect', [$this, 'handle_public_order_page']);
+        } catch (\Throwable $e) {
+            error_log('[OKJualan Init Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
         }
-
-        // Initialize GitHub auto-updater
-        new OKJ_Updater(__FILE__);
-
-        // Cron Scheduling
-        add_action('okj_daily_cron', [OKJ_Reseller_Manager::class, 'process_daily_cron']);
-        if (!wp_next_scheduled('okj_daily_cron')) {
-            wp_schedule_event(time(), 'daily', 'okj_daily_cron');
-        }
-
-        // Listen to self-service public order requests
-        add_action('template_redirect', [$this, 'handle_public_order_page']);
     }
 
     public function handle_shortlink_redirect() {
-        $request_uri = $_SERVER['REQUEST_URI'];
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         $path = parse_url($request_uri, PHP_URL_PATH);
         
         $pos = strpos($path, '/go/');
@@ -110,7 +152,7 @@ class OKJ_App {
     }
 
     public function handle_public_order_page() {
-        if (isset($_GET['okj_order'])) {
+        if (isset($_GET['okj_order']) && class_exists('OKJ_DB')) {
             global $wpdb;
             
             // Fetch categories for public catalog
@@ -125,24 +167,54 @@ class OKJ_App {
     }
 
     public function maybe_upgrade_db() {
-        global $wpdb;
-        $t_customers = OKJ_DB::get_table('customers');
-        $t_renewals = OKJ_DB::get_table('active_product_renewals');
+        try {
+            if (!class_exists('OKJ_DB')) {
+                return;
+            }
+            global $wpdb;
+            $t_customers = OKJ_DB::get_table('customers');
+            $t_renewals = OKJ_DB::get_table('active_product_renewals');
 
-        $customers_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $t_customers)) === $t_customers;
-        $renewals_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $t_renewals)) === $t_renewals;
+            $customers_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $t_customers)) === $t_customers;
+            $renewals_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $t_renewals)) === $t_renewals;
 
-        $db_ver = get_option('okj_db_version', '');
-        if ($db_ver !== self::VERSION || !$customers_exists || !$renewals_exists) {
-            OKJ_DB::install();
-            update_option('okj_db_version', self::VERSION);
+            $db_ver = get_option('okj_db_version', '');
+            if ($db_ver !== self::VERSION || !$customers_exists || !$renewals_exists) {
+                OKJ_DB::install();
+                update_option('okj_db_version', self::VERSION);
+            }
+        } catch (\Throwable $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[OKJualan DB Upgrade Error] ' . $e->getMessage());
+            }
         }
     }
 
     public static function activate() {
-        OKJ_DB::install();
-        if (!wp_next_scheduled('okj_daily_cron')) {
-            wp_schedule_event(time(), 'daily', 'okj_daily_cron');
+        try {
+            if (!class_exists('OKJ_DB')) {
+                require_once dirname(__FILE__) . '/includes/class-db.php';
+            }
+            if (class_exists('OKJ_DB')) {
+                OKJ_DB::install();
+            }
+            if (!wp_next_scheduled('okj_daily_cron')) {
+                wp_schedule_event(time(), 'daily', 'okj_daily_cron');
+            }
+        } catch (\Throwable $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('[OKJualan Activation Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            }
+            wp_die(
+                '<div style="font-family:sans-serif;padding:24px;max-width:700px;margin:30px auto;background:#fff;border-left:4px solid #d63638;box-shadow:0 1px 4px rgba(0,0,0,0.1);">' .
+                '<h2 style="color:#d63638;margin-top:0;">Gagal Mengaktifkan Plugin OKJualan</h2>' .
+                '<p>Terjadi kesalahan saat inisialisasi database plugin:</p>' .
+                '<pre style="background:#f6f7f7;padding:12px;border-radius:4px;overflow-x:auto;color:#1d2327;">' . esc_html($e->getMessage()) . "\n\nFile: " . esc_html($e->getFile()) . ':' . $e->getLine() . '</pre>' .
+                '<p><a href="' . esc_url(admin_url('plugins.php')) . '" class="button button-primary">Kembali ke Daftar Plugin</a></p>' .
+                '</div>',
+                'Aktivasi Plugin Gagal',
+                ['back_link' => true]
+            );
         }
     }
 
@@ -151,8 +223,12 @@ class OKJ_App {
     }
 }
 
-register_activation_hook(__FILE__, [OKJ_App::class, 'activate']);
-register_deactivation_hook(__FILE__, [OKJ_App::class, 'deactivate']);
+} // end if class_exists
 
-// Boot the application
-OKJ_App::instance();
+register_activation_hook(__FILE__, ['OKJ_App', 'activate']);
+register_deactivation_hook(__FILE__, ['OKJ_App', 'deactivate']);
+
+// Boot the application safely
+if (class_exists('OKJ_App')) {
+    OKJ_App::instance();
+}

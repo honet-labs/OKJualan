@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_WC_Sync')) {
+
 class OKJ_WC_Sync {
 
     /**
@@ -310,4 +312,5 @@ class OKJ_WC_Sync {
 
         update_post_meta($order_id, '_okj_order_captured', current_time('mysql'));
     }
+}
 }

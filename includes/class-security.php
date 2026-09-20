@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_Security')) {
+
 class OKJ_Security {
 
     /**
@@ -21,7 +23,11 @@ class OKJ_Security {
         }
 
         $key = self::get_encryption_key();
-        $iv = openssl_random_pseudo_bytes(16);
+        try {
+            $iv = function_exists('random_bytes') ? random_bytes(16) : (function_exists('openssl_random_pseudo_bytes') ? openssl_random_pseudo_bytes(16) : substr(md5(uniqid(mt_rand(), true)), 0, 16));
+        } catch (\Throwable $e) {
+            $iv = substr(md5(uniqid(mt_rand(), true)), 0, 16);
+        }
         $cipher = openssl_encrypt($plaintext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
         return base64_encode($iv . $cipher);
     }
@@ -84,4 +90,5 @@ class OKJ_Security {
         }
         return '127.0.0.1';
     }
+}
 }

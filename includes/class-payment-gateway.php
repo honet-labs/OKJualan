@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_Payment_Gateway')) {
+
 class OKJ_Payment_Gateway {
 
     /**
@@ -362,4 +364,5 @@ class OKJ_Payment_Gateway {
             }
         }
     }
+}
 }

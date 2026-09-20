@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_Admin')) {
+
 class OKJ_Admin {
     public function __construct() {
         add_action('admin_menu', [$this, 'register_menus']);
@@ -2578,5 +2580,6 @@ class OKJ_Admin {
 
         wp_send_json_success($res);
     }
+}
 }
 

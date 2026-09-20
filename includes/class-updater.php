@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_Updater')) {
+
 class OKJ_Updater {
     private $file;
     private $slug;
@@ -340,4 +342,5 @@ class OKJ_Updater {
             'message'     => "Selamat! OKJualan berhasil diperbarui ke versi v{$new_ver}.",
         ];
     }
+}
 }

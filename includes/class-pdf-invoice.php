@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_PDF_Invoice')) {
+
 class OKJ_PDF_Invoice {
     private function hex_to_rgb($hex) {
         $hex = str_replace('#', '', (string)$hex);
@@ -326,5 +328,6 @@ class OKJ_PDF_Invoice {
         $content .= "Q\n";
         return $this->build_pdf_document($content);
     }
+}
 }
 

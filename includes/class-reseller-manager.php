@@ -1,6 +1,8 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+if (!class_exists('OKJ_Reseller_Manager')) {
+
 class OKJ_Reseller_Manager {
     public static function log($action, $entity, $entity_id, $message, $meta = null) {
         global $wpdb;
@@ -172,4 +174,5 @@ class OKJ_Reseller_Manager {
             }
         }
     }
+}
 }
