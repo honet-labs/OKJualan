@@ -391,7 +391,7 @@ jQuery(document).ready(function($) {
     // 1-Click Update Handler
     $('#okj-btn-trigger-update').on('click', function(e) {
         e.preventDefault();
-        if (!confirm('Apakah Anda yakin ingin memperbarui plugin OKJualin sekarang? Berkas plugin dan skema database akan disinkronkan ke rilis terbaru secara otomatis.')) {
+        if (!confirm('Apakah Anda yakin ingin memperbarui plugin OKJualan sekarang? Berkas plugin dan skema database akan disinkronkan ke rilis terbaru secara otomatis.')) {
             return;
         }
 

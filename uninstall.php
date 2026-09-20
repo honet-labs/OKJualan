@@ -10,7 +10,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 
 global $wpdb;
 
-// 1. Drop all OKJualin custom database tables
+// 1. Drop all OKJualan custom database tables
 $tables = [
     $wpdb->prefix . 'okj_logs',
     $wpdb->prefix . 'okj_shortlinks',

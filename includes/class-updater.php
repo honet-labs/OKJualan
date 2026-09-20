@@ -79,7 +79,7 @@ class OKJ_Updater {
 
         if (version_compare($current, $new_ver, '<')) {
             $obj = new stdClass();
-            $obj->slug = 'okjualin';
+            $obj->slug = 'okjualan';
             $obj->plugin = $this->slug;
             $obj->new_version = $new_ver;
             $obj->url = 'https://github.com/' . $this->repo;
@@ -102,14 +102,14 @@ class OKJ_Updater {
      */
     public function plugin_info($res, $action, $args) {
         if ($action !== 'plugin_information') return $res;
-        if (empty($args->slug) || $args->slug !== 'okjualin') return $res;
+        if (empty($args->slug) || ($args->slug !== 'okjualan' && $args->slug !== 'okjualin')) return $res;
 
         $remote = self::get_remote_info_cached($this->repo, $this->token);
         if (!$remote) return $res;
 
         $res = new stdClass();
         $res->name = 'OKJualan';
-        $res->slug = 'okjualin';
+        $res->slug = 'okjualan';
         $res->version = $remote['version'];
         $res->author = 'HONET';
         $res->homepage = 'https://github.com/' . $this->repo;
@@ -230,9 +230,13 @@ class OKJ_Updater {
             }
         }
 
-        // 3. Try Raw okjualin.php file from main branch
-        $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualin.php';
+        // 3. Try Raw okjualan.php (or okjualin.php) file from main branch
+        $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualan.php';
         $raw_resp = wp_remote_get($raw_url, $args);
+        if (is_wp_error($raw_resp) || (int)wp_remote_retrieve_response_code($raw_resp) !== 200) {
+            $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualin.php';
+            $raw_resp = wp_remote_get($raw_url, $args);
+        }
 
         if (!is_wp_error($raw_resp) && (int)wp_remote_retrieve_response_code($raw_resp) === 200) {
             $content = wp_remote_retrieve_body($raw_resp);

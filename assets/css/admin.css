@@ -1,7 +1,7 @@
-/* OKJualin Premium CSS Design System */
+/* OKJualan Premium CSS Design System */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
 
-/* Universal Font Enforcement across OKJualin Menus, Forms, Modals & Components */
+/* Universal Font Enforcement across OKJualan Menus, Forms, Modals & Components */
 .okj-wrap,
 .okj-wrap h1, .okj-wrap h2, .okj-wrap h3, .okj-wrap h4, .okj-wrap h5, .okj-wrap h6,
 .okj-wrap p, .okj-wrap a, .okj-wrap label, .okj-wrap strong, .okj-wrap small,
@@ -54,7 +54,7 @@ span.dashicons,
     clear: both;
 }
 
-/* Ensure WordPress footer on OKJualin admin screens is nicely spaced at bottom */
+/* Ensure WordPress footer on OKJualan admin screens is nicely spaced at bottom */
 #wpbody-content:has(.okj-wrap) + #wpfooter,
 .okj-wrap ~ #wpfooter {
     position: relative !important;

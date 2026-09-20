@@ -3,7 +3,7 @@
 
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)](https://wordpress.org)
 [![PHP Version](https://img.shields.io/badge/PHP-7.4%20%7C%208.0%20%7C%208.1%20%7C%208.2-indigo.svg)](https://php.net)
-[![Version](https://img.shields.io/badge/Version-0.1.3-green.svg)](https://github.com/honet-labs/OKJualin)
+[![Version](https://img.shields.io/badge/Version-0.1.3-green.svg)](https://github.com/honet-labs/OKJualan)
 [![License](https://img.shields.io/badge/License-GPLv2-orange.svg)](LICENSE)
 [![Gateway](https://img.shields.io/badge/Payment-SumoPod%20QRIS-purple.svg)](https://sumopod.com)
 
@@ -114,7 +114,7 @@ Plugin menggunakan tabel mandiri berkinerja tinggi dengan prefix `wp_okj_*`:
 1. Unduh repositori ini atau clone ke direktori plugin WordPress:
    ```bash
    cd wp-content/plugins/
-   git clone https://github.com/honet-labs/OKJualin.git okjualin
+   git clone https://github.com/honet-labs/OKJualan.git okjualan
    ```
 2. Buka Dasbor WordPress &rarr; **Plugins** &rarr; cari **OKJualan** &rarr; klik **Activate**.
 3. Sistem secara otomatis menjalankan migrasi skema tabel database dan menginisialisasi role `OKJualan Manager`.

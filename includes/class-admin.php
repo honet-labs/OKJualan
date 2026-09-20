@@ -715,10 +715,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_price_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_price')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
@@ -875,10 +875,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_customer_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_customer')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
@@ -937,10 +937,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_shortlink_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_shortlink')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
@@ -1025,10 +1025,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_reseller_product_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_reseller_product')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
@@ -1160,10 +1160,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_active_product_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_active_product')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
@@ -1182,10 +1182,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_pos_transaction_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_pos_transaction')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
@@ -1203,10 +1203,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_reminder_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_reminder')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;

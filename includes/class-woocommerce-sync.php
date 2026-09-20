@@ -20,13 +20,13 @@ class OKJ_WC_Sync {
             return;
         }
 
-        // Listen to completed/processing WooCommerce orders to record customers in OKJualin
+        // Listen to completed/processing WooCommerce orders to record customers in OKJualan
         add_action('woocommerce_order_status_completed', [__CLASS__, 'on_order_completed'], 10, 1);
         add_action('woocommerce_order_status_processing', [__CLASS__, 'on_order_completed'], 10, 1);
     }
 
     /**
-     * Sync single OKJualin product price to WooCommerce product
+     * Sync single OKJualan product price to WooCommerce product
      */
     public static function sync_product($price_id) {
         if (!self::is_active()) {
@@ -144,7 +144,7 @@ class OKJ_WC_Sync {
         update_post_meta($new_wc_id, '_okj_duration_days', (int)$row['duration_days']);
         update_post_meta($new_wc_id, '_okj_synced_at', current_time('mysql'));
 
-        // Update OKJualin database record
+        // Update OKJualan database record
         $wpdb->update(
             OKJ_DB::get_table('product_prices'),
             [
@@ -221,7 +221,7 @@ class OKJ_WC_Sync {
     }
 
     /**
-     * Delete or Trash WooCommerce Product when OKJualin master price is deleted
+     * Delete or Trash WooCommerce Product when OKJualan master price is deleted
      */
     public static function delete_synced_product($price_id) {
         if (!self::is_active()) return;
@@ -278,7 +278,7 @@ class OKJ_WC_Sync {
             }
         }
 
-        // If customer does not exist in OKJualin, automatically create them
+        // If customer does not exist in OKJualan, automatically create them
         if (empty($customer_id)) {
             $customer_id = wp_generate_uuid4();
             $wpdb->insert($t_customers, [
@@ -295,7 +295,7 @@ class OKJ_WC_Sync {
             OKJ_Reseller_Manager::log('create_customer_wc', 'customer', $customer_id, "Customer otomatis dibuat dari pesanan WooCommerce #{$order_id}: {$billing_name}");
         }
 
-        // Check if any purchased item is an OKJualin synced product
+        // Check if any purchased item is an OKJualan synced product
         $synced_items = 0;
         foreach ($order->get_items() as $item) {
             $wc_prod_id = $item->get_product_id();

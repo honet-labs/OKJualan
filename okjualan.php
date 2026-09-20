@@ -15,7 +15,7 @@ register_shutdown_function(function() {
     $error = error_get_last();
     if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
         $file = isset($error['file']) ? $error['file'] : '';
-        if (strpos($file, 'okjualin') !== false || strpos($file, 'OKJualin') !== false) {
+        if (stripos($file, 'okjualan') !== false || stripos($file, 'okjualin') !== false) {
             error_log('[OKJualan Fatal Error] ' . ($error['message'] ?? '') . ' in ' . $file . ' on line ' . ($error['line'] ?? 0));
         }
     }

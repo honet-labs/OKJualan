@@ -6,7 +6,7 @@ if (!class_exists('OKJ_Backup')) {
 class OKJ_Backup {
     public static function export_json() {
         if (!current_user_can('okj_manage_settings')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'));
+            wp_die(esc_html__('Forbidden', 'okjualan'));
         }
 
         global $wpdb;
