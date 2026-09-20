@@ -76,6 +76,22 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) 
                     </div>
                 </div>
 
+                <!-- Manual Account Fulfillment Settings -->
+                <div class="okj-card okj-mt-2">
+                    <div class="okj-card-header">
+                        <h2>Pengiriman Akun Manual (Fulfillment Produk)</h2>
+                    </div>
+                    <div class="okj-card-body">
+                        <div class="okj-form-group">
+                            <label class="okj-label">Tags Produk Perlu Pengiriman Akun Manual (Pisahkan dengan koma)</label>
+                            <input type="text" name="manual_fulfillment_tags" class="okj-input" value="<?php echo esc_attr(!empty($settings['manual_fulfillment_tags']) ? $settings['manual_fulfillment_tags'] : 'netflix'); ?>" placeholder="netflix, spotify, canva, youtube" />
+                            <small class="okj-text-muted">
+                                Jika produk yang dibeli customer memiliki salah satu tag ini (misal <strong>netflix</strong>, spotify, dll), saat pembayaran berhasil maka status di <em>Produk Aktif</em> akan otomatis menjadi <strong>Dalam Proses (process)</strong>. Administrator dapat menyerahkan akun secara manual kepada customer via kontak yang tersedia, lalu mengubah statusnya menjadi Aktif.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- WAHA WhatsApp Gateway Config -->
                 <div class="okj-card okj-mt-2">
                     <div class="okj-card-header">

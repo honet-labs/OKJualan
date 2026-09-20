@@ -19,6 +19,7 @@ class OKJ_Admin {
         add_action('admin_post_okj_delete_reseller_product', [$this, 'delete_reseller_product']);
         add_action('admin_post_okj_save_active_product', [$this, 'save_active_product']);
         add_action('admin_post_okj_delete_active_product', [$this, 'delete_active_product']);
+        add_action('admin_post_okj_mark_active_product_status', [$this, 'mark_active_product_status']);
         add_action('admin_post_okj_renew_active_product', [$this, 'renew_active_product']);
         add_action('admin_post_okj_save_settings', [$this, 'save_settings']);
         add_action('admin_post_okj_backup_data', [$this, 'backup_data']);
@@ -243,7 +244,7 @@ class OKJ_Admin {
                 'existing_categories' => $existing_categories
             ]);
         } else {
-            $per_page = 15;
+            $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
@@ -283,7 +284,7 @@ class OKJ_Admin {
                 $where .= " AND r.expires_at < '{$today}'";
             }
 
-            $per_page = 15;
+            $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
@@ -333,7 +334,7 @@ class OKJ_Admin {
             $row = $id ? $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $id), ARRAY_A) : null;
             $this->render_template('customers', ['action' => $action, 'row' => $row]);
         } else {
-            $per_page = 15;
+            $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
@@ -371,7 +372,7 @@ class OKJ_Admin {
             $row = $id ? $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('sellers') . " WHERE id = %s", $id), ARRAY_A) : null;
             $this->render_template('sellers', ['action' => $action, 'row' => $row]);
         } else {
-            $per_page = 15;
+            $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
@@ -427,7 +428,7 @@ class OKJ_Admin {
             ));
 
             $status_filter = !empty($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : 'active';
-            $per_page = 15;
+            $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
@@ -436,7 +437,9 @@ class OKJ_Admin {
 
             // Build conditional WHERE clause
             $where = "1=1";
-            if ($status_filter === 'active') {
+            if ($status_filter === 'process') {
+                $where .= " AND a.status = 'process'";
+            } elseif ($status_filter === 'active') {
                 $where .= " AND a.status = 'active'";
             } elseif ($status_filter === 'expired') {
                 $where .= " AND a.status = 'expired'";
@@ -444,6 +447,12 @@ class OKJ_Admin {
 
             $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM {$table_ap} a WHERE {$where}");
             $total_pages = ceil($total_rows / $per_page);
+
+            // Counts for tabs
+            $active_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'active'));
+            $process_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'process'));
+            $expired_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'expired'));
+            $all_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table_ap}");
 
             $rows = $wpdb->get_results($wpdb->prepare(
                 "SELECT a.*, COALESCE(NULLIF(c.name, ''), a.customer_name) as customer_name, c.email as customer_email, c.phone as customer_phone, c.telegram as customer_telegram, c.whatsapp as customer_whatsapp 
@@ -462,7 +471,12 @@ class OKJ_Admin {
                 'paged' => $paged,
                 'total_pages' => $total_pages,
                 'total_rows' => $total_rows,
-                'per_page' => $per_page
+                'per_page' => $per_page,
+                'status_filter' => $status_filter,
+                'active_count' => $active_count,
+                'process_count' => $process_count,
+                'expired_count' => $expired_count,
+                'all_count' => $all_count,
             ]);
         }
     }
@@ -521,7 +535,7 @@ class OKJ_Admin {
         if ($action === 'add' || $action === 'edit') {
             $this->render_template('shortlinks', ['action' => $action, 'row' => $row]);
         } else {
-            $per_page = 15;
+            $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
 
@@ -608,8 +622,26 @@ class OKJ_Admin {
 
     public function view_logs() {
         global $wpdb;
-        $rows = $wpdb->get_results("SELECT * FROM " . OKJ_DB::get_table('logs') . " ORDER BY happened_at DESC LIMIT 200", ARRAY_A);
-        $this->render_template('logs', ['rows' => $rows]);
+        $per_page = 10;
+        $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $offset = ($paged - 1) * $per_page;
+
+        $t_logs = OKJ_DB::get_table('logs');
+        $total_rows = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$t_logs}");
+        $total_pages = ceil($total_rows / $per_page);
+
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$t_logs} ORDER BY happened_at DESC LIMIT %d OFFSET %d",
+            $per_page, $offset
+        ), ARRAY_A);
+
+        $this->render_template('logs', [
+            'rows' => $rows,
+            'paged' => $paged,
+            'total_pages' => $total_pages,
+            'total_rows' => $total_rows,
+            'per_page' => $per_page
+        ]);
     }
 
     public function view_settings() {
@@ -1337,6 +1369,36 @@ class OKJ_Admin {
         exit;
     }
 
+    public function mark_active_product_status() {
+        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
+        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        if (!wp_verify_nonce($nonce, 'okj_mark_status_' . $id) && !wp_verify_nonce($nonce, 'okj_mark_status')) {
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
+        }
+        if (!current_user_can('okj_manage')) {
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
+        }
+
+        $status = !empty($_GET['status']) ? sanitize_text_field($_GET['status']) : 'active';
+        if ($id && in_array($status, ['active', 'process', 'expired', 'completed', 'cancelled'], true)) {
+            global $wpdb;
+            $wpdb->update(OKJ_DB::get_table('active_products'), [
+                'status'     => $status,
+                'updated_at' => current_time('mysql'),
+                'updated_by' => get_current_user_id(),
+            ], ['id' => $id]);
+
+            $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('active_products') . " WHERE id = %s", $id), ARRAY_A);
+            if ($row) {
+                OKJ_Reseller_Manager::sync_reminders($row);
+                OKJ_Reseller_Manager::log('update', 'active_product', $id, "Status layanan diubah menjadi '{$status}' untuk: " . $row['product_label']);
+            }
+        }
+
+        $redirect = wp_get_referer() ?: admin_url('admin.php?page=okj-active-products');
+        $this->redirect($redirect);
+    }
+
     public function ajax_get_renewal_history() {
         if (!current_user_can('okj_manage')) {
             wp_send_json_error(['message' => 'Forbidden']);
@@ -1507,6 +1569,7 @@ class OKJ_Admin {
             'support_wa_greeting' => !empty($_POST['support_wa_greeting']) ? sanitize_text_field($_POST['support_wa_greeting']) : '',
             'support_email' => !empty($_POST['support_email']) ? sanitize_email($_POST['support_email']) : '',
             'support_faq_json' => !empty($_POST['support_faq_json']) ? sanitize_textarea_field($_POST['support_faq_json']) : '',
+            'manual_fulfillment_tags' => !empty($_POST['manual_fulfillment_tags']) ? sanitize_text_field($_POST['manual_fulfillment_tags']) : '',
         ];
 
         $existing = get_option('okj_settings_v1', []);
@@ -2028,7 +2091,7 @@ class OKJ_Admin {
         $where_sql = implode(' AND ', $where);
 
         // Pagination
-        $per_page = 20;
+        $per_page = 10;
         $current_page = isset($_GET['paged']) ? max(1, (int)$_GET['paged']) : 1;
         $offset = ($current_page - 1) * $per_page;
 
@@ -2510,9 +2573,12 @@ class OKJ_Admin {
                 $active_id = wp_generate_uuid4();
                 $start_date = wp_date('Y-m-d');
                 $expires_at = wp_date('Y-m-d', strtotime($start_date . " +{$entry['duration_days']} days"));
+                $is_manual = OKJ_Reseller_Manager::requires_manual_fulfillment($entry['product_id'] ?? null, $entry['product_name']);
+                $initial_status = ($payment_status === 'paid' && $is_manual) ? 'process' : 'active';
 
                 $wpdb->insert(OKJ_DB::get_table('active_products'), [
                     'id' => $active_id,
+                    'transaction_no' => $transaction_no,
                     'reseller_product_id' => '', // Direct POS sale, no reseller product ID needed
                     'product_label' => $entry['product_name'],
                     'customer_id' => $customer_id,
@@ -2521,7 +2587,7 @@ class OKJ_Admin {
                     'start_date' => $start_date,
                     'duration_days' => $entry['duration_days'],
                     'expires_at' => $expires_at,
-                    'status' => 'active',
+                    'status' => $initial_status,
                     'price' => $entry['price'] * $entry['qty'],
                     'payment_status' => $payment_status,
                     'notes' => 'Pembelian via POS (' . $transaction_no . ')',
@@ -2837,6 +2903,7 @@ class OKJ_Admin {
 
                 $wpdb->insert(OKJ_DB::get_table('active_products'), [
                     'id' => $active_id,
+                    'transaction_no' => $transaction_no,
                     'reseller_product_id' => '',
                     'product_label' => $entry['product_name'],
                     'customer_id' => $customer_id,

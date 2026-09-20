@@ -89,6 +89,7 @@
                             <?php $curr_status = $row && !empty($row['status']) ? $row['status'] : 'active'; ?>
                             <select name="status" class="okj-select" style="width: 100%;">
                                 <option value="active" <?php selected($curr_status, 'active'); ?>>🟢 Aktif</option>
+                                <option value="process" <?php selected($curr_status, 'process'); ?>>⏳ Dalam Proses (Perlu Akun)</option>
                                 <option value="pending" <?php selected($curr_status, 'pending'); ?>>🟡 Pending</option>
                                 <option value="completed" <?php selected($curr_status, 'completed'); ?>>✅ Selesai</option>
                                 <option value="expired" <?php selected($curr_status, 'expired'); ?>>🔴 Kedaluwarsa (Expired)</option>
@@ -157,6 +158,17 @@
                 ?>
                 <div class="okj-tabs-wrapper" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
                     <div class="okj-status-tabs" style="display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px;">
+                        <a href="<?php echo admin_url('admin.php?page=okj-active-products&status_filter=process'); ?>" 
+                           class="okj-tab-item <?php echo $current_status_filter === 'process' ? 'okj-tab-active' : ''; ?>"
+                           style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'process' ? '#ffffff' : '#b45309'; ?>; background: <?php echo $current_status_filter === 'process' ? '#d97706' : 'transparent'; ?>; display: inline-flex; align-items: center; gap: 5px;">
+                            <span>⏳</span>
+                            Dalam Proses
+                            <?php if (!empty($process_count)): ?>
+                                <span style="background: <?php echo $current_status_filter === 'process' ? '#ffffff' : '#f59e0b'; ?>; color: <?php echo $current_status_filter === 'process' ? '#b45309' : '#ffffff'; ?>; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">
+                                    <?php echo (int)$process_count; ?>
+                                </span>
+                            <?php endif; ?>
+                        </a>
                         <a href="<?php echo admin_url('admin.php?page=okj-active-products&status_filter=active'); ?>" 
                            class="okj-tab-item <?php echo $current_status_filter === 'active' ? 'okj-tab-active' : ''; ?>"
                            style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'active' ? '#ffffff' : '#64748b'; ?>; background: <?php echo $current_status_filter === 'active' ? '#4f46e5' : 'transparent'; ?>;">
@@ -235,6 +247,16 @@
                                             $wc_url = admin_url('admin.php?page=wc-orders&action=edit&id=' . $wc_id);
                                         }
                                     }
+
+                                    // Direct WhatsApp Delivery link preparation
+                                    $raw_cust_phone = $r['customer_whatsapp'] ?: $r['customer_phone'] ?: '';
+                                    $clean_cust_phone = preg_replace('/[^0-9]/', '', $raw_cust_phone);
+                                    if (!empty($clean_cust_phone) && substr($clean_cust_phone, 0, 1) === '0') {
+                                        $clean_cust_phone = '62' . substr($clean_cust_phone, 1);
+                                    }
+                                    $wa_deliver_msg = rawurlencode("Halo Kak " . ($r['customer_name'] ?: '') . ", terima kasih atas pesanannya untuk " . $r['product_label'] . ($tx_no ? " (Order: {$tx_no})" : '') . ".\n\nBerikut akun / detail akses Anda:\nEmail: \nPassword: \nProfile/PIN: \n\nMohon dicek ya kak. Jika ada kendala, silakan balas chat ini. Terima kasih!");
+                                    $wa_deliver_url = !empty($clean_cust_phone) ? "https://wa.me/{$clean_cust_phone}?text={$wa_deliver_msg}" : "#";
+                                    $mark_active_url = wp_nonce_url(admin_url('admin-post.php?action=okj_mark_active_product_status&id=' . $r['id'] . '&status=active'), 'okj_mark_status_' . $r['id']);
                                     ?>
                                     <tr>
                                         <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
@@ -286,7 +308,11 @@
                                         <td><strong style="color: #0f172a;">Rp <?php echo number_format_i18n((float)$r['price'], 0); ?></strong></td>
                                         <!-- Status Layanan -->
                                         <td>
-                                            <?php if ($p_status === 'active' || $p_status === 'completed'): ?>
+                                            <?php if ($p_status === 'process'): ?>
+                                                <span class="okj-badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                                    ⏳ Dalam Proses
+                                                </span>
+                                            <?php elseif ($p_status === 'active' || $p_status === 'completed'): ?>
                                                 <span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🟢 Aktif</span>
                                             <?php elseif ($p_status === 'pending'): ?>
                                                 <span class="okj-badge okj-badge-warning" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🟡 Pending</span>
@@ -327,14 +353,27 @@
                                         </td>
                                         <td>
                                             <div style="display: flex; flex-direction: column; gap: 4px;">
-                                                <div style="display: flex; gap: 6px; align-items: center;">
-                                                    <a class="okj-btn okj-renew-product-btn" href="#" data-id="<?php echo esc_attr($r['id']); ?>" data-name="<?php echo esc_attr($r['product_label']); ?>" data-expiry="<?php echo esc_attr($r['expires_at']); ?>" data-price="<?php echo esc_attr($r['price']); ?>" style="padding: 4px 8px; font-size: 11px; background: #4f46e5; color: #ffffff; border-radius: 4px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
-                                                        <span class="dashicons dashicons-update" style="font-size: 13px; width: 13px; height: 13px;"></span> Perpanjang
-                                                    </a>
-                                                    <a class="okj-renewal-history-btn" href="#" data-id="<?php echo esc_attr($r['id']); ?>" style="color: #059669; font-size: 11px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 2px;" title="Riwayat Renewal">
-                                                        <span class="dashicons dashicons-backup" style="font-size: 14px; width: 14px; height: 14px;"></span> Riwayat
-                                                    </a>
-                                                </div>
+                                                <?php if ($p_status === 'process'): ?>
+                                                    <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 2px;">
+                                                        <?php if (!empty($clean_cust_phone)): ?>
+                                                            <a href="<?php echo esc_url($wa_deliver_url); ?>" target="_blank" class="okj-btn" style="padding: 4px 8px; font-size: 11px; background: #25d366; color: #ffffff; border-radius: 4px; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Kirim Akun ke WhatsApp Customer">
+                                                                <span class="dashicons dashicons-whatsapp" style="font-size: 13px; width: 13px; height: 13px;"></span> Kirim WA
+                                                            </a>
+                                                        <?php endif; ?>
+                                                        <a href="<?php echo esc_url($mark_active_url); ?>" class="okj-btn" style="padding: 4px 8px; font-size: 11px; background: #10b981; color: #ffffff; border-radius: 4px; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;" title="Tandai akun telah diserahkan &amp; aktifkan masa aktif" onclick="return confirm('Tandai layanan ini sudah diserahkan dan aktif?');">
+                                                            <span class="dashicons dashicons-yes" style="font-size: 13px; width: 13px; height: 13px;"></span> Tandai Aktif
+                                                        </a>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div style="display: flex; gap: 6px; align-items: center;">
+                                                        <a class="okj-btn okj-renew-product-btn" href="#" data-id="<?php echo esc_attr($r['id']); ?>" data-name="<?php echo esc_attr($r['product_label']); ?>" data-expiry="<?php echo esc_attr($r['expires_at']); ?>" data-price="<?php echo esc_attr($r['price']); ?>" style="padding: 4px 8px; font-size: 11px; background: #4f46e5; color: #ffffff; border-radius: 4px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                                                            <span class="dashicons dashicons-update" style="font-size: 13px; width: 13px; height: 13px;"></span> Perpanjang
+                                                        </a>
+                                                        <a class="okj-renewal-history-btn" href="#" data-id="<?php echo esc_attr($r['id']); ?>" style="color: #059669; font-size: 11px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 2px;" title="Riwayat Renewal">
+                                                            <span class="dashicons dashicons-backup" style="font-size: 14px; width: 14px; height: 14px;"></span> Riwayat
+                                                        </a>
+                                                    </div>
+                                                <?php endif; ?>
                                                 <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
                                                     <a class="okj-btn-link" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_invoice_pdf&id=' . $r['id']), 'okj_invoice_pdf_' . $r['id']); ?>" target="_blank" style="font-size: 11px; color: #0284c7;">
                                                         <span class="dashicons dashicons-pdf" style="font-size: 13px; width: 13px; height: 13px;"></span> Invoice

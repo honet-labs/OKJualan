@@ -281,8 +281,9 @@ class OKJ_Reseller_Manager {
             $target_status = 'pending';
             $target_pay_status = 'pending';
             if ($is_paid) {
-                $target_status = 'active';
                 $target_pay_status = 'paid';
+                $is_manual = self::requires_manual_fulfillment($product_id, $product_name);
+                $target_status = $is_manual ? 'process' : 'active';
             } elseif ($is_cancelled) {
                 $target_status = 'cancelled';
                 $target_pay_status = 'cancelled';
@@ -298,6 +299,11 @@ class OKJ_Reseller_Manager {
             ), ARRAY_A);
 
             if ($existing_ap) {
+                // If it was already active or completed by admin, preserve that status
+                if ($is_paid && in_array($existing_ap['status'], ['active', 'completed'], true)) {
+                    $target_status = $existing_ap['status'];
+                }
+
                 $wpdb->update($t_active, [
                     'transaction_no'   => $transaction_no,
                     'status'           => $target_status,
@@ -372,6 +378,85 @@ class OKJ_Reseller_Manager {
             $total_synced += self::sync_transaction_to_active_products($row['id']);
         }
         return $total_synced;
+    }
+
+    /**
+     * Check if a product requires manual fulfillment (status 'process') based on configured tags.
+     *
+     * @param string|int|null $product_id
+     * @param string $product_name
+     * @return bool
+     */
+    public static function requires_manual_fulfillment($product_id = null, $product_name = '') {
+        $settings = OKJ_App::get_settings();
+        $raw_tags = $settings['manual_fulfillment_tags'] ?? 'netflix';
+        if (empty(trim($raw_tags))) {
+            return false;
+        }
+
+        $config_tags = array_filter(array_map('trim', explode(',', strtolower($raw_tags))));
+        if (empty($config_tags)) {
+            return false;
+        }
+
+        // 1. Check Product Name / Title
+        $name_lower = strtolower($product_name ?? '');
+        foreach ($config_tags as $ct) {
+            if ($ct !== '' && strpos($name_lower, $ct) !== false) {
+                return true;
+            }
+        }
+
+        // 2. Check Database product_prices / reseller_products tags if product_id is provided
+        if (!empty($product_id)) {
+            global $wpdb;
+            $t_prices = OKJ_DB::get_table('product_prices');
+            $t_reseller = OKJ_DB::get_table('reseller_products');
+
+            $row_tags = $wpdb->get_var($wpdb->prepare(
+                "SELECT tags FROM {$t_prices} WHERE id = %s OR wc_product_id = %s LIMIT 1",
+                $product_id, $product_id
+            ));
+            if ($row_tags) {
+                $item_tags = array_filter(array_map('trim', explode(',', strtolower($row_tags))));
+                foreach ($config_tags as $ct) {
+                    if (in_array($ct, $item_tags, true)) {
+                        return true;
+                    }
+                }
+            }
+
+            // Check reseller products
+            $reseller_tags = $wpdb->get_var($wpdb->prepare(
+                "SELECT tags FROM {$t_reseller} WHERE id = %s LIMIT 1",
+                $product_id
+            ));
+            if ($reseller_tags) {
+                $item_tags = array_filter(array_map('trim', explode(',', strtolower($reseller_tags))));
+                foreach ($config_tags as $ct) {
+                    if (in_array($ct, $item_tags, true)) {
+                        return true;
+                    }
+                }
+            }
+
+            // 3. Check WooCommerce product_tag taxonomy if WC is active and product_id is numeric
+            if (is_numeric($product_id) && function_exists('wp_get_post_terms')) {
+                $wc_tags = wp_get_post_terms((int)$product_id, 'product_tag', ['fields' => 'names']);
+                if (!is_wp_error($wc_tags) && !empty($wc_tags)) {
+                    foreach ($wc_tags as $tag_name) {
+                        $tag_name_lower = strtolower(trim($tag_name));
+                        foreach ($config_tags as $ct) {
+                            if ($ct === $tag_name_lower || strpos($tag_name_lower, $ct) !== false) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }
 }
