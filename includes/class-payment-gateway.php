@@ -462,10 +462,10 @@ class OKJ_Payment_Gateway {
             OKJ_Reseller_Manager::log('payment_completed', 'order', $tx['id'], "Order {$tx['transaction_no']} marked as PAID via {$gateway}");
         }
 
-        // Handle WooCommerce orders if transaction matches WC pattern or numeric ID
+        // Handle WooCommerce orders if transaction matches WC or INV pattern, numeric ID, or meta lookup
         if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
             $wc_order_id = 0;
-            if (preg_match('/^WC-(\d+)/i', $transaction_no, $m)) {
+            if (preg_match('/^(?:WC|INV)-(\d+)/i', $transaction_no, $m)) {
                 $wc_order_id = (int)$m[1];
             } elseif (is_numeric($transaction_no)) {
                 $check_wc = wc_get_order((int)$transaction_no);
@@ -474,13 +474,25 @@ class OKJ_Payment_Gateway {
                 }
             }
 
+            // Fallback: search WooCommerce order by stored SumoPod Order ID metadata
+            if ($wc_order_id <= 0 && function_exists('wc_get_orders')) {
+                $found_orders = wc_get_orders([
+                    'meta_key'   => '_okj_sumopod_order_id',
+                    'meta_value' => $transaction_no,
+                    'limit'      => 1,
+                ]);
+                if (!empty($found_orders)) {
+                    $wc_order_id = $found_orders[0]->get_id();
+                }
+            }
+
             if ($wc_order_id > 0) {
                 $wc_order = wc_get_order($wc_order_id);
                 if ($wc_order && !$wc_order->is_paid()) {
                     $payment_id = $meta['payment_id'] ?? '';
                     $wc_order->payment_complete($payment_id);
-                    $wc_order->add_order_note(sprintf('Pembayaran otomatis lunas terverifikasi via SumoPod QRIS (Payment ID: %s)', $payment_id));
-                    OKJ_Reseller_Manager::log('sumopod_wc_payment', 'wc_order', $wc_order_id, "WooCommerce Order #{$wc_order_id} lunas via SumoPod QRIS");
+                    $wc_order->add_order_note(sprintf('Pembayaran otomatis lunas terverifikasi via SumoPod QRIS (Payment ID: %s, Ref: %s)', $payment_id, $transaction_no));
+                    OKJ_Reseller_Manager::log('sumopod_wc_payment', 'wc_order', $wc_order_id, "WooCommerce Order #{$wc_order_id} lunas via SumoPod QRIS ({$transaction_no})");
                 }
             }
         }
@@ -498,8 +510,22 @@ class OKJ_Payment_Gateway {
         ));
 
         if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
-            if (preg_match('/^WC-(\d+)/i', $transaction_no, $m)) {
-                $wc_order = wc_get_order((int)$m[1]);
+            $wc_order_id = 0;
+            if (preg_match('/^(?:WC|INV)-(\d+)/i', $transaction_no, $m)) {
+                $wc_order_id = (int)$m[1];
+            } elseif (function_exists('wc_get_orders')) {
+                $found_orders = wc_get_orders([
+                    'meta_key'   => '_okj_sumopod_order_id',
+                    'meta_value' => $transaction_no,
+                    'limit'      => 1,
+                ]);
+                if (!empty($found_orders)) {
+                    $wc_order_id = $found_orders[0]->get_id();
+                }
+            }
+
+            if ($wc_order_id > 0) {
+                $wc_order = wc_get_order($wc_order_id);
                 if ($wc_order && $wc_order->has_status(['pending', 'on-hold'])) {
                     $wc_order->update_status('failed', 'Pembayaran QRIS via SumoPod dibatalkan atau gagal.');
                 }
@@ -519,8 +545,22 @@ class OKJ_Payment_Gateway {
         ));
 
         if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
-            if (preg_match('/^WC-(\d+)/i', $transaction_no, $m)) {
-                $wc_order = wc_get_order((int)$m[1]);
+            $wc_order_id = 0;
+            if (preg_match('/^(?:WC|INV)-(\d+)/i', $transaction_no, $m)) {
+                $wc_order_id = (int)$m[1];
+            } elseif (function_exists('wc_get_orders')) {
+                $found_orders = wc_get_orders([
+                    'meta_key'   => '_okj_sumopod_order_id',
+                    'meta_value' => $transaction_no,
+                    'limit'      => 1,
+                ]);
+                if (!empty($found_orders)) {
+                    $wc_order_id = $found_orders[0]->get_id();
+                }
+            }
+
+            if ($wc_order_id > 0) {
+                $wc_order = wc_get_order($wc_order_id);
                 if ($wc_order && $wc_order->has_status(['pending', 'on-hold'])) {
                     $wc_order->update_status('cancelled', 'Batas waktu pembayaran QRIS SumoPod telah kadaluwarsa.');
                 }

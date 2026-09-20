@@ -142,8 +142,8 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
             return ['result' => 'fail', 'redirect' => ''];
         }
 
-        // Unique transaction reference with WC prefix and order id
-        $sumopod_order_id = 'WC-' . $order_id . '-' . time();
+        // Standard invoice reference with INV- prefix matching SumoPod acquirer format
+        $sumopod_order_id = 'INV-' . $order_id . '-' . round(microtime(true) * 1000) . '-' . strtoupper(wp_generate_password(4, false));
 
         $amount = (int)round((float)$order->get_total());
         $customer_name = trim($order->get_formatted_billing_full_name());
@@ -168,7 +168,7 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
             'customer_phone' => $order->get_billing_phone(),
             'items'          => $items,
             'success_url'    => $this->get_return_url($order),
-            'cancel_url'     => $order->get_cancel_order_url(),
+            'cancel_url'     => wc_get_checkout_url(),
         ]);
 
         if (!empty($res['ok']) && !empty($res['payment_link_url'])) {
