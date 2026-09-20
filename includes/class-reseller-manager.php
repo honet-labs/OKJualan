@@ -174,5 +174,202 @@ class OKJ_Reseller_Manager {
             }
         }
     }
+
+    /**
+     * Synchronize a POS / WooCommerce transaction's purchased items into okj_active_products
+     *
+     * @param string|array $transaction_id_or_no
+     * @return int Number of active products created or updated
+     */
+    public static function sync_transaction_to_active_products($transaction_id_or_no) {
+        global $wpdb;
+        $t_trans  = OKJ_DB::get_table('pos_transactions');
+        $t_items  = OKJ_DB::get_table('pos_transaction_items');
+        $t_active = OKJ_DB::get_table('active_products');
+        $t_cust   = OKJ_DB::get_table('customers');
+        $t_prices = OKJ_DB::get_table('product_prices');
+
+        if (is_array($transaction_id_or_no)) {
+            $tx = $transaction_id_or_no;
+        } else {
+            $tx = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$t_trans} WHERE id = %s OR transaction_no = %s OR reference_no = %s LIMIT 1",
+                $transaction_id_or_no, $transaction_id_or_no, $transaction_id_or_no
+            ), ARRAY_A);
+        }
+
+        if (!$tx) {
+            return 0;
+        }
+
+        $tx_id = $tx['id'];
+        $transaction_no = $tx['transaction_no'];
+        $payment_status = strtolower($tx['payment_status'] ?? 'pending');
+        $is_paid = in_array($payment_status, ['paid', 'completed', 'processing'], true);
+        $is_cancelled = in_array($payment_status, ['cancelled', 'failed', 'refunded'], true);
+
+        // Fetch transaction items
+        $items = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$t_items} WHERE transaction_id = %s ORDER BY id ASC", $tx_id), ARRAY_A);
+        if (empty($items)) {
+            return 0;
+        }
+
+        // Fetch customer info
+        $customer_id = $tx['customer_id'] ?? '';
+        $customer_name = !empty($tx['customer_name']) ? $tx['customer_name'] : 'Pelanggan Umum';
+        $cust_contact = '';
+
+        if (!empty($customer_id)) {
+            $cust = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_cust} WHERE id = %s LIMIT 1", $customer_id), ARRAY_A);
+            if ($cust) {
+                if (!empty($cust['name'])) $customer_name = $cust['name'];
+                $parts = [];
+                if (!empty($cust['phone'])) $parts[] = 'Telp: ' . $cust['phone'];
+                if (!empty($cust['whatsapp'])) $parts[] = 'WA: ' . $cust['whatsapp'];
+                if (!empty($cust['telegram'])) $parts[] = 'TG: ' . $cust['telegram'];
+                if (!empty($cust['email'])) $parts[] = 'Email: ' . $cust['email'];
+                $cust_contact = implode(' | ', $parts);
+            }
+        }
+
+        // Fallback: If customer_id is empty, create or link a default customer
+        if (empty($customer_id)) {
+            $customer_id = wp_generate_uuid4();
+            $wpdb->insert($t_cust, [
+                'id'         => $customer_id,
+                'name'       => $customer_name,
+                'status'     => 'active',
+                'created_at' => current_time('mysql'),
+                'updated_at' => current_time('mysql'),
+                'updated_by' => 0,
+            ]);
+            $wpdb->update($t_trans, ['customer_id' => $customer_id], ['id' => $tx_id]);
+        }
+
+        $synced_count = 0;
+        $created_date = !empty($tx['created_at']) ? substr($tx['created_at'], 0, 10) : wp_date('Y-m-d');
+
+        foreach ($items as $it) {
+            $product_name = $it['product_name'];
+            $qty = !empty($it['qty']) ? (int)$it['qty'] : 1;
+            $duration = isset($it['duration_days']) ? (int)$it['duration_days'] : 0;
+            $item_price = (int)($it['subtotal'] ?? ($it['price'] * $qty));
+            $product_id = $it['product_id'] ?? null;
+
+            // If duration is 0, check if catalog price list has duration
+            if ($duration <= 0) {
+                $price_row = $wpdb->get_row($wpdb->prepare(
+                    "SELECT id, duration_days FROM {$t_prices} WHERE id = %s OR wc_product_id = %s OR name = %s LIMIT 1",
+                    $product_id, $product_id, $product_name
+                ), ARRAY_A);
+                if ($price_row && !empty($price_row['duration_days'])) {
+                    $duration = (int)$price_row['duration_days'];
+                    if (empty($product_id)) $product_id = $price_row['id'];
+                    $wpdb->update($t_items, ['duration_days' => $duration], ['id' => $it['id']]);
+                }
+            }
+
+            // Calculate expiration date
+            $start_date = $created_date;
+            if ($duration > 0) {
+                $expires_at = wp_date('Y-m-d', strtotime($start_date . " +{$duration} days"));
+            } else {
+                $expires_at = '2099-12-31';
+            }
+
+            // Target status
+            $target_status = 'pending';
+            $target_pay_status = 'pending';
+            if ($is_paid) {
+                $target_status = 'active';
+                $target_pay_status = 'paid';
+            } elseif ($is_cancelled) {
+                $target_status = 'cancelled';
+                $target_pay_status = 'cancelled';
+            }
+
+            // Check if already registered for this transaction and product
+            $existing_ap = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$t_active} WHERE (notes LIKE %s OR notes LIKE %s) AND product_label = %s LIMIT 1",
+                '%' . $wpdb->esc_like('ID: ' . $tx_id) . '%',
+                '%' . $wpdb->esc_like('(' . $transaction_no . ')') . '%',
+                $product_name
+            ), ARRAY_A);
+
+            if ($existing_ap) {
+                $wpdb->update($t_active, [
+                    'status'           => $target_status,
+                    'payment_status'   => $target_pay_status,
+                    'price'            => $item_price,
+                    'qty'              => $qty,
+                    'customer_id'      => $customer_id,
+                    'customer_name'    => $customer_name,
+                    'customer_contact' => $cust_contact,
+                    'updated_at'       => current_time('mysql'),
+                ], ['id' => $existing_ap['id']]);
+
+                $saved_row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_active} WHERE id = %s", $existing_ap['id']), ARRAY_A);
+                if ($saved_row) {
+                    self::sync_reminders($saved_row);
+                }
+                $synced_count++;
+            } else {
+                $active_id = wp_generate_uuid4();
+                $note_text = "Pembelian via {$transaction_no} (ID: {$tx_id})";
+
+                $wpdb->insert($t_active, [
+                    'id'                  => $active_id,
+                    'reseller_product_id' => '',
+                    'product_id'          => $product_id,
+                    'product_label'       => $product_name,
+                    'customer_id'         => $customer_id,
+                    'customer_name'       => $customer_name,
+                    'customer_contact'    => $cust_contact,
+                    'start_date'          => $start_date,
+                    'qty'                 => $qty,
+                    'duration_days'       => $duration,
+                    'expires_at'          => $expires_at,
+                    'status'              => $target_status,
+                    'price'               => $item_price,
+                    'payment_status'      => $target_pay_status,
+                    'notes'               => $note_text,
+                    'created_at'          => !empty($tx['created_at']) ? $tx['created_at'] : current_time('mysql'),
+                    'updated_at'          => current_time('mysql'),
+                    'updated_by'          => 0,
+                ]);
+
+                $saved_row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_active} WHERE id = %s", $active_id), ARRAY_A);
+                if ($saved_row) {
+                    self::sync_reminders($saved_row);
+                }
+                $synced_count++;
+            }
+        }
+
+        return $synced_count;
+    }
+
+    /**
+     * Batch auto-sync all paid POS/WooCommerce transactions to active products
+     */
+    public static function sync_all_paid_transactions_to_active_products($limit = 100) {
+        global $wpdb;
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $paid_txs = $wpdb->get_results($wpdb->prepare(
+            "SELECT id FROM {$t_trans} WHERE payment_status IN ('paid', 'completed', 'processing') ORDER BY created_at DESC LIMIT %d",
+            $limit
+        ), ARRAY_A);
+
+        if (empty($paid_txs)) {
+            return 0;
+        }
+
+        $total_synced = 0;
+        foreach ($paid_txs as $row) {
+            $total_synced += self::sync_transaction_to_active_products($row['id']);
+        }
+        return $total_synced;
+    }
 }
 }
+

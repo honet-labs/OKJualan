@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OKJualan
  * Description: Platform All-in-One Penjualan Produk, POS Kasir, Pelacakan Layanan & Pembelian, Notifikasi & Reminder, Payment Gateway (SumoPod QRIS), dan Laporan Penjualan.
- * Version: 0.2.3
+ * Version: 0.2.4
  * Author: HONET
  * License: GPLv2 or later
  * Text Domain: okjualan
@@ -24,7 +24,7 @@ register_shutdown_function(function() {
 if (!class_exists('OKJ_App')) {
 
 class OKJ_App {
-    const VERSION = '0.2.3';
+    const VERSION = '0.2.4';
 
     private static $instance = null;
     public static function instance() {
@@ -199,6 +199,9 @@ class OKJ_App {
             $db_ver = get_option('okj_db_version', '');
             if ($db_ver !== self::VERSION || !$customers_exists || !$renewals_exists) {
                 OKJ_DB::install();
+                if (class_exists('OKJ_Reseller_Manager')) {
+                    OKJ_Reseller_Manager::sync_all_paid_transactions_to_active_products();
+                }
                 update_option('okj_db_version', self::VERSION);
             }
         } catch (\Throwable $e) {

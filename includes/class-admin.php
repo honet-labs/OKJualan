@@ -412,6 +412,11 @@ class OKJ_Admin {
             $resellers = $wpdb->get_results("SELECT r.id, r.product_name, r.duration_days, r.price, r.purchase_date, s.name as seller_name, (SELECT COUNT(*) FROM " . OKJ_DB::get_table('active_products') . " WHERE reseller_product_id = r.id) as is_used FROM " . OKJ_DB::get_table('reseller_products') . " r LEFT JOIN " . OKJ_DB::get_table('sellers') . " s ON r.seller_id = s.id ORDER BY r.product_name ASC", ARRAY_A);
             $this->render_template('active-products', ['action' => $action, 'row' => $row, 'customers' => $customers, 'resellers' => $resellers]);
         } else {
+            // Auto-sync any paid transactions to active products
+            if (class_exists('OKJ_Reseller_Manager')) {
+                OKJ_Reseller_Manager::sync_all_paid_transactions_to_active_products();
+            }
+
             // First: Self-healing check: Auto-update statuses where expires_at < today
             $today = wp_date('Y-m-d');
             $wpdb->query($wpdb->prepare(
@@ -441,7 +446,7 @@ class OKJ_Admin {
             $total_pages = ceil($total_rows / $per_page);
 
             $rows = $wpdb->get_results($wpdb->prepare(
-                "SELECT a.*, c.name as customer_name, c.email as customer_email, c.phone as customer_phone, c.telegram as customer_telegram, c.whatsapp as customer_whatsapp 
+                "SELECT a.*, COALESCE(NULLIF(c.name, ''), a.customer_name) as customer_name, c.email as customer_email, c.phone as customer_phone, c.telegram as customer_telegram, c.whatsapp as customer_whatsapp 
                  FROM {$table_ap} a 
                  LEFT JOIN {$table_cust} c ON a.customer_id = c.id 
                  WHERE {$where} 
@@ -2634,6 +2639,11 @@ class OKJ_Admin {
             'updated_at' => current_time('mysql'),
             'updated_by' => get_current_user_id()
         ], ['id' => $transaction_id]);
+
+        // Auto-sync to Active Products
+        if (class_exists('OKJ_Reseller_Manager')) {
+            OKJ_Reseller_Manager::sync_transaction_to_active_products($transaction_id);
+        }
 
         OKJ_Reseller_Manager::log('pos_update_status', 'pos_transaction', $transaction_id, "Updated transaction status for: " . $tx['transaction_no'] . " to: " . $new_status);
 

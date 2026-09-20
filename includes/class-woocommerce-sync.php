@@ -472,6 +472,16 @@ class OKJ_WC_Sync {
                 $wc_prod_id = $item->get_product_id();
                 $okj_price_id = get_post_meta($wc_prod_id, '_okj_price_id', true) ?: (string)$wc_prod_id;
                 $duration = (int)get_post_meta($wc_prod_id, '_okj_duration_days', true);
+                if ($duration <= 0) {
+                    $price_row = $wpdb->get_row($wpdb->prepare(
+                        "SELECT id, duration_days FROM " . OKJ_DB::get_table('product_prices') . " WHERE wc_product_id = %d OR id = %s OR name = %s LIMIT 1",
+                        $wc_prod_id, $okj_price_id, $item->get_name()
+                    ), ARRAY_A);
+                    if ($price_row && !empty($price_row['duration_days'])) {
+                        $duration = (int)$price_row['duration_days'];
+                        if (empty($okj_price_id)) $okj_price_id = $price_row['id'];
+                    }
+                }
                 $item_price = (int)round((float)$order->get_item_total($item, false));
                 $item_subtotal = (int)round((float)$order->get_item_subtotal($item, false));
                 $qty = (int)$item->get_quantity();
@@ -487,6 +497,13 @@ class OKJ_WC_Sync {
                     'subtotal'      => $item_subtotal,
                     'created_at'    => $created_time,
                 ]);
+            }
+        }
+
+        // Auto-sync to Active Products if order is paid or completed
+        if ($order->is_paid() || in_array($wc_status, ['processing', 'completed', 'paid'], true)) {
+            if (class_exists('OKJ_Reseller_Manager')) {
+                OKJ_Reseller_Manager::sync_transaction_to_active_products($tx_id);
             }
         }
 
@@ -509,7 +526,10 @@ class OKJ_WC_Sync {
 
         if (!empty($orders)) {
             foreach ($orders as $order) {
-                self::sync_wc_order_to_pos_transaction($order->get_id());
+                $tx_id = self::sync_wc_order_to_pos_transaction($order->get_id());
+                if ($tx_id && class_exists('OKJ_Reseller_Manager') && in_array($order->get_status(), ['processing', 'completed', 'paid'], true)) {
+                    OKJ_Reseller_Manager::sync_transaction_to_active_products($tx_id);
+                }
             }
         }
     }
@@ -527,7 +547,10 @@ class OKJ_WC_Sync {
      */
     public static function on_order_status_changed($order_id, $old_status, $new_status) {
         if (!$order_id) return;
-        self::sync_wc_order_to_pos_transaction($order_id);
+        $tx_id = self::sync_wc_order_to_pos_transaction($order_id);
+        if ($tx_id && class_exists('OKJ_Reseller_Manager')) {
+            OKJ_Reseller_Manager::sync_transaction_to_active_products($tx_id);
+        }
         if (in_array($new_status, ['processing', 'completed'])) {
             self::on_order_completed($order_id);
         }
@@ -542,7 +565,10 @@ class OKJ_WC_Sync {
         if (!$order) return;
 
         // Ensure transaction is synced and marked paid
-        self::sync_wc_order_to_pos_transaction($order_id);
+        $tx_id = self::sync_wc_order_to_pos_transaction($order_id);
+        if ($tx_id && class_exists('OKJ_Reseller_Manager')) {
+            OKJ_Reseller_Manager::sync_transaction_to_active_products($tx_id);
+        }
 
         // Check if already processed
         if (get_post_meta($order_id, '_okj_order_captured', true)) {
