@@ -97,6 +97,7 @@ class OKJ_App {
             // Listen to payment gateway webhooks (e.g. SumoPod, Midtrans, Tripay)
             if (class_exists('OKJ_Payment_Gateway')) {
                 add_action('init', ['OKJ_Payment_Gateway', 'handle_webhook']);
+                add_action('parse_request', ['OKJ_Payment_Gateway', 'handle_webhook']);
             }
 
             // Listen to shortlink redirects

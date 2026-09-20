@@ -734,14 +734,27 @@ jQuery(document).ready(function($) {
                             </div>
 
                             <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 14px; margin-top: 12px; margin-bottom: 16px;">
-                                <label class="okj-label" style="font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 4px;">Webhook Notification URL (Salin ke Dashboard SumoPod)</label>
-                                <div style="display: flex; gap: 8px; align-items: center;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label class="okj-label" style="font-size: 12px; font-weight: 700; color: #166534; margin: 0;">Webhook Notification URL (Salin ke Dashboard SumoPod)</label>
+                                    <a href="<?php echo esc_url(home_url('/webhook')); ?>" target="_blank" style="font-size: 11.5px; color: #059669; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
+                                        <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px;"></span> Uji Status Webhook di Browser
+                                    </a>
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                                     <input type="text" id="okj_sumopod_webhook_url" class="okj-input" value="<?php echo esc_url(home_url('/?okj_webhook=payment')); ?>" readonly style="background: #ffffff; font-family: monospace; font-size: 12.5px;" />
                                     <button type="button" class="okj-btn okj-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('okj_sumopod_webhook_url').value); alert('URL Webhook berhasil disalin!');" style="white-space: nowrap;">
-                                        Salin URL
+                                        Salin URL Utama
                                     </button>
                                 </div>
-                                <small style="color: #15803d; font-size: 11px; display: block; margin-top: 4px;">Event yang didukung: <code>payment.completed</code>, <code>payment.failed</code>, <code>payment.expired</code>, <code>payment.test</code></small>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="text" id="okj_sumopod_clean_url" class="okj-input" value="<?php echo esc_url(home_url('/webhook')); ?>" readonly style="background: #ffffff; font-family: monospace; font-size: 12.5px;" />
+                                    <button type="button" class="okj-btn okj-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('okj_sumopod_clean_url').value); alert('URL Webhook Alternatif berhasil disalin!');" style="white-space: nowrap;">
+                                        Salin Clean URL
+                                    </button>
+                                </div>
+                                <small style="color: #15803d; font-size: 11px; display: block; margin-top: 6px;">
+                                    Kedua URL di atas aktif &amp; didukung. Event SumoPod: <code>payment.completed</code>, <code>payment.failed</code>, <code>payment.expired</code>, <code>payment.test</code>
+                                </small>
                             </div>
 
                             <div class="okj-form-grid">
