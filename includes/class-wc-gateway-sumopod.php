@@ -15,7 +15,7 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
 
     public function __construct() {
         $this->id                 = 'okj_sumopod_qris';
-        $this->icon               = $this->get_qris_icon();
+        $this->icon               = '';
         $this->has_fields         = false;
         $this->method_title       = __('SumoPod QRIS (OKJualan)', 'okjualan');
         $this->method_description = __('Menerima pembayaran scan QRIS instan secara otomatis (BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay) melalui SumoPod Payment Gateway.', 'okjualan');
@@ -108,13 +108,13 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
     /**
      * Provide a clean QRIS badge icon for checkout UI
      */
-    public function get_qris_icon() {
-        // High-contrast clean QRIS badge
-        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 28" width="58" height="24" style="vertical-align: middle; margin-left: 8px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-            <rect width="68" height="28" fill="#e61b23" rx="4"/>
-            <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="13" fill="#ffffff" letter-spacing="1">QRIS</text>
-        </svg>';
-        return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    public function get_icon() {
+        $icon_html = '<span style="display:inline-block; vertical-align:middle; margin-left:8px; line-height:1;">'
+            . '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 68 28" width="58" height="24" style="border-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">'
+            . '<rect width="68" height="28" fill="#e61b23" rx="4"/>'
+            . '<text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="13" fill="#ffffff" letter-spacing="1">QRIS</text>'
+            . '</svg></span>';
+        return apply_filters('woocommerce_gateway_icon', $icon_html, $this->id);
     }
 
     /**
@@ -127,6 +127,18 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
         $order = wc_get_order($order_id);
         if (!$order) {
             wc_add_notice(__('Pesanan tidak ditemukan.', 'okjualan'), 'error');
+            return ['result' => 'fail', 'redirect' => ''];
+        }
+
+        $amount = (int)round((float)$order->get_total());
+        if ($amount < 1000) {
+            wc_add_notice(
+                sprintf(
+                    __('Pembayaran Gagal: Nominal pesanan (Rp %s) terlalu kecil. Regulasi QRIS Indonesia mewajibkan nominal transaksi minimal Rp 1.000.', 'okjualan'),
+                    number_format($amount, 0, ',', '.')
+                ),
+                'error'
+            );
             return ['result' => 'fail', 'redirect' => ''];
         }
 

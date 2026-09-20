@@ -82,8 +82,22 @@ class OKJ_Payment_Gateway {
 
         $order_id = sanitize_text_field($order['order_id']);
         $amount = (int)round((float)$order['amount']);
+
+        // Check minimum transaction amount required by Indonesian QRIS regulation
+        if ($amount < 1000) {
+            return [
+                'ok'    => false,
+                'error' => 'Nominal pembayaran (Rp ' . number_format($amount, 0, ',', '.') . ') terlalu kecil. Standar pembayaran QRIS mewajibkan nominal transaksi minimal Rp 1.000.',
+            ];
+        }
+
         $success_url = !empty($order['success_url']) ? esc_url_raw($order['success_url']) : home_url('/?okj_order=1&track_order=' . rawurlencode($order_id) . '&paid=1');
         $cancel_url = !empty($order['cancel_url']) ? esc_url_raw($order['cancel_url']) : home_url('/?okj_order=1&track_order=' . rawurlencode($order_id) . '&cancelled=1');
+
+        $method_code = !empty($settings['sumopod_default_method']) ? strtoupper(trim($settings['sumopod_default_method'])) : 'QRIS';
+        if ($method_code !== 'VA') {
+            $method_code = 'QRIS';
+        }
 
         $payload = [
             'order_id'                 => $order_id,
@@ -92,7 +106,7 @@ class OKJ_Payment_Gateway {
             'expires_in_hours'         => 24,
             'success_return_url'       => $success_url,
             'cancel_return_url'        => $cancel_url,
-            'payment_method_type_code' => !empty($settings['sumopod_default_method']) ? $settings['sumopod_default_method'] : 'QRIS',
+            'payment_method_type_code' => $method_code,
         ];
 
         $resp = wp_remote_post($endpoint, [
@@ -125,8 +139,54 @@ class OKJ_Payment_Gateway {
             ];
         }
 
-        $msg = !empty($data['message']) ? $data['message'] : 'Gagal membuat pembayaran via SumoPod (HTTP ' . $code . ')';
-        return ['ok' => false, 'error' => $msg];
+        // Comprehensive error message extraction from SumoPod response
+        $err_msg = '';
+        if (is_array($data)) {
+            if (!empty($data['message']) && is_string($data['message'])) {
+                $err_msg = $data['message'];
+            } elseif (!empty($data['error'])) {
+                $err_msg = is_string($data['error']) ? $data['error'] : wp_json_encode($data['error']);
+            } elseif (!empty($data['detail'])) {
+                $err_msg = is_string($data['detail']) ? $data['detail'] : wp_json_encode($data['detail']);
+            } elseif (!empty($data['errors'])) {
+                if (is_array($data['errors'])) {
+                    $flat = [];
+                    foreach ($data['errors'] as $k => $v) {
+                        if (is_array($v)) {
+                            $flat[] = implode(', ', $v);
+                        } else {
+                            $flat[] = (string)$v;
+                        }
+                    }
+                    $err_msg = implode('; ', $flat);
+                } else {
+                    $err_msg = (string)$data['errors'];
+                }
+            }
+        }
+
+        if (empty($err_msg)) {
+            $raw_snippet = trim(strip_tags((string)$body));
+            if (!empty($raw_snippet) && strlen($raw_snippet) < 150) {
+                $err_msg = $raw_snippet;
+            } else {
+                $err_msg = 'Gagal membuat pembayaran via SumoPod';
+            }
+        }
+
+        // Log error to OKJualan logs and PHP error log for troubleshooting
+        if (class_exists('OKJ_Reseller_Manager')) {
+            OKJ_Reseller_Manager::log(
+                'sumopod_error',
+                'payment',
+                $order_id,
+                "SumoPod API HTTP {$code}: {$err_msg}",
+                ['payload' => $payload, 'response_body' => $body]
+            );
+        }
+        error_log("[OKJualan SumoPod Error] HTTP {$code}: " . $body);
+
+        return ['ok' => false, 'error' => $err_msg . ' (HTTP ' . $code . ')'];
     }
 
     /**
