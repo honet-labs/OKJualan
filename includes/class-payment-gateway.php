@@ -82,8 +82,8 @@ class OKJ_Payment_Gateway {
 
         $order_id = sanitize_text_field($order['order_id']);
         $amount = (int)round((float)$order['amount']);
-        $success_url = home_url('/?okj_order=1&track_order=' . rawurlencode($order_id) . '&paid=1');
-        $cancel_url = home_url('/?okj_order=1&track_order=' . rawurlencode($order_id) . '&cancelled=1');
+        $success_url = !empty($order['success_url']) ? esc_url_raw($order['success_url']) : home_url('/?okj_order=1&track_order=' . rawurlencode($order_id) . '&paid=1');
+        $cancel_url = !empty($order['cancel_url']) ? esc_url_raw($order['cancel_url']) : home_url('/?okj_order=1&track_order=' . rawurlencode($order_id) . '&cancelled=1');
 
         $payload = [
             'order_id'                 => $order_id,
@@ -605,6 +605,29 @@ class OKJ_Payment_Gateway {
 
             OKJ_Reseller_Manager::log('payment_completed', 'order', $tx['id'], "Order {$tx['transaction_no']} marked as PAID via {$gateway}");
         }
+
+        // Handle WooCommerce orders if transaction matches WC pattern or numeric ID
+        if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
+            $wc_order_id = 0;
+            if (preg_match('/^WC-(\d+)/i', $transaction_no, $m)) {
+                $wc_order_id = (int)$m[1];
+            } elseif (is_numeric($transaction_no)) {
+                $check_wc = wc_get_order((int)$transaction_no);
+                if ($check_wc) {
+                    $wc_order_id = (int)$transaction_no;
+                }
+            }
+
+            if ($wc_order_id > 0) {
+                $wc_order = wc_get_order($wc_order_id);
+                if ($wc_order && !$wc_order->is_paid()) {
+                    $payment_id = $meta['payment_id'] ?? '';
+                    $wc_order->payment_complete($payment_id);
+                    $wc_order->add_order_note(sprintf('Pembayaran otomatis lunas terverifikasi via SumoPod QRIS (Payment ID: %s)', $payment_id));
+                    OKJ_Reseller_Manager::log('sumopod_wc_payment', 'wc_order', $wc_order_id, "WooCommerce Order #{$wc_order_id} lunas via SumoPod QRIS");
+                }
+            }
+        }
     }
 
     /**
@@ -617,6 +640,15 @@ class OKJ_Payment_Gateway {
             "UPDATE {$t_tx} SET payment_status = 'failed', updated_at = %s WHERE transaction_no = %s OR id = %s",
             current_time('mysql'), $transaction_no, $transaction_no
         ));
+
+        if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
+            if (preg_match('/^WC-(\d+)/i', $transaction_no, $m)) {
+                $wc_order = wc_get_order((int)$m[1]);
+                if ($wc_order && $wc_order->has_status(['pending', 'on-hold'])) {
+                    $wc_order->update_status('failed', 'Pembayaran QRIS via SumoPod dibatalkan atau gagal.');
+                }
+            }
+        }
     }
 
     /**
@@ -629,6 +661,15 @@ class OKJ_Payment_Gateway {
             "UPDATE {$t_tx} SET payment_status = 'expired', updated_at = %s WHERE transaction_no = %s OR id = %s",
             current_time('mysql'), $transaction_no, $transaction_no
         ));
+
+        if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
+            if (preg_match('/^WC-(\d+)/i', $transaction_no, $m)) {
+                $wc_order = wc_get_order((int)$m[1]);
+                if ($wc_order && $wc_order->has_status(['pending', 'on-hold'])) {
+                    $wc_order->update_status('cancelled', 'Batas waktu pembayaran QRIS SumoPod telah kadaluwarsa.');
+                }
+            }
+        }
     }
 
     /**

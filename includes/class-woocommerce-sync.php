@@ -23,6 +23,21 @@ class OKJ_WC_Sync {
         // Listen to completed/processing WooCommerce orders to record customers in OKJualan
         add_action('woocommerce_order_status_completed', [__CLASS__, 'on_order_completed'], 10, 1);
         add_action('woocommerce_order_status_processing', [__CLASS__, 'on_order_completed'], 10, 1);
+
+        // Register SumoPod QRIS Payment Gateway in WooCommerce Checkout
+        add_filter('woocommerce_payment_gateways', [__CLASS__, 'register_payment_gateway']);
+    }
+
+    /**
+     * Register SumoPod QRIS Gateway class into WooCommerce
+     */
+    public static function register_payment_gateway($gateways) {
+        $gateway_file = dirname(__FILE__) . '/class-wc-gateway-sumopod.php';
+        if (file_exists($gateway_file)) {
+            require_once $gateway_file;
+            $gateways[] = 'OKJ_WC_Gateway_SumoPod';
+        }
+        return $gateways;
     }
 
     /**
