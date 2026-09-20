@@ -665,7 +665,8 @@ jQuery(document).ready(function($) {
                             <?php endif; ?>
                         </div>
                     </div>
-                </div> <!-- End #okj-tab-global-content -->
+                </div>
+            </div> <!-- End #okj-tab-global-content -->
 
                 <!-- TAB 2: POS SETTINGS -->
                 <div class="okj-tab-content" id="okj-tab-pos-content" style="<?php echo $active_tab === 'pos' ? '' : 'display: none;'; ?>">
