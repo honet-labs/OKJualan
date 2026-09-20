@@ -2256,7 +2256,10 @@ class OKJ_Admin {
         }
 
         // 4. Generate QR code image URL if not already provided
-        $settings = class_exists('OKJ_App') ? OKJ_App::get_settings() : [];
+        $settings = function_exists('get_option') ? get_option('okj_settings_v1', []) : [];
+        if (!is_array($settings)) {
+            $settings = [];
+        }
         if (empty($qr_image_url)) {
             if (!empty($payment_url)) {
                 $qr_image_url = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' . rawurlencode($payment_url);

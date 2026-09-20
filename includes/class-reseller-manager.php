@@ -388,7 +388,10 @@ class OKJ_Reseller_Manager {
      * @return bool
      */
     public static function requires_manual_fulfillment($product_id = null, $product_name = '') {
-        $settings = OKJ_App::get_settings();
+        $settings = function_exists('get_option') ? get_option('okj_settings_v1', []) : [];
+        if (!is_array($settings)) {
+            $settings = [];
+        }
         $raw_tags = $settings['manual_fulfillment_tags'] ?? 'netflix';
         if (empty(trim($raw_tags))) {
             return false;
