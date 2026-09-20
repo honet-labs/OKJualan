@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OKJualan
  * Description: Platform All-in-One Penjualan Produk, POS Kasir, Pelacakan Layanan & Pembelian, Notifikasi & Reminder, Payment Gateway (SumoPod QRIS), dan Laporan Penjualan.
- * Version: 0.1.6
+ * Version: 0.1.7
  * Author: HONET
  * License: GPLv2 or later
  * Text Domain: okjualan
@@ -24,7 +24,7 @@ register_shutdown_function(function() {
 if (!class_exists('OKJ_App')) {
 
 class OKJ_App {
-    const VERSION = '0.1.6';
+    const VERSION = '0.1.7';
 
     private static $instance = null;
     public static function instance() {
@@ -89,10 +89,27 @@ class OKJ_App {
                 }
             });
 
-            // Initialize WooCommerce synchronization engine
+            // Initialize WooCommerce synchronization engine & gateway listeners
+            add_action('plugins_loaded', function() {
+                if (class_exists('OKJ_WC_Sync')) {
+                    OKJ_WC_Sync::init();
+                }
+            }, 10);
             if (class_exists('OKJ_WC_Sync')) {
                 OKJ_WC_Sync::init();
             }
+
+            // Direct registration of SumoPod QRIS Payment Gateway for WooCommerce
+            add_filter('woocommerce_payment_gateways', function($gateways) {
+                $gateway_file = OKJ_PLUGIN_DIR . 'includes/class-wc-gateway-sumopod.php';
+                if (file_exists($gateway_file)) {
+                    require_once $gateway_file;
+                    if (class_exists('OKJ_WC_Gateway_SumoPod') && !in_array('OKJ_WC_Gateway_SumoPod', $gateways, true)) {
+                        $gateways[] = 'OKJ_WC_Gateway_SumoPod';
+                    }
+                }
+                return $gateways;
+            }, 10);
 
             // Listen to payment gateway webhooks (e.g. SumoPod, Midtrans, Tripay)
             if (class_exists('OKJ_Payment_Gateway')) {

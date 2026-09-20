@@ -539,6 +539,21 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) 
                                 </label>
                             </div>
 
+                            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; margin-top: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                        <span class="dashicons dashicons-cart" style="color: #6366f1;"></span>
+                                        Integrasi Checkout WooCommerce
+                                    </div>
+                                    <div style="color: #64748b; font-size: 12px; margin-top: 2px;">
+                                        Kelola metode pembayaran QRIS di halaman checkout dan pengaturan pembayaran WooCommerce.
+                                    </div>
+                                </div>
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=checkout&section=okj_sumopod_qris')); ?>" target="_blank" class="okj-btn okj-btn-secondary" style="font-size: 12px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                                    <span class="dashicons dashicons-admin-generic" style="font-size: 15px; width: 15px; height: 15px;"></span> Buka Pengaturan Pembayaran WooCommerce
+                                </a>
+                            </div>
+
                             <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 14px; margin-top: 12px; margin-bottom: 16px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                     <label class="okj-label" style="font-size: 12px; font-weight: 700; color: #166534; margin: 0;">Webhook Notification URL (Salin ke Dashboard SumoPod)</label>

@@ -5,7 +5,11 @@ if (!defined('ABSPATH')) { exit; }
  * SumoPod QRIS WooCommerce Payment Gateway
  * Integrates SumoPod QRIS payment method into standard WooCommerce checkout flow.
  */
-if (!class_exists('OKJ_WC_Gateway_SumoPod') && class_exists('WC_Payment_Gateway')) {
+if (!class_exists('WC_Payment_Gateway')) {
+    return;
+}
+
+if (!class_exists('OKJ_WC_Gateway_SumoPod')) {
 
 class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
 
@@ -21,15 +25,34 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
         $this->init_form_fields();
         $this->init_settings();
 
-        // Check master setting from OKJualan settings
-        $okj_settings = get_option('okj_settings_v1', []);
-        $master_enabled = !empty($okj_settings['sumopod_enabled']);
-
         $this->title       = $this->get_option('title', 'QRIS (Semua E-Wallet & Mobile Banking)');
         $this->description = $this->get_option('description', 'Bayar cepat dan otomatis terverifikasi menggunakan QRIS dari seluruh aplikasi e-wallet (GoPay, OVO, DANA, ShopeePay) atau Mobile Banking apa saja.');
-        $this->enabled     = ($master_enabled && $this->get_option('enabled', 'yes') === 'yes') ? 'yes' : 'no';
+        $this->enabled     = $this->get_option('enabled', 'yes');
+        $this->order_button_text = __('Bayar via QRIS', 'okjualan');
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
+    }
+
+    /**
+     * Check if gateway is available for checkout
+     */
+    public function is_available() {
+        if ($this->enabled !== 'yes') {
+            return false;
+        }
+
+        // Always show as available in WordPress admin preview/settings
+        if (is_admin()) {
+            return true;
+        }
+
+        // Check if SumoPod API Key is configured in OKJualan settings
+        $settings = class_exists('OKJ_Payment_Gateway') ? OKJ_Payment_Gateway::get_settings() : [];
+        if (empty($settings['sumopod_api_key'])) {
+            return false;
+        }
+
+        return parent::is_available();
     }
 
     /**
@@ -57,6 +80,29 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
                 'default'     => 'Bayar cepat dan otomatis terverifikasi menggunakan QRIS dari seluruh aplikasi e-wallet (GoPay, OVO, DANA, ShopeePay) atau Mobile Banking apa saja.',
             ],
         ];
+    }
+
+    /**
+     * Render WooCommerce settings form for SumoPod QRIS
+     */
+    public function admin_options() {
+        ?>
+        <h2><?php echo esc_html($this->method_title); ?></h2>
+        <p><?php echo esc_html($this->method_description); ?></p>
+        <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 14px; margin-bottom: 20px;">
+            <p style="margin: 0 0 10px 0; color: #166534; font-weight: 600;">
+                <span class="dashicons dashicons-yes-alt" style="color: #10b981; vertical-align: middle;"></span>
+                Gateway ini otomatis terintegrasi dengan kredensial SumoPod (API Key, Webhook Secret, dan Mode) dari menu <strong>OKJualan &gt; Settings &gt; Payment Gateway</strong>.
+            </p>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=okj-settings&tab=gateways')); ?>" class="button button-secondary" style="display: inline-flex; align-items: center; gap: 4px;">
+                <span class="dashicons dashicons-admin-generic" style="font-size: 16px; width: 16px; height: 16px;"></span>
+                Buka Pengaturan API SumoPod di OKJualan
+            </a>
+        </div>
+        <table class="form-table">
+            <?php $this->generate_settings_html(); ?>
+        </table>
+        <?php
     }
 
     /**
