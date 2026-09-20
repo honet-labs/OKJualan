@@ -133,6 +133,7 @@
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Waktu</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Item Produk</th>
+                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Qty</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Metode Bayar</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
@@ -142,7 +143,7 @@
                     <tbody>
                         <?php if (empty($transactions)): ?>
                             <tr>
-                                <td colspan="9" style="text-align: center; padding: 50px 20px; color: #64748b;">
+                                <td colspan="10" style="text-align: center; padding: 50px 20px; color: #64748b;">
                                     <div style="font-size: 42px; margin-bottom: 10px;">🧾</div>
                                     <h3 style="margin: 0 0 6px 0; color: #1e293b; font-size: 16px; font-weight: 700;">Belum Ada Transaksi Ditemukan</h3>
                                     <p style="margin: 0; font-size: 13px; color: #94a3b8;">Transaksi yang masuk melalui Kasir POS atau Checkout Online akan otomatis tercatat di sini.</p>
@@ -195,12 +196,14 @@
                                     ?>
                                     <div style="display: flex; align-items: center; gap: 6px;">
                                         <?php if ($wc_order_id > 0): ?>
-                                            <a href="<?php echo esc_url($wc_edit_url); ?>" target="_blank" title="Buka Pesanan WooCommerce #<?php echo $wc_order_id; ?> di Tab Baru" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                            <a href="#" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>'); return false;" title="Buka Detail Transaksi" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
                                                 <span class="dashicons dashicons-cart" style="font-size: 14px; width: 14px; height: 14px;"></span>
                                                 WC #<?php echo $wc_order_id; ?>
                                             </a>
                                         <?php else: ?>
-                                            <strong style="font-family: monospace; font-size: 13px; color: #1e293b;"><?php echo esc_html($tx['transaction_no']); ?></strong>
+                                            <a href="#" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>'); return false;" title="Buka Detail Transaksi" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #1e293b; text-decoration: none; cursor: pointer;">
+                                                <?php echo esc_html($tx['transaction_no']); ?>
+                                            </a>
                                         <?php endif; ?>
                                         <button type="button" class="okj-copy-btn" data-clipboard="<?php echo esc_attr($tx['transaction_no']); ?>" title="Salin No Transaksi" style="background: none; border: none; padding: 2px; cursor: pointer; color: #94a3b8;">
                                             <span class="dashicons dashicons-clipboard" style="font-size: 14px; width: 14px; height: 14px;"></span>
@@ -252,21 +255,36 @@
                                 </td>
 
                                 <!-- Item Produk -->
-                                <td style="padding: 14px 16px; max-width: 260px;">
+                                <td style="padding: 14px 16px; max-width: 240px;">
                                     <?php if (!empty($tx['items'])): ?>
                                         <div style="display: flex; flex-direction: column; gap: 4px;">
                                             <?php foreach (array_slice($tx['items'], 0, 2) as $it): ?>
-                                                <div style="font-size: 12px; color: #334155; display: flex; justify-content: space-between; gap: 8px;">
-                                                    <span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;" title="<?php echo esc_attr($it['product_name']); ?>">
-                                                        • <?php echo esc_html($it['product_name']); ?>
-                                                    </span>
-                                                    <span style="color: #64748b; font-size: 11px; font-weight: 600; white-space: nowrap;">x<?php echo (int)$it['qty']; ?></span>
+                                                <div style="font-size: 12.5px; color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?php echo esc_attr($it['product_name']); ?>">
+                                                    • <?php echo esc_html($it['product_name']); ?>
                                                 </div>
                                             <?php endforeach; ?>
                                             <?php if (count($tx['items']) > 2): ?>
                                                 <small style="color: #4f46e5; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>')">
                                                     +<?php echo count($tx['items']) - 2; ?> item lainnya...
                                                 </small>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <span style="color: #94a3b8; font-size: 12px;">-</span>
+                                    <?php endif; ?>
+                                </td>
+
+                                <!-- Qty -->
+                                <td style="padding: 14px 16px; text-align: center; white-space: nowrap;">
+                                    <?php if (!empty($tx['items'])): ?>
+                                        <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+                                            <?php foreach (array_slice($tx['items'], 0, 2) as $it): ?>
+                                                <span style="font-size: 12px; font-weight: 700; color: #334155; background: #f1f5f9; padding: 2px 8px; border-radius: 10px; display: inline-block;">
+                                                    <?php echo (int)$it['qty']; ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                            <?php if (count($tx['items']) > 2): ?>
+                                                <span style="font-size: 11px; color: #94a3b8; line-height: 1;">&hellip;</span>
                                             <?php endif; ?>
                                         </div>
                                     <?php else: ?>
@@ -557,12 +575,6 @@ function okjOpenTxDetail(txId) {
                                         Buka Pembayaran ↗
                                     </a>
                                 ` : ''}
-                                ${rawCustPhone ? `
-                                    <a href="https://wa.me/${rawCustPhone}?text=${waPendingText}" target="_blank" class="okj-btn" style="background: #25d366; color: #ffffff; border: none; font-size: 11.5px; font-weight: 700; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
-                                        <span class="dashicons dashicons-whatsapp" style="font-size: 13px; width: 13px; height: 13px;"></span>
-                                        Kirim ke WA
-                                    </a>
-                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -577,7 +589,6 @@ function okjOpenTxDetail(txId) {
                     <strong style="color: #0f172a; font-size: 14px; display: block;">${tx.customer_name || 'Pelanggan Umum'}</strong>
                     ${tx.cust_phone || tx.cust_whatsapp ? `<span style="color: #475569;">📱 ${tx.cust_whatsapp || tx.cust_phone}</span><br>` : ''}
                     ${tx.cust_email ? `<span style="color: #475569;">✉️ ${tx.cust_email}</span>` : ''}
-                    ${tx.wc_order_id ? `<div style="margin-top: 8px;"><a href="${tx.wc_edit_url}" target="_blank" style="color: #4f46e5; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; border: 1px solid #c7d2fe;">🛒 Buka Order WooCommerce #${tx.wc_order_id} ↗</a></div>` : ''}
                 </div>
                 <div>
                     <span style="color: #64748b; display: block; margin-bottom: 2px;">Metode Pembayaran:</span>
