@@ -46,9 +46,9 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
             return true;
         }
 
-        // Check if SumoPod API Key is configured in OKJualan settings
+        // Check if SumoPod API Key is configured and enabled in OKJualan settings
         $settings = class_exists('OKJ_Payment_Gateway') ? OKJ_Payment_Gateway::get_settings() : [];
-        if (empty($settings['sumopod_api_key'])) {
+        if (empty($settings['sumopod_enabled']) || empty($settings['sumopod_api_key'])) {
             return false;
         }
 
@@ -124,11 +124,12 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
      * @return array
      */
     public function process_payment($order_id) {
-        $order = wc_get_order($order_id);
-        if (!$order) {
-            wc_add_notice(__('Pesanan tidak ditemukan.', 'okjualan'), 'error');
-            return ['result' => 'fail', 'redirect' => ''];
-        }
+        try {
+            $order = wc_get_order($order_id);
+            if (!$order) {
+                wc_add_notice(__('Pesanan tidak ditemukan.', 'okjualan'), 'error');
+                return ['result' => 'fail', 'redirect' => ''];
+            }
 
         $amount = (int)round((float)$order->get_total());
         if ($amount < 1000) {
@@ -198,13 +199,21 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
             ];
         }
 
-        $err_msg = !empty($res['error']) ? $res['error'] : __('Terjadi kegagalan saat menghubungkan ke gateway pembayaran SumoPod.', 'okjualan');
-        wc_add_notice(__('Pembayaran Gagal: ', 'okjualan') . esc_html($err_msg), 'error');
+            $err_msg = !empty($res['error']) ? $res['error'] : __('Terjadi kegagalan saat menghubungkan ke gateway pembayaran SumoPod.', 'okjualan');
+            wc_add_notice(__('Pembayaran Gagal: ', 'okjualan') . esc_html($err_msg), 'error');
 
-        return [
-            'result'   => 'fail',
-            'redirect' => '',
-        ];
+            return [
+                'result'   => 'fail',
+                'redirect' => '',
+            ];
+        } catch (\Throwable $e) {
+            error_log('[OKJualan SumoPod Gateway Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            wc_add_notice(__('Pembayaran Gagal: Terjadi kendala teknis saat memproses pembayaran. ', 'okjualan') . esc_html($e->getMessage()), 'error');
+            return [
+                'result'   => 'fail',
+                'redirect' => '',
+            ];
+        }
     }
 }
 

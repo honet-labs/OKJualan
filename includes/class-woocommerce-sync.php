@@ -13,6 +13,7 @@ class OKJ_WC_Sync {
     }
 
     private static $initialized = false;
+    private static $syncing_orders = [];
 
     /**
      * Initialize WooCommerce hooks and order listeners
@@ -343,7 +344,9 @@ class OKJ_WC_Sync {
         if (!empty($override_tx_no)) {
             $sumopod_id = sanitize_text_field($override_tx_no);
             $order->update_meta_data('_okj_sumopod_order_id', $sumopod_id);
-            $order->save();
+            if (!doing_action('woocommerce_new_order') && !doing_action('woocommerce_checkout_order_processed')) {
+                $order->save();
+            }
         }
 
         $transaction_no = 'WC-' . $order_id;
@@ -468,10 +471,15 @@ class OKJ_WC_Sync {
             ]);
         }
 
-        // Save linkage on WooCommerce Order
+        // Save linkage on WooCommerce Order safely without triggering recursive hooks
         if ($order->get_meta('_okj_pos_transaction_id') !== $tx_id) {
             $order->update_meta_data('_okj_pos_transaction_id', $tx_id);
-            $order->save();
+            if (function_exists('update_post_meta')) {
+                update_post_meta($order_id, '_okj_pos_transaction_id', $tx_id);
+            }
+            if (!doing_action('woocommerce_new_order') && !doing_action('woocommerce_checkout_order_processed')) {
+                $order->save();
+            }
         }
 
         // Sync items if not yet present
@@ -548,7 +556,17 @@ class OKJ_WC_Sync {
      */
     public static function on_wc_order_created($order_id) {
         if (!$order_id) return;
-        self::sync_wc_order_to_pos_transaction($order_id);
+        if (!empty(self::$syncing_orders[$order_id])) {
+            return;
+        }
+        self::$syncing_orders[$order_id] = true;
+        try {
+            self::sync_wc_order_to_pos_transaction($order_id);
+        } catch (\Throwable $e) {
+            error_log('[OKJualan WC Order Sync Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        } finally {
+            unset(self::$syncing_orders[$order_id]);
+        }
     }
 
     /**
@@ -556,12 +574,16 @@ class OKJ_WC_Sync {
      */
     public static function on_order_status_changed($order_id, $old_status, $new_status) {
         if (!$order_id) return;
-        $tx_id = self::sync_wc_order_to_pos_transaction($order_id);
-        if ($tx_id && class_exists('OKJ_Reseller_Manager')) {
-            OKJ_Reseller_Manager::sync_transaction_to_active_products($tx_id);
-        }
-        if (in_array($new_status, ['processing', 'completed'])) {
-            self::on_order_completed($order_id);
+        try {
+            $tx_id = self::sync_wc_order_to_pos_transaction($order_id);
+            if ($tx_id && class_exists('OKJ_Reseller_Manager')) {
+                OKJ_Reseller_Manager::sync_transaction_to_active_products($tx_id);
+            }
+            if (in_array($new_status, ['processing', 'completed'])) {
+                self::on_order_completed($order_id);
+            }
+        } catch (\Throwable $e) {
+            error_log('[OKJualan WC Status Change Error] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
         }
     }
 
