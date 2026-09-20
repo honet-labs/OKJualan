@@ -134,7 +134,7 @@
                                         <strong><?php echo esc_html($r['transaction_no']); ?></strong>
                                         <div style="font-size: 10px; color: #94a3b8;"><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></div>
                                     </td>
-                                    <td><?php echo esc_html(wp_date('d/m/Y H:i', strtotime($r['created_at']))); ?></td>
+                                    <td><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($r['created_at'], 'd/m/Y H:i') : date('d/m/Y H:i', strtotime($r['created_at']))); ?></td>
                                     <td><strong><?php echo esc_html($r['customer_name']); ?></strong></td>
                                     <td>
                                         <div style="max-width: 250px; font-size: 12px; color: #334155;">

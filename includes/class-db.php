@@ -178,6 +178,7 @@ class OKJ_DB {
 
         $sql_active = "CREATE TABLE {$t_active} (
             id CHAR(36) NOT NULL,
+            transaction_no VARCHAR(100) NULL,
             reseller_product_id CHAR(36) NOT NULL DEFAULT '',
             product_id CHAR(36) NULL,
             product_label VARCHAR(255) NOT NULL,
@@ -197,6 +198,7 @@ class OKJ_DB {
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
+            KEY transaction_no (transaction_no(40)),
             KEY expires_at (expires_at),
             KEY status (status),
             KEY customer_id (customer_id),
@@ -374,6 +376,9 @@ class OKJ_DB {
             if (in_array($t_active, $existing_tables)) {
                 $cols = $wpdb->get_col("SHOW COLUMNS FROM {$t_active}");
                 if (is_array($cols)) {
+                    if (!in_array('transaction_no', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN transaction_no VARCHAR(100) NULL AFTER id");
+                    }
                     if (!in_array('product_id', $cols)) {
                         $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN product_id CHAR(36) NULL");
                     }
@@ -381,6 +386,11 @@ class OKJ_DB {
                         $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN qty INT(11) NOT NULL DEFAULT 1");
                     }
                 }
+
+                // Auto-backfill transaction_no from notes for existing records
+                $wpdb->query("UPDATE {$t_active} SET transaction_no = CONCAT('WC-', SUBSTRING_INDEX(SUBSTRING_INDEX(notes, 'Pembelian via WC #', -1), ' ', 1)) WHERE (transaction_no IS NULL OR transaction_no = '') AND notes LIKE '%Pembelian via WC #%'");
+                $wpdb->query("UPDATE {$t_active} SET transaction_no = SUBSTRING_INDEX(SUBSTRING_INDEX(notes, 'Pembelian via ', -1), ' ', 1) WHERE (transaction_no IS NULL OR transaction_no = '') AND notes LIKE '%Pembelian via POS-%'");
+                $wpdb->query("UPDATE {$t_active} SET transaction_no = SUBSTRING_INDEX(SUBSTRING_INDEX(notes, 'Pembelian via ', -1), ' ', 1) WHERE (transaction_no IS NULL OR transaction_no = '') AND notes LIKE '%Pembelian via WC-%'");
             }
 
             // POS Transactions columns

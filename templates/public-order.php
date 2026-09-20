@@ -678,7 +678,7 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
                             $static_qris_enabled = !empty($settings['static_qris_enabled']) || $pos_enable_qris;
                             ?>
                             <?php if ($sumopod_enabled): ?>
-                                <option value="sumopod" selected>SumoPod QRIS (Otomatis &amp; Real-time) ⚡</option>
+                                <option value="sumopod" selected>QRIS (Otomatis &amp; Real-time) ⚡</option>
                             <?php endif; ?>
                             <?php if ($static_qris_enabled): ?>
                                 <option value="qris" <?php echo !$sumopod_enabled ? 'selected' : ''; ?>>Scan QRIS Toko</option>
@@ -780,9 +780,9 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
                 <?php if ($tx['payment_method'] === 'sumopod'): ?>
                     <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 14px; margin: 10px 0;">
                         <span class="dashicons dashicons-shield" style="color: #16a34a; font-size: 20px; width: 20px; height: 20px;"></span>
-                        <h4 style="margin: 4px 0; color: #166534; font-size: 13px;">Pembayaran SumoPod QRIS Otomatis</h4>
+                        <h4 style="margin: 4px 0; color: #166534; font-size: 13px;">Pembayaran QRIS Otomatis</h4>
                         <div class="okj-payment-qr" style="margin: 8px auto;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=<?php echo urlencode('SUMOPOD-QRIS-' . $tx['transaction_no'] . '-TOTAL-' . $tx['total']); ?>" alt="QRIS SumoPod OKJualan" />
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=<?php echo urlencode('SUMOPOD-QRIS-' . $tx['transaction_no'] . '-TOTAL-' . $tx['total']); ?>" alt="QRIS OKJualan" />
                         </div>
                         <p style="font-size: 11px; color: #15803d; margin: 4px 0 0 0;">Pindai QRIS di atas dengan aplikasi E-Wallet atau M-Banking apapun. Sistem akan memverifikasi pembayaran Anda secara otomatis dalam hitungan detik.</p>
                     </div>

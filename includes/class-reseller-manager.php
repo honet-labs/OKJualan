@@ -290,7 +290,8 @@ class OKJ_Reseller_Manager {
 
             // Check if already registered for this transaction and product
             $existing_ap = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM {$t_active} WHERE (notes LIKE %s OR notes LIKE %s) AND product_label = %s LIMIT 1",
+                "SELECT * FROM {$t_active} WHERE (transaction_no = %s OR notes LIKE %s OR notes LIKE %s) AND product_label = %s LIMIT 1",
+                $transaction_no,
                 '%' . $wpdb->esc_like('ID: ' . $tx_id) . '%',
                 '%' . $wpdb->esc_like('(' . $transaction_no . ')') . '%',
                 $product_name
@@ -298,6 +299,7 @@ class OKJ_Reseller_Manager {
 
             if ($existing_ap) {
                 $wpdb->update($t_active, [
+                    'transaction_no'   => $transaction_no,
                     'status'           => $target_status,
                     'payment_status'   => $target_pay_status,
                     'price'            => $item_price,
@@ -319,6 +321,7 @@ class OKJ_Reseller_Manager {
 
                 $wpdb->insert($t_active, [
                     'id'                  => $active_id,
+                    'transaction_no'      => $transaction_no,
                     'reseller_product_id' => '',
                     'product_id'          => $product_id,
                     'product_label'       => $product_name,

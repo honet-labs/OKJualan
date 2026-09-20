@@ -88,8 +88,8 @@
                     <select name="payment_method" class="okj-select" style="width: 100%;">
                         <option value="">Semua Metode</option>
                         <option value="cash" <?php selected($payment_method, 'cash'); ?>>💵 Cash / Tunai</option>
-                        <option value="qris" <?php selected($payment_method, 'qris'); ?>>📱 QRIS / E-Wallet</option>
-                        <option value="sumopod" <?php selected($payment_method, 'sumopod'); ?>>⚡ SumoPod QRIS</option>
+                        <option value="qris" <?php selected($payment_method, 'qris'); ?>>📱 QRIS</option>
+                        <option value="sumopod" <?php selected($payment_method, 'sumopod'); ?>>⚡ QRIS (Otomatis)</option>
                         <option value="transfer" <?php selected($payment_method, 'transfer'); ?>>🏦 Transfer Bank</option>
                         <option value="midtrans" <?php selected($payment_method, 'midtrans'); ?>>💳 Midtrans</option>
                         <option value="tripay" <?php selected($payment_method, 'tripay'); ?>>🌐 Tripay</option>
@@ -235,8 +235,8 @@
 
                                 <!-- Tanggal & Waktu -->
                                 <td style="padding: 14px 16px; white-space: nowrap;">
-                                    <div style="font-weight: 600; font-size: 13px; color: #1e293b;"><?php echo esc_html(wp_date('d M Y', strtotime($tx['created_at']))); ?></div>
-                                    <small style="color: #64748b; font-size: 11px;"><?php echo esc_html(wp_date('H:i', strtotime($tx['created_at']))); ?> WIB</small>
+                                    <div style="font-weight: 600; font-size: 13px; color: #1e293b;"><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'd M Y') : date('d M Y', strtotime($tx['created_at']))); ?></div>
+                                    <small style="color: #64748b; font-size: 11px;"><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'H:i') : date('H:i', strtotime($tx['created_at']))); ?> WIB</small>
                                 </td>
 
                                 <!-- Customer -->
@@ -446,8 +446,7 @@ jQuery(document).ready(function($) {
 function okjFormatPaymentMethod(method) {
     if (!method) return '-';
     var m = String(method).toLowerCase();
-    if (m.indexOf('sumopod') !== -1) return 'QRIS SumoPod';
-    if (m.indexOf('qris') !== -1) return 'QRIS / E-Wallet';
+    if (m.indexOf('sumopod') !== -1 || m.indexOf('qris') !== -1) return 'QRIS';
     if (m === 'cash' || m === 'cod' || m === 'tunai') return 'Cash / Tunai';
     if (m === 'transfer' || m === 'bacs' || m.indexOf('transfer') !== -1 || m.indexOf('bank') !== -1) return 'Transfer Bank';
     if (m.indexOf('midtrans') !== -1) return 'Midtrans';

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OKJualan
  * Description: Platform All-in-One Penjualan Produk, POS Kasir, Pelacakan Layanan & Pembelian, Notifikasi & Reminder, Payment Gateway (SumoPod QRIS), dan Laporan Penjualan.
- * Version: 0.2.4
+ * Version: 0.2.5
  * Author: HONET
  * License: GPLv2 or later
  * Text Domain: okjualan
@@ -24,7 +24,7 @@ register_shutdown_function(function() {
 if (!class_exists('OKJ_App')) {
 
 class OKJ_App {
-    const VERSION = '0.2.4';
+    const VERSION = '0.2.5';
 
     private static $instance = null;
     public static function instance() {
@@ -255,13 +255,9 @@ class OKJ_App {
             return '-';
         }
 
-        // SumoPod QRIS
-        if (strpos($raw, 'sumopod') !== false) {
-            return 'QRIS SumoPod';
-        }
-        // Generic QRIS
-        if (strpos($raw, 'qris') !== false) {
-            return 'QRIS / E-Wallet';
+        // SumoPod QRIS / Generic QRIS -> Show as clean 'QRIS'
+        if (strpos($raw, 'qris') !== false || strpos($raw, 'sumopod') !== false) {
+            return 'QRIS';
         }
         // Cash / Tunai / COD
         if (in_array($raw, ['cash', 'cod', 'tunai'])) {
@@ -286,6 +282,38 @@ class OKJ_App {
         $clean = preg_replace('/^(okj_|wc_)/i', '', $raw);
         return ucwords(str_replace(['_', '-'], ' ', $clean));
     }
+
+    /**
+     * Safely format datetime string avoiding double-timezone offset issues in WordPress.
+     *
+     * @param string $datetime_str Datetime from database or order
+     * @param string $format Target PHP/WP date format
+     * @return string
+     */
+    public static function format_datetime($datetime_str, $format = 'd M Y, H:i') {
+        if (empty($datetime_str) || $datetime_str === '0000-00-00 00:00:00') {
+            return '-';
+        }
+        try {
+            // If the string contains explicit timezone indicator (e.g. +07:00, Z)
+            if (strpos($datetime_str, '+') !== false || strpos($datetime_str, 'Z') !== false) {
+                $dt = new DateTime($datetime_str);
+                $dt->setTimezone(wp_timezone());
+                return wp_date($format, $dt->getTimestamp(), wp_timezone());
+            }
+
+            // Normal MySQL datetime string stored in site's local time (via current_time('mysql'))
+            // Passing DateTimeZone('UTC') to wp_date ensures WordPress does not apply an extra offset
+            // while still respecting localized month/day translations.
+            $ts = strtotime($datetime_str);
+            if ($ts === false) {
+                return $datetime_str;
+            }
+            return wp_date($format, $ts, new DateTimeZone('UTC'));
+        } catch (\Throwable $e) {
+            return date($format, strtotime($datetime_str));
+        }
+    }
 }
 
 } // end if class_exists
@@ -293,6 +321,12 @@ class OKJ_App {
 if (!function_exists('okj_format_payment_method')) {
     function okj_format_payment_method($method) {
         return OKJ_App::format_payment_method($method);
+    }
+}
+
+if (!function_exists('okj_format_datetime')) {
+    function okj_format_datetime($datetime_str, $format = 'd M Y, H:i') {
+        return OKJ_App::format_datetime($datetime_str, $format);
     }
 }
 

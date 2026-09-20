@@ -937,8 +937,7 @@ jQuery(document).ready(function($) {
     function okjFormatPaymentMethod(method) {
         if (!method) return '-';
         var m = String(method).toLowerCase();
-        if (m.indexOf('sumopod') !== -1) return 'QRIS SumoPod';
-        if (m.indexOf('qris') !== -1) return 'QRIS / E-Wallet';
+        if (m.indexOf('sumopod') !== -1 || m.indexOf('qris') !== -1) return 'QRIS';
         if (m === 'cash' || m === 'cod' || m === 'tunai') return 'Cash / Tunai';
         if (m === 'transfer' || m === 'bacs' || m.indexOf('transfer') !== -1 || m.indexOf('bank') !== -1) return 'Transfer Bank';
         if (m.indexOf('midtrans') !== -1) return 'Midtrans';

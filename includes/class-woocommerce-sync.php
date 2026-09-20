@@ -419,7 +419,16 @@ class OKJ_WC_Sync {
             $existing_tx = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_transactions} WHERE notes LIKE %s LIMIT 1", 'WooCommerce Order #' . $order_id . '%'), ARRAY_A);
         }
 
-        $created_time = $order->get_date_created() ? $order->get_date_created()->date('Y-m-d H:i:s') : current_time('mysql');
+        $created_time = current_time('mysql');
+        if ($order->get_date_created()) {
+            try {
+                $wc_dt = clone $order->get_date_created();
+                $wc_dt->setTimezone(wp_timezone());
+                $created_time = $wc_dt->format('Y-m-d H:i:s');
+            } catch (\Throwable $e) {
+                $created_time = $order->get_date_created()->date('Y-m-d H:i:s');
+            }
+        }
 
         if ($existing_tx) {
             $tx_id = $existing_tx['id'];

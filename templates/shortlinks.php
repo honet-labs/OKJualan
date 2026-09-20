@@ -123,7 +123,7 @@
                                             <span class="dashicons dashicons-chart-bar" style="font-size: 14px; width: 14px; height: 14px; margin-right: 4px; margin-top: 1px; vertical-align: text-bottom;"></span> <?php echo number_format($r['clicks']); ?> Klik
                                         </span>
                                     </td>
-                                    <td><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($r['created_at']))); ?></td>
+                                    <td><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($r['created_at'], get_option('date_format', 'd M Y')) : date('d M Y', strtotime($r['created_at']))); ?></td>
                                     <td>
                                         <a class="okj-btn okj-btn-secondary okj-btn-small" href="<?php echo admin_url('admin.php?page=okj-shortlinks&action=edit&id=' . $r['id']); ?>">
                                             <span class="dashicons dashicons-edit"></span> Edit

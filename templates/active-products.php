@@ -106,6 +106,12 @@
                         </div>
 
                         <div class="okj-form-group">
+                            <label class="okj-label">Nomor Transaksi (Opsional)</label>
+                            <input type="text" name="transaction_no" class="okj-input" value="<?php echo $row && !empty($row['transaction_no']) ? esc_attr($row['transaction_no']) : ''; ?>" placeholder="Contoh: WC-10825 atau POS-2026..." />
+                            <small style="color: #64748b; font-size: 11px;">Nomor referensi order WooCommerce atau transaksi kasir POS.</small>
+                        </div>
+
+                        <div class="okj-form-group">
                             <label class="okj-label">Bukti Pembayaran (Opsional)</label>
                             <input type="file" name="payment_attachments" accept="image/*" class="okj-input" style="padding: 6px;" />
                             <?php if ($row && !empty($row['payment_attachments'])): ?>
@@ -188,12 +194,14 @@
                             <thead>
                                 <tr>
                                     <th>ID Pembelian</th>
+                                    <th>No. Transaksi</th>
                                     <th>Customer</th>
-                                    <th>Produk</th>
+                                    <th>Produk &amp; Masa Aktif</th>
                                     <th>Tgl Pembelian</th>
                                     <th>Qty</th>
                                     <th>Total Harga</th>
-                                    <th>Status</th>
+                                    <th>Status Layanan</th>
+                                    <th>Status Pembayaran</th>
                                     <th>Keterangan</th>
                                     <th>Perpanjang Masa Aktif &amp; Aksi</th>
                                 </tr>
@@ -203,19 +211,58 @@
                                     <?php 
                                     $qty_val = !empty($r['qty']) ? (int)$r['qty'] : 1;
                                     $p_status = !empty($r['status']) ? $r['status'] : 'active';
+                                    $pay_status = !empty($r['payment_status']) ? strtolower($r['payment_status']) : 'paid';
+
+                                    // Extract transaction number & WooCommerce link if available
+                                    $tx_no = !empty($r['transaction_no']) ? trim($r['transaction_no']) : '';
+                                    if (empty($tx_no) && !empty($r['notes'])) {
+                                        if (preg_match('/Pembelian via (WC[ -]#?\d+|POS-[A-Za-z0-9-]+|INV-[A-Za-z0-9-]+)/i', $r['notes'], $m)) {
+                                            $tx_no = $m[1];
+                                        }
+                                    }
+                                    $wc_id = 0;
+                                    if (!empty($tx_no)) {
+                                        if (preg_match('/(?:WC[ -]#?|#)(\d+)/i', $tx_no, $wm)) {
+                                            $wc_id = (int)$wm[1];
+                                        } elseif (is_numeric($tx_no)) {
+                                            $wc_id = (int)$tx_no;
+                                        }
+                                    }
+                                    $wc_url = '';
+                                    if ($wc_id > 0) {
+                                        $wc_url = admin_url('post.php?post=' . $wc_id . '&action=edit');
+                                        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()) {
+                                            $wc_url = admin_url('admin.php?page=wc-orders&action=edit&id=' . $wc_id);
+                                        }
+                                    }
                                     ?>
                                     <tr>
                                         <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
                                         <td>
+                                            <?php if ($wc_id > 0): ?>
+                                                <a href="<?php echo esc_url($wc_url); ?>" target="_blank" title="Buka Pesanan WooCommerce #<?php echo $wc_id; ?> di Tab Baru" style="font-family: monospace; font-size: 12px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #c7d2fe;">
+                                                    <span class="dashicons dashicons-cart" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                                    WC #<?php echo $wc_id; ?>
+                                                </a>
+                                            <?php elseif (!empty($tx_no)): ?>
+                                                <a href="<?php echo esc_url(admin_url('admin.php?page=okj-transactions&s=' . urlencode($tx_no))); ?>" target="_blank" title="Cari di List Transaksi" style="font-family: monospace; font-size: 12px; font-weight: 600; color: #1e293b; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #f8fafc; padding: 3px 8px; border-radius: 5px; border: 1px solid #e2e8f0;">
+                                                    <span class="dashicons dashicons-media-text" style="font-size: 13px; width: 13px; height: 13px; color: #64748b;"></span>
+                                                    <?php echo esc_html($tx_no); ?>
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="okj-text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
                                             <?php if (!empty($r['customer_name'])): ?>
                                                 <a href="#" class="okj-view-customer-detail" 
-                                                   data-name="<?php echo esc_attr($r['customer_name']); ?>"
-                                                   data-email="<?php echo esc_attr($r['customer_email'] ?: '-'); ?>"
-                                                   data-phone="<?php echo esc_attr($r['customer_phone'] ?: '-'); ?>"
-                                                   data-telegram="<?php echo esc_attr($r['customer_telegram'] ?: '-'); ?>"
-                                                   data-whatsapp="<?php echo esc_attr($r['customer_whatsapp'] ?: '-'); ?>"
-                                                   style="text-decoration: none; color: #4f46e5; font-weight: 600;"
-                                                   title="Lihat Detail Customer">
+                                                    data-name="<?php echo esc_attr($r['customer_name']); ?>"
+                                                    data-email="<?php echo esc_attr($r['customer_email'] ?: '-'); ?>"
+                                                    data-phone="<?php echo esc_attr($r['customer_phone'] ?: '-'); ?>"
+                                                    data-telegram="<?php echo esc_attr($r['customer_telegram'] ?: '-'); ?>"
+                                                    data-whatsapp="<?php echo esc_attr($r['customer_whatsapp'] ?: '-'); ?>"
+                                                    style="text-decoration: none; color: #4f46e5; font-weight: 600;"
+                                                    title="Lihat Detail Customer">
                                                     <?php echo esc_html($r['customer_name']); ?>
                                                 </a>
                                             <?php else: ?>
@@ -237,21 +284,32 @@
                                         <td><?php echo esc_html($r['start_date']); ?></td>
                                         <td><strong><?php echo $qty_val; ?></strong></td>
                                         <td><strong style="color: #0f172a;">Rp <?php echo number_format_i18n((float)$r['price'], 0); ?></strong></td>
+                                        <!-- Status Layanan -->
                                         <td>
                                             <?php if ($p_status === 'active' || $p_status === 'completed'): ?>
-                                                <span class="okj-badge okj-badge-success" style="padding: 3px 8px; font-size: 11px;">Aktif / Selesai</span>
+                                                <span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🟢 Aktif</span>
                                             <?php elseif ($p_status === 'pending'): ?>
-                                                <span class="okj-badge okj-badge-warning" style="padding: 3px 8px; font-size: 11px;">Pending</span>
+                                                <span class="okj-badge okj-badge-warning" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🟡 Pending</span>
                                             <?php elseif ($p_status === 'cancelled'): ?>
-                                                <span class="okj-badge" style="background: #f1f5f9; color: #64748b; padding: 3px 8px; font-size: 11px;">Dibatalkan</span>
+                                                <span class="okj-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">⚪ Dibatalkan</span>
                                             <?php else: ?>
-                                                <span class="okj-badge okj-badge-danger" style="padding: 3px 8px; font-size: 11px;">Expired</span>
+                                                <span class="okj-badge okj-badge-danger" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🔴 Expired</span>
                                             <?php endif; ?>
-
-                                            <?php if ($r['payment_status'] === 'paid'): ?>
-                                                <div style="margin-top: 3px;"><span style="font-size: 10px; color: #16a34a; font-weight: 600;">✓ Lunas</span></div>
+                                        </td>
+                                        <!-- Status Pembayaran -->
+                                        <td>
+                                            <?php if ($pay_status === 'paid'): ?>
+                                                <span class="okj-badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
+                                                    ✓ Lunas
+                                                </span>
+                                            <?php elseif ($pay_status === 'cancelled' || $pay_status === 'failed'): ?>
+                                                <span class="okj-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
+                                                    ✕ Gagal
+                                                </span>
                                             <?php else: ?>
-                                                <div style="margin-top: 3px;"><span style="font-size: 10px; color: #d97706; font-weight: 600;">⏳ Belum Bayar</span></div>
+                                                <span class="okj-badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
+                                                    ⏳ Belum Bayar
+                                                </span>
                                             <?php endif; ?>
                                         </td>
                                         <td>

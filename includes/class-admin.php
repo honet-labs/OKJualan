@@ -1108,6 +1108,7 @@ class OKJ_Admin {
 
         $data = [
             'id' => $id,
+            'transaction_no' => !empty($_POST['transaction_no']) ? sanitize_text_field($_POST['transaction_no']) : null,
             'reseller_product_id' => $reseller_product_id,
             'product_id' => $product_id,
             'product_label' => $product_label,
@@ -2149,7 +2150,7 @@ class OKJ_Admin {
         }
 
         $tx['items'] = $items ?: [];
-        $tx['formatted_date'] = wp_date('d M Y, H:i', strtotime($tx['created_at']));
+        $tx['formatted_date'] = class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'd M Y, H:i') . ' WIB' : date('d M Y, H:i', strtotime($tx['created_at'])) . ' WIB';
         $tx['formatted_subtotal'] = 'Rp ' . number_format_i18n((float)$tx['subtotal'], 0);
         $tx['formatted_discount'] = 'Rp ' . number_format_i18n((float)$tx['discount'], 0);
         $tx['formatted_total'] = 'Rp ' . number_format_i18n((float)$tx['total'], 0);
