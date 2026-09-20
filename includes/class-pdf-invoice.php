@@ -263,4 +263,68 @@ class OKJ_PDF_Invoice {
 
         return $this->build_pdf_document($content);
     }
+
+    /**
+     * Generate Sales Report PDF
+     */
+    public function generate_sales_report($rows, $period_label, $settings) {
+        $company_name = !empty($settings['pdf_company_name']) ? $settings['pdf_company_name'] : 'OKJualan';
+        $x0 = 50;
+        $maxW = 495;
+        $y = 780;
+
+        $content = "q\n1 w\n0 0 0 RG\n";
+        $content .= $this->draw_text($x0, $y, "LAPORAN PENJUALAN", true, 18);
+        $content .= $this->draw_text($x0 + 320, $y + 4, $company_name, true, 11);
+        $y -= 20;
+
+        $content .= $this->draw_text($x0, $y, "Periode: " . $period_label, false, 10);
+        $content .= $this->draw_text($x0 + 320, $y, "Dicetak: " . wp_date('d/m/Y H:i'), false, 9);
+        $y -= 25;
+
+        // Line separator
+        $content .= sprintf("%d %d m %d %d l S\n", $x0, $y, $x0 + $maxW, $y);
+        $y -= 20;
+
+        // Table headers: No (30), Tanggal (75), No Transaksi (110), Customer (130), Total (150)
+        $content .= $this->draw_text($x0, $y, "No.", true, 9);
+        $content .= $this->draw_text($x0 + 30, $y, "Tanggal", true, 9);
+        $content .= $this->draw_text($x0 + 105, $y, "No. Transaksi", true, 9);
+        $content .= $this->draw_text($x0 + 220, $y, "Pelanggan", true, 9);
+        $content .= $this->draw_text($x0 + 370, $y, "Total Penjualan", true, 9);
+        $y -= 10;
+        $content .= sprintf("%d %d m %d %d l S\n", $x0, $y, $x0 + $maxW, $y);
+        $y -= 16;
+
+        $total_omset = 0;
+        $idx = 1;
+
+        foreach ($rows as $r) {
+            if ($y < 70) break; // prevent overflowing page 1
+            $t_no = (string)($r['transaction_no'] ?? '-');
+            $t_date = substr((string)($r['created_at'] ?? ''), 0, 10);
+            $t_cust = (string)($r['customer_name'] ?? 'Guest');
+            $amount = (float)($r['total'] ?? 0);
+            $total_omset += $amount;
+
+            $content .= $this->draw_text($x0, $y, (string)$idx . '.', false, 8);
+            $content .= $this->draw_text($x0 + 30, $y, $t_date, false, 8);
+            $content .= $this->draw_text($x0 + 105, $y, $t_no, false, 8);
+            $content .= $this->draw_text($x0 + 220, $y, substr($t_cust, 0, 24), false, 8);
+            $content .= $this->draw_text($x0 + 370, $y, "Rp " . number_format($amount, 0, ',', '.'), false, 8);
+
+            $y -= 14;
+            $idx++;
+        }
+
+        $y -= 6;
+        $content .= sprintf("%d %d m %d %d l S\n", $x0, $y, $x0 + $maxW, $y);
+        $y -= 16;
+        $content .= $this->draw_text($x0 + 220, $y, "TOTAL OMSET PENJUALAN:", true, 10);
+        $content .= $this->draw_text($x0 + 370, $y, "Rp " . number_format($total_omset, 0, ',', '.'), true, 10);
+
+        $content .= "Q\n";
+        return $this->build_pdf_document($content);
+    }
 }
+

@@ -2,18 +2,21 @@
 <div class="okj-wrap">
     <?php if (isset($_GET['deleted'])): ?>
         <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #10b981; background: #ecfdf5; color: #065f46; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-            <p style="margin: 0; font-weight: 600;">Data seller berhasil dihapus.</p>
+            <p style="margin: 0; font-weight: 600;">Data Seller/Supplier/Provider berhasil dihapus.</p>
         </div>
     <?php endif; ?>
+
     <?php if ($action === 'add' || $action === 'edit'): ?>
         <!-- Add / Edit Page -->
         <div class="okj-header">
             <div>
-                <h1><?php echo $action === 'edit' ? 'Edit Data Seller' : 'Tambah Seller Baru'; ?></h1>
-                <p class="okj-subtitle">Daftarkan akun profil seller pembantu penjualan produk.</p>
+                <h1><?php echo $action === 'edit' ? 'Edit Seller / Supplier / Provider' : 'Tambah Seller / Supplier / Provider Baru'; ?></h1>
+                <p class="okj-subtitle">Kelola informasi mitra pemasok dan penyedia akun atau produk digital di OKJualan.</p>
             </div>
             <div class="okj-actions">
-                <a class="okj-btn okj-btn-secondary" href="<?php echo admin_url('admin.php?page=okj-sellers'); ?>">Kembali</a>
+                <a class="okj-btn okj-btn-secondary" href="<?php echo admin_url('admin.php?page=okj-sellers'); ?>">
+                    <span class="dashicons dashicons-arrow-left-alt" style="margin-top: 3px;"></span> Kembali
+                </a>
             </div>
         </div>
 
@@ -28,44 +31,65 @@
 
                     <div class="okj-form-grid">
                         <div class="okj-form-group">
-                            <label class="okj-label">Nama Seller <span class="okj-required">*</span></label>
-                            <input type="text" name="name" class="okj-input" value="<?php echo $row ? esc_attr($row['name']) : ''; ?>" required />
+                            <label class="okj-label">Nama Seller / Supplier / Provider <span class="okj-required">*</span></label>
+                            <input type="text" name="name" class="okj-input" value="<?php echo $row ? esc_attr($row['name']) : ''; ?>" placeholder="Contoh: Digital Supplier ID" required />
                         </div>
 
                         <div class="okj-form-group">
-                            <label class="okj-label">Email</label>
-                            <input type="email" name="email" class="okj-input" value="<?php echo $row ? esc_attr($row['email']) : ''; ?>" />
-                        </div>
-
-                        <div class="okj-form-group">
-                            <label class="okj-label">No. Telepon</label>
-                            <input type="text" name="phone" class="okj-input" value="<?php echo $row ? esc_attr($row['phone']) : ''; ?>" />
-                        </div>
-
-                        <div class="okj-form-group">
-                            <label class="okj-label">Telegram Chat ID</label>
-                            <input type="text" name="telegram" class="okj-input" value="<?php echo $row ? esc_attr($row['telegram']) : ''; ?>" />
+                            <label class="okj-label">Nomor Telepon</label>
+                            <input type="text" name="phone" class="okj-input" value="<?php echo $row ? esc_attr($row['phone']) : ''; ?>" placeholder="08123456789..." />
                         </div>
 
                         <div class="okj-form-group">
                             <label class="okj-label">WhatsApp (Format Internasional)</label>
-                            <input type="text" name="whatsapp" class="okj-input" value="<?php echo $row ? esc_attr($row['whatsapp']) : ''; ?>" placeholder="Contoh: 628123456789" />
+                            <input type="text" name="whatsapp" class="okj-input" value="<?php echo $row ? esc_attr($row['whatsapp']) : ''; ?>" placeholder="628123456789..." />
+                        </div>
+
+                        <div class="okj-form-group">
+                            <label class="okj-label">Email</label>
+                            <input type="email" name="email" class="okj-input" value="<?php echo $row ? esc_attr($row['email']) : ''; ?>" placeholder="provider@email.com" />
+                        </div>
+
+                        <div class="okj-form-group">
+                            <label class="okj-label">Telegram Username / Chat ID</label>
+                            <input type="text" name="telegram" class="okj-input" value="<?php echo $row ? esc_attr($row['telegram']) : ''; ?>" placeholder="@username atau Chat ID" />
+                        </div>
+
+                        <div class="okj-form-group">
+                            <label class="okj-label">Status Seller / Supplier / Provider</label>
+                            <?php $curr_status = $row && !empty($row['status']) ? $row['status'] : 'active'; ?>
+                            <select name="status" class="okj-select" style="width: 100%;">
+                                <option value="active" <?php selected($curr_status, 'active'); ?>>🟢 Aktif</option>
+                                <option value="inactive" <?php selected($curr_status, 'inactive'); ?>>🔴 Nonaktif</option>
+                            </select>
+                        </div>
+
+                        <div class="okj-form-group" style="grid-column: span 2;">
+                            <label class="okj-label">Alamat</label>
+                            <textarea name="address" class="okj-input" rows="2" placeholder="Alamat kantor / gudang / domisili supplier..."><?php echo $row && !empty($row['address']) ? esc_textarea($row['address']) : ''; ?></textarea>
+                        </div>
+
+                        <div class="okj-form-group" style="grid-column: span 2;">
+                            <label class="okj-label">Keterangan Tambahan</label>
+                            <textarea name="notes" class="okj-input" rows="2" placeholder="Catatan kontrak, ketentuan garansi, kontak darurat, dsb..."><?php echo $row && !empty($row['notes']) ? esc_textarea($row['notes']) : ''; ?></textarea>
                         </div>
                     </div>
 
-                    <div class="okj-form-actions okj-mt-2">
-                        <button type="submit" class="okj-btn okj-btn-primary">Simpan Profil Seller</button>
+                    <div class="okj-form-actions okj-mt-2" style="border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                        <button type="submit" class="okj-btn okj-btn-primary">
+                            <span class="dashicons dashicons-saved" style="margin-top: 3px;"></span> Simpan Profil Seller
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
 
     <?php else: ?>
-        <!-- List Page -->
+        <!-- List Page: 7 Columns per User Requirements -->
         <div class="okj-header">
             <div>
-                <h1>Daftar Data Seller</h1>
-                <p class="okj-subtitle">Manajemen daftar seller internal pendukung penjualan produk reseller.</p>
+                <h1>List Seller / Supplier / Provider</h1>
+                <p class="okj-subtitle">Daftar mitra seller, supplier, dan provider produk di platform OKJualan.</p>
             </div>
             <div class="okj-actions">
                 <a class="okj-btn okj-btn-primary" href="<?php echo admin_url('admin.php?page=okj-sellers&action=add'); ?>">
@@ -78,68 +102,108 @@
             <div class="okj-card-body">
                 <?php if (empty($rows)): ?>
                     <div class="okj-empty-state">
-                        <span class="dashicons dashicons-info"></span>
-                        <p>Belum ada data seller pendukung yang didaftarkan.</p>
+                        <span class="dashicons dashicons-businessman"></span>
+                        <p>Belum ada seller/supplier/provider terdaftar. Klik "Tambah Seller" untuk mulai mendaftarkan.</p>
                     </div>
                 <?php else: ?>
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
-                        <input type="text" class="okj-input okj-table-search" placeholder="Cari data..." style="max-width: 300px; width: 100%;" />
+                        <input type="text" class="okj-input okj-table-search" placeholder="Cari nama, telepon, email..." style="max-width: 300px; width: 100%;" />
                     </div>
-                    <table class="okj-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nama Seller</th>
-                                <th>Email</th>
-                                <th>Telepon</th>
-                                <th>Telegram</th>
-                                <th>WhatsApp</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($rows as $r): ?>
+                    <div style="overflow-x: auto;">
+                        <table class="okj-table">
+                            <thead>
                                 <tr>
-                                    <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
-                                    <td>
-                                        <strong><?php echo esc_html($r['name']); ?></strong>
-                                        <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                                            <?php if (!empty($r['total_purchases_count']) && $r['total_purchases_count'] > 0): ?>
-                                                <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 10px; padding: 1px 6px; font-weight: 600;">
-                                                    <?php echo (int)$r['total_purchases_count']; ?> Pembelian Stok
-                                                </span>
-                                            <?php endif; ?>
-                                            <?php if (!empty($r['master_products_count']) && $r['master_products_count'] > 0): ?>
-                                                <span class="okj-badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 10px; padding: 1px 6px;">
-                                                    <?php echo (int)$r['master_products_count']; ?> Master Produk
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td><?php echo esc_html($r['email'] ?: '-'); ?></td>
-                                    <td><?php echo esc_html($r['phone'] ?: '-'); ?></td>
-                                    <td><code><?php echo esc_html($r['telegram'] ?: '-'); ?></code></td>
-                                    <td><?php echo esc_html($r['whatsapp'] ?: '-'); ?></td>
-                                    <td>
-                                        <div class="okj-row-actions">
-                                            <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-sellers&action=edit&id=' . $r['id']); ?>">
-                                                <span class="dashicons dashicons-edit"></span> Edit
-                                            </a>
-                                            <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_seller&id=' . $r['id']), 'okj_delete_seller_' . $r['id']); ?>" onclick="return confirm('Hapus seller ini?');">
-                                                <span class="dashicons dashicons-trash"></span> Hapus
-                                            </a>
-                                        </div>
-                                    </td>
+                                    <th>ID Seller</th>
+                                    <th>Nama Seller / Supplier / Provider</th>
+                                    <th>Alamat</th>
+                                    <th>Nomor Telepon</th>
+                                    <th>Email</th>
+                                    <th>Keterangan Tambahan</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($rows as $r): ?>
+                                    <?php 
+                                    $s_status = !empty($r['status']) ? $r['status'] : 'active';
+                                    ?>
+                                    <tr>
+                                        <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
+                                        <td>
+                                            <strong><?php echo esc_html($r['name']); ?></strong>
+                                            <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                                                <?php if (!empty($r['total_purchases_count']) && $r['total_purchases_count'] > 0): ?>
+                                                    <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; font-size: 10px; padding: 1px 6px;">
+                                                        <?php echo (int)$r['total_purchases_count']; ?> Pembelian
+                                                    </span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($r['master_products_count']) && $r['master_products_count'] > 0): ?>
+                                                    <span class="okj-badge" style="background: #f1f5f9; color: #475569; font-size: 10px; padding: 1px 6px;">
+                                                        <?php echo (int)$r['master_products_count']; ?> Produk
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($r['address'])): ?>
+                                                <span title="<?php echo esc_attr($r['address']); ?>" style="display: inline-block; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #475569;">
+                                                    <?php echo esc_html($r['address']); ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="okj-text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php 
+                                            $phone_display = $r['phone'] ?: ($r['whatsapp'] ?: '-');
+                                            ?>
+                                            <div style="font-weight: 500;"><?php echo esc_html($phone_display); ?></div>
+                                            <?php if (!empty($r['whatsapp'])): ?>
+                                                <div style="font-size: 11px; color: #16a34a;">WA: <?php echo esc_html($r['whatsapp']); ?></div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($r['telegram'])): ?>
+                                                <div style="font-size: 11px; color: #0284c7;">TG: <?php echo esc_html($r['telegram']); ?></div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td><?php echo esc_html($r['email'] ?: '-'); ?></td>
+                                        <td>
+                                            <?php if (!empty($r['notes'])): ?>
+                                                <span title="<?php echo esc_attr($r['notes']); ?>" style="display: inline-block; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #64748b;">
+                                                    <?php echo esc_html($r['notes']); ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="okj-text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($s_status === 'active'): ?>
+                                                <span class="okj-badge okj-badge-success" style="padding: 3px 8px; font-size: 11px;">Aktif</span>
+                                            <?php else: ?>
+                                                <span class="okj-badge okj-badge-danger" style="padding: 3px 8px; font-size: 11px;">Nonaktif</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div style="display: flex; gap: 6px; align-items: center;">
+                                                <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-sellers&action=edit&id=' . $r['id']); ?>" title="Edit Seller">
+                                                    <span class="dashicons dashicons-edit"></span>
+                                                </a>
+                                                <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_seller&id=' . $r['id']), 'okj_delete_seller_' . $r['id']); ?>" onclick="return confirm('Hapus seller ini?');" title="Hapus Seller">
+                                                    <span class="dashicons dashicons-trash"></span>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
 
                     <!-- Pagination -->
                     <?php if (isset($total_pages) && $total_pages > 1): 
                         $current_offset = ($paged - 1) * $per_page;
                     ?>
-                        <div class="okj-pagination">
+                        <div class="okj-pagination okj-mt-2">
                             <div class="okj-pagination-info">
                                 Menampilkan <?php echo ($current_offset + 1); ?> - <?php echo min($total_rows, $current_offset + $per_page); ?> dari <?php echo $total_rows; ?> data
                             </div>

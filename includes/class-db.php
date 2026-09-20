@@ -66,7 +66,10 @@ class OKJ_DB {
             seller_id CHAR(36) NULL,
             reseller_price BIGINT(20) NOT NULL DEFAULT 0,
             sale_price BIGINT(20) NOT NULL DEFAULT 0,
+            stock INT(11) NOT NULL DEFAULT -1,
             duration_days INT(11) NOT NULL DEFAULT 0,
+            image_url TEXT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'active',
             affiliate_url TEXT NULL,
             show_in_pos TINYINT(1) NOT NULL DEFAULT 1,
             sync_to_wc TINYINT(1) NOT NULL DEFAULT 0,
@@ -80,6 +83,7 @@ class OKJ_DB {
             KEY name (name(80)),
             KEY category (category(40)),
             KEY seller_id (seller_id),
+            KEY status (status),
             KEY sync_to_wc (sync_to_wc),
             KEY wc_product_id (wc_product_id)
         ) {$charset};";
@@ -130,12 +134,16 @@ class OKJ_DB {
             phone VARCHAR(50) NOT NULL DEFAULT '',
             telegram VARCHAR(100) NOT NULL DEFAULT '',
             whatsapp VARCHAR(50) NOT NULL DEFAULT '',
+            address TEXT NULL,
+            notes LONGTEXT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'active',
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
             PRIMARY KEY (id),
             KEY email (email(80)),
-            KEY name (name(80))
+            KEY name (name(80)),
+            KEY status (status)
         ) {$charset};";
 
         $sql_sellers = "CREATE TABLE {$t_sellers} (
@@ -145,22 +153,28 @@ class OKJ_DB {
             phone VARCHAR(50) NOT NULL DEFAULT '',
             telegram VARCHAR(100) NOT NULL DEFAULT '',
             whatsapp VARCHAR(50) NOT NULL DEFAULT '',
+            address TEXT NULL,
+            notes LONGTEXT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'active',
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
             PRIMARY KEY (id),
             KEY email (email(80)),
-            KEY name (name(80))
+            KEY name (name(80)),
+            KEY status (status)
         ) {$charset};";
 
         $sql_active = "CREATE TABLE {$t_active} (
             id CHAR(36) NOT NULL,
-            reseller_product_id CHAR(36) NOT NULL,
+            reseller_product_id CHAR(36) NOT NULL DEFAULT '',
+            product_id CHAR(36) NULL,
             product_label VARCHAR(255) NOT NULL,
             customer_id CHAR(36) NOT NULL,
             customer_name VARCHAR(200) NOT NULL,
             customer_contact VARCHAR(200) NOT NULL DEFAULT '',
             start_date DATE NOT NULL,
+            qty INT(11) NOT NULL DEFAULT 1,
             duration_days INT(11) NOT NULL DEFAULT 0,
             expires_at DATE NOT NULL,
             status VARCHAR(20) NOT NULL DEFAULT 'active',
@@ -175,6 +189,7 @@ class OKJ_DB {
             KEY expires_at (expires_at),
             KEY status (status),
             KEY customer_id (customer_id),
+            KEY product_id (product_id),
             KEY reseller_product_id (reseller_product_id)
         ) {$charset};";
 
@@ -290,6 +305,56 @@ class OKJ_DB {
         if (empty($col_wc_id)) {
             $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN wc_product_id BIGINT(20) NOT NULL DEFAULT 0 AFTER sync_to_wc");
         }
+        $col_stock = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'stock'");
+        if (empty($col_stock)) {
+            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN stock INT(11) NOT NULL DEFAULT -1 AFTER sale_price");
+        }
+        $col_p_img = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'image_url'");
+        if (empty($col_p_img)) {
+            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN image_url TEXT NULL AFTER duration_days");
+        }
+        $col_p_stat = $wpdb->get_results("SHOW COLUMNS FROM {$t_prices} LIKE 'status'");
+        if (empty($col_p_stat)) {
+            $wpdb->query("ALTER TABLE {$t_prices} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER image_url");
+        }
+
+        // Sellers new columns
+        $col_s_addr = $wpdb->get_results("SHOW COLUMNS FROM {$t_sellers} LIKE 'address'");
+        if (empty($col_s_addr)) {
+            $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN address TEXT NULL AFTER whatsapp");
+        }
+        $col_s_notes = $wpdb->get_results("SHOW COLUMNS FROM {$t_sellers} LIKE 'notes'");
+        if (empty($col_s_notes)) {
+            $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN notes LONGTEXT NULL AFTER address");
+        }
+        $col_s_stat = $wpdb->get_results("SHOW COLUMNS FROM {$t_sellers} LIKE 'status'");
+        if (empty($col_s_stat)) {
+            $wpdb->query("ALTER TABLE {$t_sellers} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER notes");
+        }
+
+        // Customers new columns
+        $col_c_addr = $wpdb->get_results("SHOW COLUMNS FROM {$t_customers} LIKE 'address'");
+        if (empty($col_c_addr)) {
+            $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN address TEXT NULL AFTER whatsapp");
+        }
+        $col_c_notes = $wpdb->get_results("SHOW COLUMNS FROM {$t_customers} LIKE 'notes'");
+        if (empty($col_c_notes)) {
+            $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN notes LONGTEXT NULL AFTER address");
+        }
+        $col_c_stat = $wpdb->get_results("SHOW COLUMNS FROM {$t_customers} LIKE 'status'");
+        if (empty($col_c_stat)) {
+            $wpdb->query("ALTER TABLE {$t_customers} ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER notes");
+        }
+
+        // Active products / purchases new columns
+        $col_ap_prod = $wpdb->get_results("SHOW COLUMNS FROM {$t_active} LIKE 'product_id'");
+        if (empty($col_ap_prod)) {
+            $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN product_id CHAR(36) NULL AFTER reseller_product_id");
+        }
+        $col_ap_qty = $wpdb->get_results("SHOW COLUMNS FROM {$t_active} LIKE 'qty'");
+        if (empty($col_ap_qty)) {
+            $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN qty INT(11) NOT NULL DEFAULT 1 AFTER start_date");
+        }
 
         // Ensure capabilities and settings are initialized
         self::ensure_caps();
@@ -314,7 +379,7 @@ class OKJ_DB {
         }
 
         if (!get_role('okj_manager')) {
-            add_role('okj_manager', 'OKJualin Manager', [
+            add_role('okj_manager', 'OKJualan Manager', [
                 'okj_manage' => true,
                 'okj_view_reports' => true,
                 'okj_view_logs' => true,

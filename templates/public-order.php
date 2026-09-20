@@ -673,16 +673,17 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
                             $pos_enable_cash = isset($settings['pos_enable_cash']) ? (int)$settings['pos_enable_cash'] : 1;
                             $pos_enable_transfer = isset($settings['pos_enable_transfer']) ? (int)$settings['pos_enable_transfer'] : 1;
                             $pos_enable_qris = isset($settings['pos_enable_qris']) ? (int)$settings['pos_enable_qris'] : 1;
-
-                            // Fallback to cash if all disabled
-                            if (!$pos_enable_cash && !$pos_enable_transfer && !$pos_enable_qris) {
-                                $pos_enable_cash = 1;
-                            }
+                            $sumopod_enabled = !empty($settings['sumopod_enabled']);
+                            $manual_enabled = !empty($settings['manual_transfer_enabled']) || $pos_enable_transfer;
+                            $static_qris_enabled = !empty($settings['static_qris_enabled']) || $pos_enable_qris;
                             ?>
-                            <?php if ($pos_enable_qris): ?>
-                                <option value="qris">QRIS / E-Wallet (Bayar Instan)</option>
+                            <?php if ($sumopod_enabled): ?>
+                                <option value="sumopod" selected>SumoPod QRIS (Otomatis &amp; Real-time) ⚡</option>
                             <?php endif; ?>
-                            <?php if ($pos_enable_transfer): ?>
+                            <?php if ($static_qris_enabled): ?>
+                                <option value="qris" <?php echo !$sumopod_enabled ? 'selected' : ''; ?>>Scan QRIS Toko</option>
+                            <?php endif; ?>
+                            <?php if ($manual_enabled): ?>
                                 <option value="transfer">Transfer Bank Manual</option>
                             <?php endif; ?>
                             <?php if ($pos_enable_cash): ?>
@@ -776,18 +777,34 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
                 <p style="font-size:11.5px; color:var(--gray); margin-top:2px;">Metode Pembayaran: <strong><?php echo esc_html(strtoupper($tx['payment_method'])); ?></strong></p>
                 <div style="font-size: 16px; font-weight:800; color:var(--primary); margin: 8px 0;">Rp <?php echo number_format($tx['total'], 0, ',', '.'); ?></div>
                 
-                <?php if ($tx['payment_method'] === 'qris'): ?>
-                    <!-- Dynamically generate QR Code or show placeholder for QRIS -->
+                <?php if ($tx['payment_method'] === 'sumopod'): ?>
+                    <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 14px; margin: 10px 0;">
+                        <span class="dashicons dashicons-shield" style="color: #16a34a; font-size: 20px; width: 20px; height: 20px;"></span>
+                        <h4 style="margin: 4px 0; color: #166534; font-size: 13px;">Pembayaran SumoPod QRIS Otomatis</h4>
+                        <div class="okj-payment-qr" style="margin: 8px auto;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=<?php echo urlencode('SUMOPOD-QRIS-' . $tx['transaction_no'] . '-TOTAL-' . $tx['total']); ?>" alt="QRIS SumoPod OKJualan" />
+                        </div>
+                        <p style="font-size: 11px; color: #15803d; margin: 4px 0 0 0;">Pindai QRIS di atas dengan aplikasi E-Wallet atau M-Banking apapun. Sistem akan memverifikasi pembayaran Anda secara otomatis dalam hitungan detik.</p>
+                    </div>
+                <?php elseif ($tx['payment_method'] === 'qris'): ?>
                     <div class="okj-payment-qr">
-                        <!-- Free QR Code generator API to generate payment code or instructions -->
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=<?php echo urlencode('PAY-' . $tx['transaction_no'] . '-TOTAL-' . $tx['total']); ?>" alt="QRIS OKJualin" />
+                        <?php if (!empty($settings['static_qris_image_url'])): ?>
+                            <img src="<?php echo esc_url($settings['static_qris_image_url']); ?>" alt="QRIS OKJualan" />
+                        <?php else: ?>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=<?php echo urlencode('PAY-' . $tx['transaction_no'] . '-TOTAL-' . $tx['total']); ?>" alt="QRIS OKJualan" />
+                        <?php endif; ?>
                     </div>
                     <p style="font-size:10px; color:var(--gray);">Pindai QR di atas menggunakan aplikasi E-Wallet atau Bank Anda untuk membayar.</p>
                 <?php elseif ($tx['payment_method'] === 'transfer'): ?>
+                    <?php 
+                    $bank_name = !empty($settings['manual_bank_name']) ? $settings['manual_bank_name'] : 'Bank Mandiri';
+                    $bank_no = !empty($settings['manual_account_number']) ? $settings['manual_account_number'] : '123-45678-901';
+                    $bank_holder = !empty($settings['manual_account_holder']) ? $settings['manual_account_holder'] : $company_name;
+                    ?>
                     <div style="background: #ffffff; border:1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 12px; text-align: left; margin: 10px 0;">
                         <p style="color:var(--gray); margin-bottom:4px;">Silakan transfer ke rekening:</p>
-                        <strong>Bank Mandiri: 123-45678-901</strong><br/>
-                        <span>A.N. <?php echo esc_html($company_name); ?></span>
+                        <strong><?php echo esc_html($bank_name); ?>: <?php echo esc_html($bank_no); ?></strong><br/>
+                        <span>A.N. <?php echo esc_html($bank_holder); ?></span>
                     </div>
                 <?php else: ?>
                     <p style="font-size:12px; color:var(--gray); padding: 10px 0;">Silakan lakukan pembayaran langsung ke Operator/Kasir di meja pelayanan.</p>
@@ -867,7 +884,23 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
         });
         </script>
     <?php endif; ?>
-
+    <?php endif; ?>
+    <?php
+    // Dukungan Pelanggan: Floating WhatsApp CS Widget
+    $support_wa = !empty($settings['support_wa_number']) ? $settings['support_wa_number'] : (!empty($settings['waha_sender_number']) ? $settings['waha_sender_number'] : '');
+    if (!empty($support_wa)):
+        $clean_support_wa = preg_replace('/[^0-9]/', '', $support_wa);
+        if (strpos($clean_support_wa, '0') === 0) {
+            $clean_support_wa = '62' . substr($clean_support_wa, 1);
+        }
+        $cs_message = rawurlencode('Halo CS ' . $company_name . ', saya ingin bertanya mengenai pesanan di OKJualan.');
+    ?>
+    <!-- Floating WhatsApp Customer Support Widget -->
+    <a href="https://wa.me/<?php echo esc_attr($clean_support_wa); ?>?text=<?php echo $cs_message; ?>" target="_blank" rel="noopener noreferrer" class="okj-cs-float-btn" title="Chat CS via WhatsApp">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.587 1.961.94 2.796.94 3.179 0 5.767-2.587 5.767-5.766.001-3.182-2.585-5.767-5.767-5.767zm0 10.366c-.767 0-1.636-.299-2.327-.723l-.167-.1-1.579.414.421-1.54-.109-.174c-.456-.732-.733-1.467-.733-2.476 0-2.536 2.063-4.598 4.601-4.598 2.535 0 4.598 2.062 4.598 4.598 0 2.536-2.063 4.599-4.604 4.599zm3.011-3.698c-.165-.083-.979-.483-1.131-.538-.152-.055-.263-.083-.374.083-.111.166-.43 1.54-.527.65-.097.11-.194.124-.359.041-.166-.083-.7-.258-1.334-.823-.493-.439-.826-.982-.923-1.147-.097-.166-.01-.256.072-.338.075-.074.166-.194.249-.291.083-.097.111-.166.166-.277.055-.111.028-.208-.014-.291-.042-.083-.374-.9-.512-1.233-.135-.324-.272-.28-.374-.285l-.319-.005c-.11 0-.291.042-.443.208-.152.166-.582.568-.582 1.385 0 .817.596 1.607.679 1.718.083.11 1.173 1.792 2.842 2.513 1.669.721 1.669.48 1.974.452.305-.028.979-.401 1.117-.788.139-.387.139-.719.097-.788-.041-.069-.152-.11-.317-.193z"/>
+        </svg>
+    </a>
     <?php endif; ?>
 
 </div>
@@ -877,6 +910,27 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
 @keyframes publicSpin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+.okj-cs-float-btn {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #25D366;
+    color: #ffffff !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+    z-index: 180;
+    text-decoration: none;
+    transition: all 0.25s ease;
+}
+.okj-cs-float-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 25px rgba(37, 211, 102, 0.6);
 }
 </style>
 

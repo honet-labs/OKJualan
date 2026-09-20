@@ -1,6 +1,6 @@
 <?php
 /**
- * OKJualin Uninstaller
+ * OKJualan Uninstaller
  * Fired when the plugin is deleted via the WordPress admin plugins interface.
  */
 
@@ -69,3 +69,7 @@ foreach ($roles as $role_name) {
         }
     }
 }
+
+// 5. Remove custom OKJualan manager role
+remove_role('okj_manager');
+

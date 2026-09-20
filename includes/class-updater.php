@@ -106,7 +106,7 @@ class OKJ_Updater {
         if (!$remote) return $res;
 
         $res = new stdClass();
-        $res->name = 'OKJualin';
+        $res->name = 'OKJualan';
         $res->slug = 'okjualin';
         $res->version = $remote['version'];
         $res->author = 'HONET';
@@ -327,7 +327,7 @@ class OKJ_Updater {
         update_option('okj_db_version', $new_ver);
 
         // Log the upgrade action
-        OKJ_Reseller_Manager::log('system_update', 'plugin', $plugin_file, "Plugin OKJualin berhasil diperbarui dari v{$current_ver} ke v{$new_ver}");
+        OKJ_Reseller_Manager::log('system_update', 'plugin', $plugin_file, "Plugin OKJualan berhasil diperbarui dari v{$current_ver} ke v{$new_ver}");
 
         // Clear transient
         delete_transient('okj_gh_rel_info_' . md5($repo));
@@ -337,7 +337,7 @@ class OKJ_Updater {
             'success'     => true,
             'old_version' => $current_ver,
             'new_version' => $new_ver,
-            'message'     => "Selamat! OKJualin berhasil diperbarui ke versi v{$new_ver}.",
+            'message'     => "Selamat! OKJualan berhasil diperbarui ke versi v{$new_ver}.",
         ];
     }
 }

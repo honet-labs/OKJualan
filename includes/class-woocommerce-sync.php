@@ -305,7 +305,7 @@ class OKJ_WC_Sync {
         }
 
         if ($synced_items > 0) {
-            OKJ_Reseller_Manager::log('wc_order_processed', 'order', (string)$order_id, "Pesanan WooCommerce #{$order_id} ({$billing_name}) berhasil disinkronkan ke OKJualin.");
+            OKJ_Reseller_Manager::log('wc_order_processed', 'order', (string)$order_id, "Pesanan WooCommerce #{$order_id} ({$billing_name}) berhasil disinkronkan ke OKJualan.");
         }
 
         update_post_meta($order_id, '_okj_order_captured', current_time('mysql'));

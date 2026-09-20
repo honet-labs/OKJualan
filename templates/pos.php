@@ -8,8 +8,18 @@ if ($wpdb->get_var("SHOW TABLES LIKE '{$t_transactions}'") !== $t_transactions) 
     OKJ_DB::install();
 }
 
-// Fetch all transactions for Tab 2
-$transactions = $wpdb->get_results("SELECT * FROM {$t_transactions} ORDER BY created_at DESC LIMIT 50", ARRAY_A);
+// Fetch all transactions for Tab 2 with product summary and item count
+$transactions = $wpdb->get_results("
+    SELECT t.*, 
+        COUNT(i.id) as item_count,
+        COALESCE(SUM(i.qty), 0) as total_qty,
+        GROUP_CONCAT(CONCAT(i.product_name, ' (x', i.qty, ')') SEPARATOR ', ') as product_list
+    FROM {$t_transactions} t
+    LEFT JOIN " . OKJ_DB::get_table('pos_transaction_items') . " i ON t.id = i.transaction_id
+    GROUP BY t.id
+    ORDER BY t.created_at DESC 
+    LIMIT 100
+", ARRAY_A);
 
 // Settings for company details
 $settings = get_option('okj_settings_v1', []);
@@ -224,19 +234,21 @@ $qr_url = home_url('/?okj_order=1');
                 <table class="okj-table" style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
-                            <th>No. Transaksi</th>
+                            <th>ID Transaksi</th>
+                            <th>Customer</th>
+                            <th>Produk</th>
+                            <th>Jumlah Terjual</th>
+                            <th>Total Harga</th>
                             <th>Tanggal</th>
-                            <th>Nama Customer</th>
-                            <th>Total Belanja</th>
-                            <th>Metode Bayar</th>
-                            <th>Status Proses</th>
+                            <th>Keterangan</th>
+                            <th>Status</th>
                             <th style="text-align: right;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($transactions)): ?>
                             <tr>
-                                <td colspan="7" style="text-align: center; color: #64748b; padding: 30px 0;">Belum ada riwayat transaksi.</td>
+                                <td colspan="9" style="text-align: center; color: #64748b; padding: 30px 0;">Belum ada riwayat transaksi POS.</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($transactions as $tx): 
@@ -246,11 +258,28 @@ $qr_url = home_url('/?okj_order=1');
                                 if ($status === 'paid' || $status === 'completed') $badge_style = 'background: #dcfce7; color: #15803d;';
                             ?>
                                 <tr id="tx-row-<?php echo esc_attr($tx['id']); ?>">
-                                    <td><strong><?php echo esc_html($tx['transaction_no']); ?></strong></td>
-                                    <td><?php echo esc_html($tx['created_at']); ?></td>
-                                    <td><?php echo esc_html($tx['customer_name']); ?></td>
-                                    <td><strong>Rp <?php echo number_format($tx['total'], 0, ',', '.'); ?></strong></td>
-                                    <td><span style="font-size: 11px; padding: 2px 6px; background: #f1f5f9; border-radius: 4px; font-weight: 700;"><?php echo esc_html(strtoupper($tx['payment_method'])); ?></span></td>
+                                    <td>
+                                        <strong><?php echo esc_html($tx['transaction_no']); ?></strong>
+                                        <div style="font-size: 10px; color: #94a3b8;">ID: <code><?php echo esc_html(substr($tx['id'], 0, 8)); ?></code></div>
+                                    </td>
+                                    <td><strong><?php echo esc_html($tx['customer_name']); ?></strong></td>
+                                    <td>
+                                        <div style="max-width: 220px; font-size: 12px; color: #334155;">
+                                            <?php echo esc_html($tx['product_list'] ?: 'Produk POS'); ?>
+                                        </div>
+                                    </td>
+                                    <td><strong style="color: #4f46e5;"><?php echo !empty($tx['total_qty']) ? (int)$tx['total_qty'] : 1; ?> item</strong></td>
+                                    <td><strong style="color: #0f172a;">Rp <?php echo number_format($tx['total'], 0, ',', '.'); ?></strong></td>
+                                    <td><span style="font-size: 12px; color: #64748b;"><?php echo esc_html($tx['created_at']); ?></span></td>
+                                    <td>
+                                        <?php if (!empty($tx['notes'])): ?>
+                                            <span style="font-size: 12px; color: #64748b; font-style: italic;" title="<?php echo esc_attr($tx['notes']); ?>">
+                                                <?php echo esc_html(wp_trim_words($tx['notes'], 5)); ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="okj-text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <!-- Real-time Status Dropdown Manager -->
                                         <select class="okj-status-changer" data-id="<?php echo esc_attr($tx['id']); ?>" style="font-size: 11.5px; font-weight: 700; padding: 4px 8px; border-radius: 6px; <?php echo $badge_style; ?> cursor: pointer; outline: none; border: none;">
@@ -409,7 +438,7 @@ $qr_url = home_url('/?okj_order=1');
                 <div class="okj-struk-divider">-----------------------------------------</div>
                 <div class="okj-struk-footer">
                     <p style="margin: 0; font-size: 11px;">Terima kasih atas kunjungan Anda!</p>
-                    <p style="margin: 4px 0 0 0; font-size: 10px; color: #94a3b8;">Powered by OKJualin</p>
+                    <p style="margin: 4px 0 0 0; font-size: 10px; color: #94a3b8;">Powered by OKJualan</p>
                 </div>
             </div>
 
@@ -610,18 +639,38 @@ jQuery(document).ready(function($) {
                         } else {
                             response.data.forEach(function(p) {
                                 let formattedPrice = 'Rp ' + Number(p.sale_price).toLocaleString('id-ID');
+                                let stockNum = (p.stock !== undefined && p.stock !== null) ? parseInt(p.stock) : -1;
+                                let stockBadge = '';
+                                let isOutOfStock = (stockNum === 0);
+
+                                if (stockNum < 0) {
+                                    stockBadge = '<span style="font-size:10px; padding:1px 5px; background:#ecfdf5; color:#065f46; border-radius:4px; font-weight:600;">&infin; Unlimited</span>';
+                                } else if (stockNum === 0) {
+                                    stockBadge = '<span style="font-size:10px; padding:1px 5px; background:#fef2f2; color:#991b1b; border-radius:4px; font-weight:700;">Habis</span>';
+                                } else if (stockNum <= 3) {
+                                    stockBadge = '<span style="font-size:10px; padding:1px 5px; background:#fffbeb; color:#b45309; border-radius:4px; font-weight:700;">Sisa ' + stockNum + '</span>';
+                                } else {
+                                    stockBadge = '<span style="font-size:10px; padding:1px 5px; background:#f0fdf4; color:#166534; border-radius:4px; font-weight:600;">Stok ' + stockNum + '</span>';
+                                }
+
+                                let imgTag = p.image_url ? `<img src="${p.image_url}" style="width:44px; height:44px; object-fit:cover; border-radius:8px; margin-right:10px; flex-shrink:0; border:1px solid #e2e8f0;" />` : '';
+
                                 html += `
-                                    <div class="okj-pos-product-card" data-id="${p.id}" data-name="${p.name}" data-price="${p.sale_price}">
-                                        <div>
-                                            <h3 class="okj-pos-p-title">${p.name}</h3>
-                                            <div class="okj-pos-p-meta">
-                                                <span class="okj-pos-p-cat">${p.category || 'Umum'}</span>
-                                                ${p.duration_days > 0 ? `<span class="okj-pos-p-dur">${p.duration_days} Hari</span>` : ''}
+                                    <div class="okj-pos-product-card" data-id="${p.id}" data-name="${p.name}" data-price="${p.sale_price}" data-stock="${stockNum}" style="display:flex; flex-direction:column; justify-content:space-between; ${isOutOfStock ? 'opacity:0.6;' : ''}">
+                                        <div style="display:flex; align-items:flex-start;">
+                                            ${imgTag}
+                                            <div style="flex:1;">
+                                                <h3 class="okj-pos-p-title" style="margin:0 0 4px 0; font-size:13.5px; font-weight:700; color:#0f172a;">${p.name}</h3>
+                                                <div class="okj-pos-p-meta" style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+                                                    <span class="okj-pos-p-cat">${p.category || 'Umum'}</span>
+                                                    ${p.duration_days > 0 ? `<span class="okj-pos-p-dur">${p.duration_days} Hari</span>` : ''}
+                                                    ${stockBadge}
+                                                </div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <p class="okj-pos-p-price">${formattedPrice}</p>
-                                            <button type="button" class="okj-pos-p-add-btn">+ Tambah</button>
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:8px; border-top:1px solid #f1f5f9;">
+                                            <p class="okj-pos-p-price" style="margin:0; font-weight:700; font-size:14px; color:#4f46e5;">${formattedPrice}</p>
+                                            <button type="button" class="okj-pos-p-add-btn" ${isOutOfStock ? 'disabled style="background:#cbd5e1; cursor:not-allowed;"' : ''}>${isOutOfStock ? 'Habis' : '+ Tambah'}</button>
                                         </div>
                                     </div>
                                 `;

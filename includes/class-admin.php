@@ -22,6 +22,8 @@ class OKJ_Admin {
         add_action('admin_post_okj_backup_data', [$this, 'backup_data']);
         add_action('admin_post_okj_restore_data', [$this, 'restore_data']);
         add_action('admin_post_okj_invoice_pdf', [$this, 'download_invoice_pdf']);
+        add_action('admin_post_okj_monthly_report_pdf', [$this, 'download_monthly_report_pdf']);
+        add_action('admin_post_okj_export_sales_csv', [$this, 'export_sales_csv']);
         add_action('admin_post_okj_save_shortlink', [$this, 'save_shortlink']);
         add_action('admin_post_okj_delete_shortlink', [$this, 'delete_shortlink']);
         add_action('admin_post_okj_delete_pos_transaction', [$this, 'delete_pos_transaction']);
@@ -59,10 +61,10 @@ class OKJ_Admin {
     public function register_menus() {
         $cap = 'okj_manage';
 
-        // Main OKJualin Manager Menu
+        // Main OKJualan Manager Menu
         add_menu_page(
-            'OKJualin',
-            'OKJualin',
+            'OKJualan',
+            'OKJualan',
             $cap,
             'okj-dashboard',
             [$this, 'view_dashboard'],
@@ -72,20 +74,21 @@ class OKJ_Admin {
 
         add_submenu_page('okj-dashboard', 'Dashboard', 'Dashboard', $cap, 'okj-dashboard', [$this, 'view_dashboard']);
         add_submenu_page('okj-dashboard', 'Daftar Harga Produk', 'Daftar Harga Produk', $cap, 'okj-product-prices', [$this, 'view_product_prices']);
-        add_submenu_page('okj-dashboard', 'Pembelian Produk', 'Pembelian Produk', $cap, 'okj-reseller-products', [$this, 'view_reseller_products']);
+        add_submenu_page('okj-dashboard', 'Pembelian & Produk Aktif', 'Pembelian & Produk Aktif', $cap, 'okj-active-products', [$this, 'view_active_products']);
+        add_submenu_page('okj-dashboard', 'Pembelian Reseller', 'Pembelian Reseller', $cap, 'okj-reseller-products', [$this, 'view_reseller_products']);
         add_submenu_page('okj-dashboard', 'Customer', 'Customer', $cap, 'okj-customers', [$this, 'view_customers']);
         add_submenu_page('okj-dashboard', 'Seller', 'Seller', $cap, 'okj-sellers', [$this, 'view_sellers']);
-        add_submenu_page('okj-dashboard', 'Produk Aktif', 'Produk Aktif', $cap, 'okj-active-products', [$this, 'view_active_products']);
         add_submenu_page('okj-dashboard', 'Reminder', 'Reminder', $cap, 'okj-reminders', [$this, 'view_reminders']);
         add_submenu_page('okj-dashboard', 'Shortlink Affiliate', 'Shortlink Affiliate', $cap, 'okj-shortlinks', [$this, 'view_shortlinks']);
-        add_submenu_page('okj-dashboard', 'Laporan', 'Laporan', 'okj_view_reports', 'okj-reports', [$this, 'view_reports']);
+        add_submenu_page('okj-dashboard', 'Laporan Penjualan', 'Laporan', 'okj_view_reports', 'okj-reports', [$this, 'view_reports']);
+        add_submenu_page('okj-dashboard', 'Dukungan Pelanggan', 'Dukungan Pelanggan', $cap, 'okj-support', [$this, 'view_support']);
         add_submenu_page('okj-dashboard', 'Logs', 'Logs', 'okj_view_logs', 'okj-logs', [$this, 'view_logs']);
         add_submenu_page('okj-dashboard', 'Settings', 'Settings', 'okj_manage_settings', 'okj-settings', [$this, 'view_settings']);
 
         // Dedicated Top-Level POS Menu (Premium UX ala WooCommerce)
         add_menu_page(
-            'OKJualin POS',
-            'OKJualin - POS',
+            'OKJualan POS',
+            'OKJualan - POS',
             $cap,
             'okj-pos',
             [$this, 'view_pos'],
@@ -171,6 +174,12 @@ class OKJ_Admin {
             $revenue_monthly[] = ['label' => $m_label, 'revenue' => $revenue];
         }
 
+        // Low stock products alert (stok <= 3 dan >= 0)
+        $low_stock_products = $wpdb->get_results(
+            "SELECT id, name, stock, price, category FROM " . OKJ_DB::get_table('product_prices') . " WHERE stock >= 0 AND stock <= 3 ORDER BY stock ASC LIMIT 10",
+            ARRAY_A
+        );
+
         $this->render_template('dashboard', [
             'total_reseller' => $total_reseller,
             'total_active' => $total_active,
@@ -179,6 +188,7 @@ class OKJ_Admin {
             'soon' => $soon,
             'today' => $today,
             'revenue_monthly' => $revenue_monthly,
+            'low_stock_products' => $low_stock_products,
         ]);
     }
 
@@ -523,8 +533,67 @@ class OKJ_Admin {
 
     public function view_reports() {
         global $wpdb;
-        $sales = $wpdb->get_results("SELECT start_date, price FROM " . OKJ_DB::get_table('active_products') . " WHERE payment_status = 'paid'", ARRAY_A);
-        $this->render_template('reports', ['sales' => $sales]);
+        $period_type = !empty($_GET['period_type']) ? sanitize_text_field($_GET['period_type']) : 'monthly';
+        $selected_month = !empty($_GET['month']) ? sanitize_text_field($_GET['month']) : wp_date('Y-m');
+        $start_date = !empty($_GET['start_date']) ? sanitize_text_field($_GET['start_date']) : wp_date('Y-m-d', strtotime('-7 days'));
+        $end_date = !empty($_GET['end_date']) ? sanitize_text_field($_GET['end_date']) : wp_date('Y-m-d');
+
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $t_items = OKJ_DB::get_table('pos_transaction_items');
+
+        if ($period_type === 'range') {
+            $sql = $wpdb->prepare("
+                SELECT t.*, 
+                    COALESCE(SUM(i.qty), 1) as total_qty,
+                    GROUP_CONCAT(i.product_name SEPARATOR ', ') as products_summary
+                FROM {$t_trans} t
+                LEFT JOIN {$t_items} i ON t.id = i.transaction_id
+                WHERE DATE(t.created_at) >= %s AND DATE(t.created_at) <= %s
+                GROUP BY t.id
+                ORDER BY t.created_at DESC
+            ", $start_date, $end_date);
+            $period_label = wp_date('d M Y', strtotime($start_date)) . ' - ' . wp_date('d M Y', strtotime($end_date));
+        } else {
+            // Monthly
+            $sql = $wpdb->prepare("
+                SELECT t.*, 
+                    COALESCE(SUM(i.qty), 1) as total_qty,
+                    GROUP_CONCAT(i.product_name SEPARATOR ', ') as products_summary
+                FROM {$t_trans} t
+                LEFT JOIN {$t_items} i ON t.id = i.transaction_id
+                WHERE t.created_at LIKE %s
+                GROUP BY t.id
+                ORDER BY t.created_at DESC
+            ", $selected_month . '%');
+            $period_label = wp_date('F Y', strtotime($selected_month . '-01'));
+        }
+
+        $rows = $wpdb->get_results($sql, ARRAY_A);
+
+        // Calculate statistics
+        $total_orders = count($rows);
+        $total_omset = 0;
+        $total_items_sold = 0;
+        foreach ($rows as $r) {
+            $total_omset += (float)$r['total'];
+            $total_items_sold += (int)$r['total_qty'];
+        }
+
+        $this->render_template('reports', [
+            'rows' => $rows,
+            'period_type' => $period_type,
+            'selected_month' => $selected_month,
+            'start_date' => $start_date,
+            'end_date' => $end_date,
+            'period_label' => $period_label,
+            'total_orders' => $total_orders,
+            'total_omset' => $total_omset,
+            'total_items_sold' => $total_items_sold,
+        ]);
+    }
+
+    public function view_support() {
+        $this->render_template('support');
     }
 
     public function view_logs() {
@@ -554,6 +623,25 @@ class OKJ_Admin {
         $is_edit = !empty($_POST['id']);
 
         $sync_to_wc = isset($_POST['sync_to_wc']) ? 1 : 0;
+        $stock = isset($_POST['unlimited_stock']) ? -1 : (isset($_POST['stock']) ? (int)$_POST['stock'] : -1);
+        $status = !empty($_POST['status']) ? sanitize_text_field($_POST['status']) : 'active';
+        $image_url = !empty($_POST['image_url']) ? esc_url_raw($_POST['image_url']) : '';
+
+        // Handle Image upload if provided
+        if (!empty($_FILES['product_image']['name'])) {
+            if (!function_exists('media_handle_upload')) {
+                require_once ABSPATH . 'wp-admin/includes/image.php';
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+                require_once ABSPATH . 'wp-admin/includes/media.php';
+            }
+            $img_id = media_handle_upload('product_image', 0);
+            if (!is_wp_error($img_id)) {
+                $image_url = wp_get_attachment_url($img_id);
+            }
+        } elseif ($is_edit && empty($image_url)) {
+            $existing_img = $wpdb->get_var($wpdb->prepare("SELECT image_url FROM " . OKJ_DB::get_table('product_prices') . " WHERE id = %s", $id));
+            if ($existing_img) $image_url = $existing_img;
+        }
 
         $data = [
             'id' => $id,
@@ -563,7 +651,10 @@ class OKJ_Admin {
             'seller_id' => !empty($_POST['seller_id']) ? sanitize_text_field($_POST['seller_id']) : null,
             'reseller_price' => (float)$_POST['reseller_price'],
             'sale_price' => (float)$_POST['sale_price'],
+            'stock' => $stock,
             'duration_days' => (int)$_POST['duration_days'],
+            'image_url' => $image_url,
+            'status' => $status,
             'affiliate_url' => !empty($_POST['affiliate_url']) ? esc_url_raw($_POST['affiliate_url']) : '',
             'show_in_pos' => isset($_POST['show_in_pos']) ? 1 : 0,
             'sync_to_wc' => $sync_to_wc,
@@ -703,6 +794,9 @@ class OKJ_Admin {
             'phone' => sanitize_text_field($_POST['phone']),
             'telegram' => sanitize_text_field($_POST['telegram']),
             'whatsapp' => sanitize_text_field($_POST['whatsapp']),
+            'address' => !empty($_POST['address']) ? sanitize_textarea_field($_POST['address']) : '',
+            'notes' => !empty($_POST['notes']) ? wp_kses_post($_POST['notes']) : '',
+            'status' => !empty($_POST['status']) ? sanitize_text_field($_POST['status']) : 'active',
             'updated_at' => current_time('mysql'),
             'updated_by' => get_current_user_id(),
         ];
@@ -724,10 +818,10 @@ class OKJ_Admin {
         $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
         $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_seller_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_seller')) {
-            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualin'), esc_html__('Akses Ditolak', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
         if (!current_user_can('okj_manage')) {
-            wp_die(esc_html__('Forbidden', 'okjualin'), esc_html__('Forbidden', 'okjualin'), ['back_link' => true]);
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
@@ -755,6 +849,9 @@ class OKJ_Admin {
             'phone' => sanitize_text_field($_POST['phone']),
             'telegram' => sanitize_text_field($_POST['telegram']),
             'whatsapp' => sanitize_text_field($_POST['whatsapp']),
+            'address' => !empty($_POST['address']) ? sanitize_textarea_field($_POST['address']) : '',
+            'notes' => !empty($_POST['notes']) ? wp_kses_post($_POST['notes']) : '',
+            'status' => !empty($_POST['status']) ? sanitize_text_field($_POST['status']) : 'active',
             'updated_at' => current_time('mysql'),
             'updated_by' => get_current_user_id(),
         ];
@@ -950,18 +1047,44 @@ class OKJ_Admin {
         $id = !empty($_POST['id']) ? sanitize_text_field($_POST['id']) : wp_generate_uuid4();
         $is_edit = !empty($_POST['id']);
 
-        $reseller_product_id = sanitize_text_field($_POST['reseller_product_id']);
+        $reseller_product_id = !empty($_POST['reseller_product_id']) ? sanitize_text_field($_POST['reseller_product_id']) : '';
+        $product_id = !empty($_POST['product_id']) ? sanitize_text_field($_POST['product_id']) : null;
         $customer_id = sanitize_text_field($_POST['customer_id']);
+        $qty = !empty($_POST['qty']) ? max(1, (int)$_POST['qty']) : 1;
 
-        $rp = $wpdb->get_row($wpdb->prepare("SELECT product_name, duration_days FROM " . OKJ_DB::get_table('reseller_products') . " WHERE id = %s", $reseller_product_id), ARRAY_A);
+        $product_label = 'Produk';
+        $duration = 0;
+
+        if ($product_id) {
+            $pp = $wpdb->get_row($wpdb->prepare("SELECT name, duration_days FROM " . OKJ_DB::get_table('product_prices') . " WHERE id = %s", $product_id), ARRAY_A);
+            if ($pp) {
+                $product_label = $pp['name'];
+                $duration = (int)$pp['duration_days'];
+            }
+        } elseif ($reseller_product_id) {
+            $rp = $wpdb->get_row($wpdb->prepare("SELECT product_name, duration_days FROM " . OKJ_DB::get_table('reseller_products') . " WHERE id = %s", $reseller_product_id), ARRAY_A);
+            if ($rp) {
+                $product_label = $rp['product_name'];
+                $duration = (int)$rp['duration_days'];
+            }
+        }
+
         $cust = $wpdb->get_row($wpdb->prepare("SELECT name, phone, telegram, whatsapp, email FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $customer_id), ARRAY_A);
 
         $start_date = sanitize_text_field($_POST['start_date']);
-        $duration = $rp ? (int)$rp['duration_days'] : 30;
-        $expires_at = wp_date('Y-m-d', strtotime($start_date . " +{$duration} days"));
+        if ($duration > 0) {
+            $expires_at = wp_date('Y-m-d', strtotime($start_date . " +{$duration} days"));
+        } else {
+            $expires_at = wp_date('Y-m-d', strtotime($start_date . " +365 days"));
+        }
 
         $today = wp_date('Y-m-d');
-        $status = (strtotime($expires_at) < strtotime($today)) ? 'expired' : 'active';
+        $custom_status = !empty($_POST['status']) ? sanitize_text_field($_POST['status']) : '';
+        if ($custom_status) {
+            $status = $custom_status;
+        } else {
+            $status = (strtotime($expires_at) < strtotime($today)) ? 'expired' : 'active';
+        }
 
         $cust_contact = '';
         if ($cust) {
@@ -976,11 +1099,13 @@ class OKJ_Admin {
         $data = [
             'id' => $id,
             'reseller_product_id' => $reseller_product_id,
-            'product_label' => $rp ? $rp['product_name'] : 'Produk',
+            'product_id' => $product_id,
+            'product_label' => $product_label,
             'customer_id' => $customer_id,
             'customer_name' => $cust ? $cust['name'] : 'Customer',
             'customer_contact' => $cust_contact,
             'start_date' => $start_date,
+            'qty' => $qty,
             'duration_days' => $duration,
             'expires_at' => $expires_at,
             'status' => $status,
@@ -1331,9 +1456,46 @@ class OKJ_Admin {
             'pos_enable_cash' => !empty($_POST['pos_enable_cash']) ? 1 : 0,
             'pos_enable_transfer' => !empty($_POST['pos_enable_transfer']) ? 1 : 0,
             'pos_enable_qris' => !empty($_POST['pos_enable_qris']) ? 1 : 0,
+
+            // Payment Gateways: SumoPod
+            'sumopod_enabled' => !empty($_POST['sumopod_enabled']) ? 1 : 0,
+            'sumopod_mode' => !empty($_POST['sumopod_mode']) ? sanitize_text_field($_POST['sumopod_mode']) : 'sandbox',
+            'sumopod_api_key' => !empty($_POST['sumopod_api_key']) ? sanitize_text_field($_POST['sumopod_api_key']) : '',
+            'sumopod_webhook_secret' => !empty($_POST['sumopod_webhook_secret']) ? sanitize_text_field($_POST['sumopod_webhook_secret']) : '',
+            'sumopod_webhook_token' => !empty($_POST['sumopod_webhook_token']) ? sanitize_text_field($_POST['sumopod_webhook_token']) : '',
+            'sumopod_default_method' => !empty($_POST['sumopod_default_method']) ? sanitize_text_field($_POST['sumopod_default_method']) : 'qris',
+
+            // Midtrans
+            'midtrans_enabled' => !empty($_POST['midtrans_enabled']) ? 1 : 0,
+            'midtrans_server_key' => !empty($_POST['midtrans_server_key']) ? sanitize_text_field($_POST['midtrans_server_key']) : '',
+            'midtrans_client_key' => !empty($_POST['midtrans_client_key']) ? sanitize_text_field($_POST['midtrans_client_key']) : '',
+            'midtrans_is_production' => !empty($_POST['midtrans_is_production']) ? 1 : 0,
+
+            // Tripay
+            'tripay_enabled' => !empty($_POST['tripay_enabled']) ? 1 : 0,
+            'tripay_api_key' => !empty($_POST['tripay_api_key']) ? sanitize_text_field($_POST['tripay_api_key']) : '',
+            'tripay_private_key' => !empty($_POST['tripay_private_key']) ? sanitize_text_field($_POST['tripay_private_key']) : '',
+            'tripay_merchant_code' => !empty($_POST['tripay_merchant_code']) ? sanitize_text_field($_POST['tripay_merchant_code']) : '',
+            'tripay_mode' => !empty($_POST['tripay_mode']) ? sanitize_text_field($_POST['tripay_mode']) : 'sandbox',
+
+            // Manual Transfer & Static QRIS
+            'manual_transfer_enabled' => !empty($_POST['manual_transfer_enabled']) ? 1 : 0,
+            'manual_bank_name' => !empty($_POST['manual_bank_name']) ? sanitize_text_field($_POST['manual_bank_name']) : '',
+            'manual_account_number' => !empty($_POST['manual_account_number']) ? sanitize_text_field($_POST['manual_account_number']) : '',
+            'manual_account_holder' => !empty($_POST['manual_account_holder']) ? sanitize_text_field($_POST['manual_account_holder']) : '',
+            'static_qris_enabled' => !empty($_POST['static_qris_enabled']) ? 1 : 0,
+            'static_qris_image_url' => !empty($_POST['static_qris_image_url']) ? esc_url_raw($_POST['static_qris_image_url']) : '',
+
+            // Customer Support
+            'support_wa_number' => !empty($_POST['support_wa_number']) ? sanitize_text_field($_POST['support_wa_number']) : '',
+            'support_wa_greeting' => !empty($_POST['support_wa_greeting']) ? sanitize_text_field($_POST['support_wa_greeting']) : '',
+            'support_email' => !empty($_POST['support_email']) ? sanitize_email($_POST['support_email']) : '',
+            'support_faq_json' => !empty($_POST['support_faq_json']) ? sanitize_textarea_field($_POST['support_faq_json']) : '',
         ];
 
-        update_option('okj_settings_v1', $data);
+        $existing = get_option('okj_settings_v1', []);
+        $updated = array_merge(is_array($existing) ? $existing : [], $data);
+        update_option('okj_settings_v1', $updated);
         OKJ_Reseller_Manager::log('save_settings', 'settings', '', 'Updated plugin settings configuration');
 
         wp_safe_redirect(admin_url('admin.php?page=okj-settings'));
@@ -1378,6 +1540,77 @@ class OKJ_Admin {
         header('Content-Disposition: attachment; filename="invoice-' . $id . '.pdf"');
         header('Content-Length: ' . strlen($pdf_data));
         echo $pdf_data;
+        exit;
+    }
+
+    public function download_monthly_report_pdf() {
+        if (!current_user_can('okj_view_reports')) wp_die('Forbidden');
+        check_admin_referer('okj_monthly_report_pdf');
+
+        global $wpdb;
+        $month = !empty($_GET['month']) ? sanitize_text_field($_GET['month']) : wp_date('Y-m');
+        $period_label = wp_date('F Y', strtotime($month . '-01'));
+
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$t_trans} WHERE created_at LIKE %s ORDER BY created_at ASC",
+            $month . '%'
+        ), ARRAY_A);
+
+        $settings = get_option('okj_settings_v1', []);
+        $pdf_gen = new OKJ_PDF_Invoice();
+        $pdf_data = $pdf_gen->generate_sales_report($rows, $period_label, $settings);
+
+        OKJ_Reseller_Manager::log('download_sales_report_pdf', 'report', $month, "Downloaded sales report PDF for period: " . $period_label);
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="laporan-penjualan-' . $month . '.pdf"');
+        header('Content-Length: ' . strlen($pdf_data));
+        echo $pdf_data;
+        exit;
+    }
+
+    public function export_sales_csv() {
+        if (!current_user_can('okj_view_reports')) wp_die('Forbidden');
+        check_admin_referer('okj_export_sales_csv');
+
+        global $wpdb;
+        $month = !empty($_GET['month']) ? sanitize_text_field($_GET['month']) : wp_date('Y-m');
+
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$t_trans} WHERE created_at LIKE %s ORDER BY created_at ASC",
+            $month . '%'
+        ), ARRAY_A);
+
+        OKJ_Reseller_Manager::log('export_sales_csv', 'report', $month, "Exported sales report CSV for period: " . $month);
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="laporan-penjualan-' . $month . '.csv"');
+        
+        $output = fopen('php://output', 'w');
+        // UTF-8 BOM for Excel compatibility
+        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+        fputcsv($output, ['No', 'ID Transaksi', 'No Transaksi', 'Tanggal', 'Nama Pelanggan', 'Metode Pembayaran', 'Status Pembayaran', 'Subtotal', 'Diskon', 'Total', 'Catatan']);
+
+        $i = 1;
+        foreach ($rows as $r) {
+            fputcsv($output, [
+                $i++,
+                $r['id'] ?? '',
+                $r['transaction_no'] ?? '',
+                $r['created_at'] ?? '',
+                $r['customer_name'] ?? '',
+                $r['payment_method'] ?? '',
+                $r['payment_status'] ?? '',
+                $r['subtotal'] ?? 0,
+                $r['discount'] ?? 0,
+                $r['total'] ?? 0,
+                $r['notes'] ?? '',
+            ]);
+        }
+        fclose($output);
         exit;
     }
 
@@ -1502,6 +1735,9 @@ class OKJ_Admin {
             'telegram' => !empty($_POST['telegram']) ? sanitize_text_field($_POST['telegram']) : '',
             'phone' => !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '',
             'email' => !empty($_POST['email']) ? sanitize_email($_POST['email']) : '',
+            'address' => !empty($_POST['address']) ? sanitize_textarea_field($_POST['address']) : '',
+            'notes' => !empty($_POST['notes']) ? wp_kses_post($_POST['notes']) : '',
+            'status' => !empty($_POST['status']) ? sanitize_text_field($_POST['status']) : 'active',
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ];
@@ -1537,6 +1773,9 @@ class OKJ_Admin {
             'telegram' => !empty($_POST['telegram']) ? sanitize_text_field($_POST['telegram']) : '',
             'phone' => !empty($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '',
             'email' => !empty($_POST['email']) ? sanitize_email($_POST['email']) : '',
+            'address' => !empty($_POST['address']) ? sanitize_textarea_field($_POST['address']) : '',
+            'notes' => !empty($_POST['notes']) ? wp_kses_post($_POST['notes']) : '',
+            'status' => !empty($_POST['status']) ? sanitize_text_field($_POST['status']) : 'active',
             'created_at' => current_time('mysql'),
             'updated_at' => current_time('mysql'),
         ];
@@ -1589,7 +1828,7 @@ class OKJ_Admin {
             $headers['X-Api-Key'] = $token;
         }
 
-        $message = "Halo! Ini adalah pesan uji coba dari OKJualin Anda. Koneksi berhasil! 🚀";
+        $message = "Halo! Ini adalah pesan uji coba dari OKJualan Anda. Koneksi berhasil! 🚀";
 
         $resp = wp_remote_post($url, [
             'timeout' => 20,
@@ -1629,7 +1868,7 @@ class OKJ_Admin {
         }
 
         $url = 'https://api.telegram.org/bot' . rawurlencode($token) . '/sendMessage';
-        $message = "Halo! Ini adalah pesan uji coba dari OKJualin Anda. Koneksi berhasil! 🚀";
+        $message = "Halo! Ini adalah pesan uji coba dari OKJualan Anda. Koneksi berhasil! 🚀";
 
         $resp = wp_remote_post($url, [
             'timeout' => 15,
@@ -1688,8 +1927,8 @@ class OKJ_Admin {
 
         add_action('phpmailer_init', $temp_hook, 999);
         
-        $subject = 'OKJualin - Test SMTP Connection';
-        $body = "Halo!\n\nIni adalah email uji coba untuk memverifikasi pengaturan SMTP Anda pada plugin OKJualin.\n\nKoneksi SMTP Anda berhasil terintegrasi dengan sempurna! 🚀";
+        $subject = 'OKJualan - Test SMTP Connection';
+        $body = "Halo!\n\nIni adalah email uji coba untuk memverifikasi pengaturan SMTP Anda pada plugin OKJualan.\n\nKoneksi SMTP Anda berhasil terintegrasi dengan sempurna! 🚀";
         $headers = ['Content-Type: text/plain; charset=UTF-8'];
 
         $ok = wp_mail($from_email, $subject, $body, $headers);
@@ -1883,6 +2122,15 @@ class OKJ_Admin {
         // Insert Transaction Items
         foreach ($item_entries as $entry) {
             $wpdb->insert($t_pos_items, $entry);
+
+            // Deduct product stock (and trigger low stock alert if threshold <= 3)
+            OKJ_Payment_Gateway::deduct_product_stock($entry['product_id'], $entry['qty']);
+
+            // Notify seller if product has seller
+            $seller_id_for_item = $wpdb->get_var($wpdb->prepare("SELECT seller_id FROM " . OKJ_DB::get_table('product_prices') . " WHERE id = %s", $entry['product_id']));
+            if ($seller_id_for_item) {
+                OKJ_Notifier::notify_seller_product_sold($seller_id_for_item, $entry['product_name'], $entry['qty'], $customer_name);
+            }
 
             // Automate: Create entry in okj_active_products if product has duration
             if ($entry['duration_days'] > 0 && $customer_id) {
@@ -2219,6 +2467,28 @@ class OKJ_Admin {
 
         OKJ_Reseller_Manager::log('pos_public_order', 'pos_transaction', $transaction_id, "New self-service order received: " . $transaction_no . " from customer: " . $name);
 
+        // Check for SumoPod Payment Gateway integration
+        $payment_data = null;
+        if ($payment_method === 'sumopod') {
+            $sumo_res = OKJ_Payment_Gateway::create_sumopod_payment([
+                'order_id' => $transaction_no,
+                'amount' => $subtotal,
+                'customer_name' => $name,
+                'customer_phone' => $whatsapp,
+                'description' => 'Pembelian di ' . (get_bloginfo('name') ?: 'OKJualan') . ' (' . $transaction_no . ')'
+            ]);
+
+            if ($sumo_res['ok'] && !empty($sumo_res['data'])) {
+                $payment_data = $sumo_res['data'];
+            }
+        }
+
+        // Trigger order created notification
+        $order_record = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_transactions} WHERE id = %s", $transaction_id), ARRAY_A);
+        if ($order_record) {
+            OKJ_Notifier::notify_order_created($order_record);
+        }
+
         // Notify client via WhatsApp instantly if provided
         if (!empty($whatsapp)) {
             $notifier = new OKJ_Notifier();
@@ -2232,7 +2502,7 @@ class OKJ_Admin {
             $msg .= "Nama Pelanggan: {$name}\n";
             $msg .= "Total Bayar: Rp " . number_format($subtotal, 0, ',', '.') . "\n";
             $msg .= "Metode Bayar: " . strtoupper($payment_method) . "\n";
-            $msg .= "Status: *MENUNGGU KONFIRMASI*\n";
+            $msg .= "Status: *MENUNGGU PEMBAYARAN*\n";
             $msg .= "------------------------------------------\n";
             $msg .= "Pantau status pesanan secara real-time di sini:\n{$track_url}\n";
             $msg .= "------------------------------------------\n";
@@ -2246,6 +2516,8 @@ class OKJ_Admin {
             'transaction_no' => $transaction_no,
             'customer_name' => $name,
             'total' => $subtotal,
+            'payment_method' => $payment_method,
+            'payment_data' => $payment_data,
             'created_at' => wp_date('Y-m-d H:i:s'),
         ]);
     }

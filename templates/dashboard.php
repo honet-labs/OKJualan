@@ -2,10 +2,57 @@
 <div class="okj-wrap">
     <div class="okj-header">
         <div>
-            <h1>OKJualin Dashboard</h1>
-            <p class="okj-subtitle">Ikhtisar performa bisnis dan pelacakan reminder produk aktif.</p>
+            <h1>OKJualan Dashboard</h1>
+            <p class="okj-subtitle">Ikhtisar performa bisnis, pemantauan stok menipis, dan pelacakan reminder produk aktif.</p>
         </div>
     </div>
+
+    <?php if (!empty($low_stock_products)): ?>
+    <!-- Low Stock Alert Banner -->
+    <div class="okj-card okj-mt-2" style="border-left: 4px solid #ef4444; background: #fff5f5; margin-bottom: 20px;">
+        <div class="okj-card-header" style="border-bottom: 1px solid #fee2e2; display: flex; justify-content: space-between; align-items: center; padding: 12px 18px;">
+            <h2 style="color: #991b1b; display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0;">
+                <span class="dashicons dashicons-warning" style="color: #ef4444; font-size: 18px; width: 18px; height: 18px;"></span>
+                Peringatan: Stok Produk Menipis (&le; 3 Unit)
+            </h2>
+            <a href="<?php echo admin_url('admin.php?page=okj-product-prices'); ?>" class="okj-btn okj-btn-secondary" style="font-size: 11.5px; padding: 4px 10px;">Kelola Stok &raquo;</a>
+        </div>
+        <div class="okj-card-body" style="padding: 12px 16px;">
+            <table class="okj-table" style="background: transparent;">
+                <thead>
+                    <tr style="background: rgba(239, 68, 68, 0.05);">
+                        <th>Nama Produk</th>
+                        <th>Kategori</th>
+                        <th>Harga</th>
+                        <th>Sisa Stok</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($low_stock_products as $lp): ?>
+                    <tr>
+                        <td><strong><?php echo esc_html($lp['name']); ?></strong></td>
+                        <td><?php echo esc_html($lp['category'] ?: '-'); ?></td>
+                        <td>Rp <?php echo number_format_i18n($lp['price'], 0); ?></td>
+                        <td>
+                            <?php if ((int)$lp['stock'] === 0): ?>
+                                <span class="okj-badge okj-badge-danger" style="font-weight: 700;">HABIS (0)</span>
+                            <?php else: ?>
+                                <span class="okj-badge okj-badge-warning" style="font-weight: 700;">Sisa <?php echo (int)$lp['stock']; ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-product-prices&action=edit&id=' . $lp['id']); ?>">
+                                <span class="dashicons dashicons-edit"></span> Restock
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- KPIs Widgets Grid -->
     <div class="okj-grid okj-grid-4">

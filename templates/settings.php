@@ -2,14 +2,14 @@
 <div class="okj-wrap">
     <div class="okj-header">
         <div>
-            <h1>Pengaturan OKJualin</h1>
-            <p class="okj-subtitle">Konfigurasikan gateway notifikasi, desain branding invoice PDF, serta backup data JSON.</p>
+            <h1>Pengaturan OKJualan</h1>
+            <p class="okj-subtitle">Konfigurasikan payment gateway, notifikasi, branding struk &amp; invoice PDF, serta backup data.</p>
         </div>
     </div>
 
     <?php if (isset($_GET['updated'])): ?>
         <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #10b981; background: #ecfdf5; color: #065f46; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-            <p style="margin: 0; font-weight: 600;">Plugin OKJualin berhasil diperbarui ke versi terbaru dan database telah disinkronkan!</p>
+            <p style="margin: 0; font-weight: 600;">Plugin OKJualan berhasil diperbarui ke versi terbaru dan database telah disinkronkan!</p>
         </div>
     <?php endif; ?>
     <?php if (isset($_GET['checked'])): ?>
@@ -32,12 +32,18 @@
 
                 <!-- NAVIGATION TABS -->
                 <div class="okj-tabs-wrapper" style="margin-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
-                    <ul class="okj-tabs-nav" style="display: flex; gap: 24px; list-style: none; margin: 0; padding: 0;">
+                    <ul class="okj-tabs-nav" style="display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap;">
                         <li class="okj-tab-item active" data-tab="global" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 700; font-size: 15px; color: #4f46e5; border-bottom: 3px solid #4f46e5; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
-                            <span class="dashicons dashicons-admin-generic" style="font-size: 18px; width: 18px; height: 18px;"></span> Pengaturan Global & Integrasi
+                            <span class="dashicons dashicons-admin-generic" style="font-size: 18px; width: 18px; height: 18px;"></span> Pengaturan Global &amp; Integrasi
+                        </li>
+                        <li class="okj-tab-item" data-tab="gateways" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 600; font-size: 15px; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                            <span class="dashicons dashicons-money-alt" style="font-size: 18px; width: 18px; height: 18px;"></span> Payment Gateway
                         </li>
                         <li class="okj-tab-item" data-tab="pos" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 600; font-size: 15px; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
-                            <span class="dashicons dashicons-calculator" style="font-size: 18px; width: 18px; height: 18px;"></span> Pengaturan Mesin Kasir POS
+                            <span class="dashicons dashicons-calculator" style="font-size: 18px; width: 18px; height: 18px;"></span> Kasir POS
+                        </li>
+                        <li class="okj-tab-item" data-tab="support" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 600; font-size: 15px; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                            <span class="dashicons dashicons-format-chat" style="font-size: 18px; width: 18px; height: 18px;"></span> Dukungan Pelanggan
                         </li>
                     </ul>
                 </div>
@@ -579,7 +585,7 @@ jQuery(document).ready(function($) {
                     <div class="okj-card-body">
                         <div class="okj-form-group">
                             <label class="okj-label">Repositori GitHub (Format: username/repo)</label>
-                            <input type="text" name="github_repo" class="okj-input" value="<?php echo esc_attr(!empty($settings['github_repo']) ? $settings['github_repo'] : ''); ?>" placeholder="honet-labs/okjualin" />
+                            <input type="text" name="github_repo" class="okj-input" value="<?php echo esc_attr(!empty($settings['github_repo']) ? $settings['github_repo'] : ''); ?>" placeholder="honet-labs/OKJualan" />
                         </div>
                         <div class="okj-form-group okj-mt-1">
                             <label class="okj-label">Personal Access Token GitHub (Gunakan jika repositori private)</label>
@@ -701,6 +707,243 @@ jQuery(document).ready(function($) {
                         </div>
                     </div>
                 </div> <!-- End #okj-tab-pos-content -->
+
+                <!-- ======================================================================= -->
+                <!-- TAB: PAYMENT GATEWAYS (SumoPod, Midtrans, Tripay, Manual, QRIS)        -->
+                <!-- ======================================================================= -->
+                <div class="okj-tab-content" id="okj-tab-gateways-content" style="display: none;">
+                    <!-- SumoPod Payment Gateway -->
+                    <div class="okj-card">
+                        <div class="okj-card-header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 18px 20px; color: #ffffff;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h2 style="color: #ffffff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                                        <span class="dashicons dashicons-shield" style="font-size: 20px; width: 20px; height: 20px;"></span>
+                                        SumoPod Payment Gateway (QRIS &amp; Otomatisasi)
+                                    </h2>
+                                    <p style="margin: 4px 0 0 0; color: #d1fae5; font-size: 12px;">Gateway pembayaran resmi SumoPod terintegrasi verifikasi webhook Svix signature (whsec_) &amp; token.</p>
+                                </div>
+                                <span class="okj-badge" style="background: #ffffff; color: #047857; font-weight: 700; font-size: 11px; padding: 4px 8px;">Rekomendasi</span>
+                            </div>
+                        </div>
+                        <div class="okj-card-body">
+                            <div class="okj-form-group">
+                                <label class="okj-checkbox-label" style="font-weight: 700; font-size: 14px; color: #065f46;">
+                                    <input type="checkbox" name="sumopod_enabled" value="1" <?php checked(!empty($settings['sumopod_enabled']), 1); ?> /> Aktifkan SumoPod Payment Gateway
+                                </label>
+                            </div>
+
+                            <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 14px; margin-top: 12px; margin-bottom: 16px;">
+                                <label class="okj-label" style="font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 4px;">Webhook Notification URL (Salin ke Dashboard SumoPod)</label>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="text" id="okj_sumopod_webhook_url" class="okj-input" value="<?php echo esc_url(home_url('/?okj_webhook=payment')); ?>" readonly style="background: #ffffff; font-family: monospace; font-size: 12.5px;" />
+                                    <button type="button" class="okj-btn okj-btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('okj_sumopod_webhook_url').value); alert('URL Webhook berhasil disalin!');" style="white-space: nowrap;">
+                                        Salin URL
+                                    </button>
+                                </div>
+                                <small style="color: #15803d; font-size: 11px; display: block; margin-top: 4px;">Event yang didukung: <code>payment.completed</code>, <code>payment.failed</code>, <code>payment.expired</code>, <code>payment.test</code></small>
+                            </div>
+
+                            <div class="okj-form-grid">
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Environment Mode</label>
+                                    <?php $sumo_mode = !empty($settings['sumopod_mode']) ? $settings['sumopod_mode'] : 'sandbox'; ?>
+                                    <select name="sumopod_mode" class="okj-select" style="width: 100%;">
+                                        <option value="sandbox" <?php selected($sumo_mode, 'sandbox'); ?>>🧪 Sandbox Mode (https://api-pay-sandbox.sumopod.com)</option>
+                                        <option value="production" <?php selected($sumo_mode, 'production'); ?>>🚀 Production / Live (https://api-pay.sumopod.com)</option>
+                                    </select>
+                                </div>
+
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Metode Pembayaran Default</label>
+                                    <?php $sumo_method = !empty($settings['sumopod_default_method']) ? $settings['sumopod_default_method'] : 'qris'; ?>
+                                    <select name="sumopod_default_method" class="okj-select" style="width: 100%;">
+                                        <option value="qris" <?php selected($sumo_method, 'qris'); ?>>QRIS (Semua E-Wallet &amp; Mobile Banking)</option>
+                                        <option value="va" <?php selected($sumo_method, 'va'); ?>>Virtual Account (BCA, Mandiri, BRI, BNI)</option>
+                                    </select>
+                                </div>
+
+                                <div class="okj-form-group" style="grid-column: span 2;">
+                                    <label class="okj-label">SumoPod API Key</label>
+                                    <input type="password" name="sumopod_api_key" class="okj-input" value="<?php echo esc_attr(!empty($settings['sumopod_api_key']) ? $settings['sumopod_api_key'] : ''); ?>" placeholder="Masukkan API Key dari Dashboard SumoPod" />
+                                </div>
+
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Webhook Secret (Svix Signature)</label>
+                                    <input type="password" name="sumopod_webhook_secret" class="okj-input" value="<?php echo esc_attr(!empty($settings['sumopod_webhook_secret']) ? $settings['sumopod_webhook_secret'] : ''); ?>" placeholder="whsec_..." />
+                                    <small class="okj-text-muted">Digunakan untuk validasi signature HMAC-SHA256.</small>
+                                </div>
+
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Webhook Token (Opsi Cadangan)</label>
+                                    <input type="password" name="sumopod_webhook_token" class="okj-input" value="<?php echo esc_attr(!empty($settings['sumopod_webhook_token']) ? $settings['sumopod_webhook_token'] : ''); ?>" placeholder="whtok_..." />
+                                    <small class="okj-text-muted">Token header HTTP_X_WEBHOOK_TOKEN.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Midtrans Gateway -->
+                    <div class="okj-card okj-mt-2">
+                        <div class="okj-card-header">
+                            <h2>Midtrans Payment Gateway</h2>
+                        </div>
+                        <div class="okj-card-body">
+                            <div class="okj-form-group">
+                                <label class="okj-checkbox-label">
+                                    <input type="checkbox" name="midtrans_enabled" value="1" <?php checked(!empty($settings['midtrans_enabled']), 1); ?> /> Aktifkan Midtrans Snap Gateway
+                                </label>
+                            </div>
+                            <div class="okj-form-grid okj-mt-1">
+                                <div class="okj-form-group">
+                                    <label class="okj-checkbox-label">
+                                        <input type="checkbox" name="midtrans_is_production" value="1" <?php checked(!empty($settings['midtrans_is_production']), 1); ?> /> Mode Production (Live)
+                                    </label>
+                                </div>
+                                <div class="okj-form-group"></div>
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Server Key</label>
+                                    <input type="password" name="midtrans_server_key" class="okj-input" value="<?php echo esc_attr(!empty($settings['midtrans_server_key']) ? $settings['midtrans_server_key'] : ''); ?>" />
+                                </div>
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Client Key</label>
+                                    <input type="text" name="midtrans_client_key" class="okj-input" value="<?php echo esc_attr(!empty($settings['midtrans_client_key']) ? $settings['midtrans_client_key'] : ''); ?>" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tripay Gateway -->
+                    <div class="okj-card okj-mt-2">
+                        <div class="okj-card-header">
+                            <h2>Tripay Payment Gateway</h2>
+                        </div>
+                        <div class="okj-card-body">
+                            <div class="okj-form-group">
+                                <label class="okj-checkbox-label">
+                                    <input type="checkbox" name="tripay_enabled" value="1" <?php checked(!empty($settings['tripay_enabled']), 1); ?> /> Aktifkan Tripay Gateway
+                                </label>
+                            </div>
+                            <div class="okj-form-grid okj-mt-1">
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Mode Tripay</label>
+                                    <?php $tripay_m = !empty($settings['tripay_mode']) ? $settings['tripay_mode'] : 'sandbox'; ?>
+                                    <select name="tripay_mode" class="okj-select" style="width: 100%;">
+                                        <option value="sandbox" <?php selected($tripay_m, 'sandbox'); ?>>Sandbox (Testing)</option>
+                                        <option value="production" <?php selected($tripay_m, 'production'); ?>>Production (Live)</option>
+                                    </select>
+                                </div>
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Kode Merchant</label>
+                                    <input type="text" name="tripay_merchant_code" class="okj-input" value="<?php echo esc_attr(!empty($settings['tripay_merchant_code']) ? $settings['tripay_merchant_code'] : ''); ?>" />
+                                </div>
+                                <div class="okj-form-group">
+                                    <label class="okj-label">API Key</label>
+                                    <input type="password" name="tripay_api_key" class="okj-input" value="<?php echo esc_attr(!empty($settings['tripay_api_key']) ? $settings['tripay_api_key'] : ''); ?>" />
+                                </div>
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Private Key</label>
+                                    <input type="password" name="tripay_private_key" class="okj-input" value="<?php echo esc_attr(!empty($settings['tripay_private_key']) ? $settings['tripay_private_key'] : ''); ?>" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Bank Transfer & Static QRIS -->
+                    <div class="okj-card okj-mt-2">
+                        <div class="okj-card-header">
+                            <h2>Transfer Bank Manual &amp; QRIS Statis Toko</h2>
+                        </div>
+                        <div class="okj-card-body">
+                            <div class="okj-form-grid">
+                                <div class="okj-form-group" style="grid-column: span 2;">
+                                    <label class="okj-checkbox-label" style="font-weight: 700;">
+                                        <input type="checkbox" name="manual_transfer_enabled" value="1" <?php checked(!empty($settings['manual_transfer_enabled']), 1); ?> /> Aktifkan Pembayaran Transfer Bank Manual
+                                    </label>
+                                </div>
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Nama Bank</label>
+                                    <input type="text" name="manual_bank_name" class="okj-input" value="<?php echo esc_attr(!empty($settings['manual_bank_name']) ? $settings['manual_bank_name'] : ''); ?>" placeholder="Contoh: BCA / Bank Mandiri" />
+                                </div>
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Nomor Rekening</label>
+                                    <input type="text" name="manual_account_number" class="okj-input" value="<?php echo esc_attr(!empty($settings['manual_account_number']) ? $settings['manual_account_number'] : ''); ?>" placeholder="1234567890" />
+                                </div>
+                                <div class="okj-form-group" style="grid-column: span 2;">
+                                    <label class="okj-label">Atas Nama Rekening</label>
+                                    <input type="text" name="manual_account_holder" class="okj-input" value="<?php echo esc_attr(!empty($settings['manual_account_holder']) ? $settings['manual_account_holder'] : ''); ?>" placeholder="Nama pemilik rekening..." />
+                                </div>
+
+                                <div class="okj-form-group okj-mt-2" style="grid-column: span 2; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                                    <label class="okj-checkbox-label" style="font-weight: 700;">
+                                        <input type="checkbox" name="static_qris_enabled" value="1" <?php checked(!empty($settings['static_qris_enabled']), 1); ?> /> Aktifkan Scan QRIS Statis Toko
+                                    </label>
+                                </div>
+                                <div class="okj-form-group" style="grid-column: span 2;">
+                                    <label class="okj-label">URL Gambar Barcode QRIS Statis</label>
+                                    <input type="url" name="static_qris_image_url" class="okj-input" value="<?php echo esc_url(!empty($settings['static_qris_image_url']) ? $settings['static_qris_image_url'] : ''); ?>" placeholder="https://domain.com/wp-content/uploads/qris.jpg" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End #okj-tab-gateways-content -->
+
+                <!-- ======================================================================= -->
+                <!-- TAB: DUKUNGAN PELANGGAN (Feature 10: WhatsApp, Email, FAQ)             -->
+                <!-- ======================================================================= -->
+                <div class="okj-tab-content" id="okj-tab-support-content" style="display: none;">
+                    <!-- WhatsApp CS & Email Helpdesk -->
+                    <div class="okj-card">
+                        <div class="okj-card-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 18px 20px; color: #ffffff;">
+                            <h2 style="color: #ffffff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                                <span class="dashicons dashicons-format-chat" style="font-size: 20px; width: 20px; height: 20px;"></span>
+                                Kanal Dukungan Pelanggan (Helpdesk &amp; Live Chat)
+                            </h2>
+                            <p style="margin: 4px 0 0 0; color: #c7d2fe; font-size: 12px;">Konfigurasi nomor WhatsApp CS interaktif dan alamat email bantuan untuk pelanggan Anda.</p>
+                        </div>
+                        <div class="okj-card-body">
+                            <div class="okj-form-grid">
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Nomor WhatsApp Customer Service <span class="okj-required">*</span></label>
+                                    <input type="text" name="support_wa_number" class="okj-input" value="<?php echo esc_attr(!empty($settings['support_wa_number']) ? $settings['support_wa_number'] : ''); ?>" placeholder="Contoh: 628123456789" />
+                                    <small class="okj-text-muted">Tombol WhatsApp mengambang akan otomatis mengarahkan chat ke nomor ini.</small>
+                                </div>
+
+                                <div class="okj-form-group">
+                                    <label class="okj-label">Email Helpdesk / Dukungan</label>
+                                    <input type="email" name="support_email" class="okj-input" value="<?php echo esc_attr(!empty($settings['support_email']) ? $settings['support_email'] : ''); ?>" placeholder="support@okjualan.com" />
+                                </div>
+
+                                <div class="okj-form-group" style="grid-column: span 2;">
+                                    <label class="okj-label">Pesan Sapaan Otomatis WhatsApp</label>
+                                    <textarea name="support_wa_greeting" class="okj-input" rows="2" placeholder="Halo Admin OKJualan, saya memerlukan bantuan terkait pemesanan produk..."><?php echo !empty($settings['support_wa_greeting']) ? esc_textarea($settings['support_wa_greeting']) : 'Halo Admin OKJualan, saya ingin bantuan seputar pesanan saya.'; ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- FAQ Management -->
+                    <div class="okj-card okj-mt-2">
+                        <div class="okj-card-header">
+                            <h2>Kelola FAQ (Pertanyaan yang Sering Diajukan)</h2>
+                        </div>
+                        <div class="okj-card-body">
+                            <div class="okj-form-group">
+                                <label class="okj-label">Data FAQ JSON (Pertanyaan &amp; Jawaban)</label>
+                                <?php
+                                $default_faqs = [
+                                    ["q" => "Bagaimana cara melakukan pembayaran?", "a" => "Pembayaran dapat dilakukan melalui scan QRIS (SumoPod/Statis) dari aplikasi e-wallet / m-banking, atau transfer bank manual."],
+                                    ["q" => "Kapan produk/layanan saya aktif?", "a" => "Pesanan yang dibayar via QRIS otomatis akan langsung aktif. Untuk transfer manual akan diverifikasi oleh admin maksimal 10 menit."],
+                                    ["q" => "Bagaimana cara memperpanjang masa aktif?", "a" => "Anda dapat menghubungi CS kami atau memperbarui masa aktif langsung sebelum jatuh tempo dari link pelacakan pesanan Anda."]
+                                ];
+                                $faq_val = !empty($settings['support_faq_json']) ? $settings['support_faq_json'] : wp_json_encode($default_faqs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                                ?>
+                                <textarea name="support_faq_json" class="okj-input" rows="8" style="font-family: monospace; font-size: 12px;"><?php echo esc_textarea($faq_val); ?></textarea>
+                                <small class="okj-text-muted">Format JSON array objek dengan properti <code>"q"</code> (Pertanyaan) dan <code>"a"</code> (Jawaban). FAQ ini akan ditampilkan di halaman Dukungan Pelanggan.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End #okj-tab-support-content -->
 
                 <div class="okj-form-actions okj-mt-2">
                     <button type="submit" class="okj-btn okj-btn-primary">Simpan Semua Pengaturan</button>

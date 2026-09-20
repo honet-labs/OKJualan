@@ -1,17 +1,17 @@
 <?php
 /**
- * Plugin Name: OKJualin
- * Description: Manajemen reseller premium: master harga, reseller product, customer, active product tracker, automated reminders (email/telegram/whatsapp WAHA), brandable PDF invoice customizer, JSON backup & ECharts analytics dashboard.
- * Version: 0.1.2
+ * Plugin Name: OKJualan
+ * Description: Platform All-in-One Penjualan Produk, POS Kasir, Pelacakan Layanan & Pembelian, Notifikasi & Reminder, Payment Gateway (SumoPod QRIS), dan Laporan Penjualan.
+ * Version: 0.1.3
  * Author: HONET
  * License: GPLv2 or later
- * Text Domain: okjualin
+ * Text Domain: okjualan
  */
 
 if (!defined('ABSPATH')) { exit; }
 
 class OKJ_App {
-    const VERSION = '0.1.2';
+    const VERSION = '0.1.3';
 
     private static $instance = null;
     public static function instance() {
@@ -37,9 +37,11 @@ class OKJ_App {
     }
 
     private function includes() {
+        require_once OKJ_PLUGIN_DIR . 'includes/class-security.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-db.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-notifier.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-pdf-invoice.php';
+        require_once OKJ_PLUGIN_DIR . 'includes/class-payment-gateway.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-backup.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-updater.php';
         require_once OKJ_PLUGIN_DIR . 'includes/class-woocommerce-sync.php';
@@ -58,6 +60,9 @@ class OKJ_App {
 
         // Initialize WooCommerce synchronization engine
         OKJ_WC_Sync::init();
+
+        // Listen to payment gateway webhooks (e.g. SumoPod, Midtrans, Tripay)
+        add_action('init', [OKJ_Payment_Gateway::class, 'handle_webhook']);
 
         // Listen to shortlink redirects
         add_action('parse_request', [$this, 'handle_shortlink_redirect']);

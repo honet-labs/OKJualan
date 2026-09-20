@@ -157,4 +157,149 @@ class OKJ_Notifier {
         }
         return ['ok' => true];
     }
+
+    /**
+     * Notify customer when payment is confirmed / completed
+     */
+    public static function notify_payment_completed($tx) {
+        global $wpdb;
+        $notifier = new self();
+        $settings = get_option('okj_settings_v1', []);
+        $company_name = !empty($settings['pdf_company_name']) ? $settings['pdf_company_name'] : 'OKJualan';
+
+        $phone = '';
+        $email = '';
+        $telegram = '';
+        $name = $tx['customer_name'] ?? 'Pelanggan';
+
+        if (!empty($tx['customer_id'])) {
+            $cust = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $tx['customer_id']), ARRAY_A);
+            if ($cust) {
+                $phone = $cust['whatsapp'] ?: $cust['phone'];
+                $email = $cust['email'];
+                $telegram = $cust['telegram'];
+                $name = $cust['name'];
+            }
+        }
+
+        $msg = "*PEMBAYARAN DITERIMA - {$company_name}*\n";
+        $msg .= "------------------------------------------\n";
+        $msg .= "Halo *{$name}*, pembayaran Anda telah berhasil diverifikasi!\n\n";
+        $msg .= "No. Transaksi: `{$tx['transaction_no']}`\n";
+        $msg .= "Total Bayar: Rp " . number_format((float)$tx['total'], 0, ',', '.') . "\n";
+        $msg .= "Metode: " . strtoupper($tx['payment_method'] ?? 'Online') . "\n";
+        $msg .= "Status: *LUNAS (COMPLETED) 🟢*\n";
+        $msg .= "------------------------------------------\n";
+        $msg .= "Terima kasih atas pesanan Anda di {$company_name}. Semoga berkah dan bermanfaat! 🙏";
+
+        if ($phone) {
+            $notifier->send_waha($phone, $msg);
+        }
+        if ($telegram) {
+            $notifier->send_telegram($telegram, $msg);
+        }
+        if ($email && !empty($settings['smtp_enabled'])) {
+            $notifier->send_email($email, "[Lunas] Pembayaran Pesanan #{$tx['transaction_no']}", $msg, []);
+        }
+    }
+
+    /**
+     * Notify customer when new order is placed
+     */
+    public static function notify_order_created($tx, $payment_link = '') {
+        global $wpdb;
+        $notifier = new self();
+        $settings = get_option('okj_settings_v1', []);
+        $company_name = !empty($settings['pdf_company_name']) ? $settings['pdf_company_name'] : 'OKJualan';
+
+        $phone = '';
+        $name = $tx['customer_name'] ?? 'Pelanggan';
+
+        if (!empty($tx['customer_id'])) {
+            $cust = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $tx['customer_id']), ARRAY_A);
+            if ($cust) {
+                $phone = $cust['whatsapp'] ?: $cust['phone'];
+                $name = $cust['name'];
+            }
+        }
+
+        if (!$phone) return;
+
+        $msg = "*PESANAN DITERIMA - {$company_name}*\n";
+        $msg .= "------------------------------------------\n";
+        $msg .= "Halo *{$name}*, pesanan Anda telah berhasil dicatat.\n\n";
+        $msg .= "No. Transaksi: `{$tx['transaction_no']}`\n";
+        $msg .= "Total Bayar: Rp " . number_format((float)$tx['total'], 0, ',', '.') . "\n";
+        $msg .= "Status: *MENUNGGU PEMBAYARAN*\n";
+        if ($payment_link) {
+            $msg .= "\n🔗 *Link Pembayaran (QRIS / Online):*\n{$payment_link}\n";
+        }
+        $msg .= "------------------------------------------\n";
+        $msg .= "Silakan lakukan pembayaran agar pesanan segera diproses. Terima kasih! 🙏";
+
+        $notifier->send_waha($phone, $msg);
+    }
+
+    /**
+     * Notify seller when their product is purchased
+     */
+    public static function notify_seller_product_sold($seller_id, $product_name, $qty, $tx_no) {
+        if (!$seller_id) return;
+        global $wpdb;
+        $seller = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('sellers') . " WHERE id = %s", $seller_id), ARRAY_A);
+        if (!$seller) return;
+
+        $phone = $seller['whatsapp'] ?: $seller['phone'];
+        if (!$phone) return;
+
+        $notifier = new self();
+        $settings = get_option('okj_settings_v1', []);
+        $company_name = !empty($settings['pdf_company_name']) ? $settings['pdf_company_name'] : 'OKJualan';
+
+        $msg = "*NOTIFIKASI PENJUALAN - {$company_name}*\n";
+        $msg .= "------------------------------------------\n";
+        $msg .= "Halo *{$seller['name']}*, produk Anda telah terjual!\n\n";
+        $msg .= "Produk: *{$product_name}*\n";
+        $msg .= "Jumlah: *{$qty} unit*\n";
+        $msg .= "No. Transaksi: `{$tx_no}`\n";
+        $msg .= "------------------------------------------\n";
+        $msg .= "Pantau laporan berkala di sistem OKJualan. Terima kasih atas kerja samanya! 🚀";
+
+        $notifier->send_waha($phone, $msg);
+    }
+
+    /**
+     * Low stock alert to seller or admin
+     */
+    public static function notify_seller_low_stock($product, $remaining_stock) {
+        global $wpdb;
+        $notifier = new self();
+        $settings = get_option('okj_settings_v1', []);
+        $company_name = !empty($settings['pdf_company_name']) ? $settings['pdf_company_name'] : 'OKJualan';
+
+        $target_phone = '';
+        if (!empty($product['seller_id'])) {
+            $seller = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('sellers') . " WHERE id = %s", $product['seller_id']), ARRAY_A);
+            if ($seller) {
+                $target_phone = $seller['whatsapp'] ?: $seller['phone'];
+            }
+        }
+
+        if (!$target_phone && !empty($settings['waha_test_phone'])) {
+            $target_phone = $settings['waha_test_phone'];
+        }
+
+        if (!$target_phone) return;
+
+        $msg = "⚠️ *PERINGATAN STOK MENIPIS - {$company_name}*\n";
+        $msg .= "------------------------------------------\n";
+        $msg .= "Perhatian, stok produk berikut hampir habis:\n\n";
+        $msg .= "Produk: *{$product['name']}*\n";
+        $msg .= "Sisa Stok: *{$remaining_stock} unit*\n";
+        $msg .= "------------------------------------------\n";
+        $msg .= "Mohon segera lakukan penambahan stok agar operasional penjualan tetap berjalan lancar.";
+
+        $notifier->send_waha($target_phone, $msg);
+    }
 }
+
