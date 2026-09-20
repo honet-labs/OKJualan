@@ -244,6 +244,7 @@ class OKJ_DB {
         $sql_pos_transactions = "CREATE TABLE {$t_pos_transactions} (
             id CHAR(36) NOT NULL,
             transaction_no VARCHAR(50) NOT NULL,
+            reference_no VARCHAR(100) NULL,
             customer_id CHAR(36) NULL,
             customer_name VARCHAR(200) NOT NULL,
             seller_id CHAR(36) NULL,
@@ -259,6 +260,7 @@ class OKJ_DB {
             updated_by BIGINT(20) NOT NULL DEFAULT 0,
             PRIMARY KEY  (id),
             UNIQUE KEY transaction_no (transaction_no),
+            KEY reference_no (reference_no),
             KEY customer_id (customer_id),
             KEY seller_id (seller_id)
         ) {$charset};";
@@ -377,6 +379,16 @@ class OKJ_DB {
                     }
                     if (!in_array('qty', $cols)) {
                         $wpdb->query("ALTER TABLE {$t_active} ADD COLUMN qty INT(11) NOT NULL DEFAULT 1");
+                    }
+                }
+            }
+
+            // POS Transactions columns
+            if (in_array($t_pos_transactions, $existing_tables)) {
+                $cols = $wpdb->get_col("SHOW COLUMNS FROM {$t_pos_transactions}");
+                if (is_array($cols)) {
+                    if (!in_array('reference_no', $cols)) {
+                        $wpdb->query("ALTER TABLE {$t_pos_transactions} ADD COLUMN reference_no VARCHAR(100) NULL AFTER transaction_no");
                     }
                 }
             }

@@ -1984,7 +1984,8 @@ class OKJ_Admin {
 
         if (!empty($search)) {
             $like = '%' . $wpdb->esc_like($search) . '%';
-            $where[] = "(t.transaction_no LIKE %s OR t.customer_name LIKE %s OR t.notes LIKE %s)";
+            $where[] = "(t.transaction_no LIKE %s OR t.reference_no LIKE %s OR t.customer_name LIKE %s OR t.notes LIKE %s)";
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
@@ -2119,6 +2120,21 @@ class OKJ_Admin {
             $id
         ), ARRAY_A);
 
+        $wc_order_id = 0;
+        if (preg_match('/^WC-(\d+)/i', $tx['transaction_no'], $m)) {
+            $wc_order_id = (int)$m[1];
+        } elseif (!empty($tx['notes']) && preg_match('/WooCommerce Order #(\d+)/i', $tx['notes'], $m)) {
+            $wc_order_id = (int)$m[1];
+        }
+        $tx['wc_order_id'] = $wc_order_id;
+        $tx['wc_edit_url'] = '';
+        if ($wc_order_id > 0) {
+            $tx['wc_edit_url'] = admin_url('post.php?post=' . $wc_order_id . '&action=edit');
+            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()) {
+                $tx['wc_edit_url'] = admin_url('admin.php?page=wc-orders&action=edit&id=' . $wc_order_id);
+            }
+        }
+
         $tx['items'] = $items ?: [];
         $tx['formatted_date'] = wp_date('d M Y, H:i', strtotime($tx['created_at']));
         $tx['formatted_subtotal'] = 'Rp ' . number_format_i18n((float)$tx['subtotal'], 0);
@@ -2150,7 +2166,8 @@ class OKJ_Admin {
 
         if (!empty($search)) {
             $like = '%' . $wpdb->esc_like($search) . '%';
-            $where[] = "(t.transaction_no LIKE %s OR t.customer_name LIKE %s OR t.notes LIKE %s)";
+            $where[] = "(t.transaction_no LIKE %s OR t.reference_no LIKE %s OR t.customer_name LIKE %s OR t.notes LIKE %s)";
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
@@ -2217,6 +2234,7 @@ class OKJ_Admin {
         fputcsv($output, [
             'No',
             'No Transaksi',
+            'Referensi Order ID (SumoPod)',
             'Tanggal & Waktu',
             'Nama Customer',
             'WhatsApp / No Telp',
@@ -2239,6 +2257,7 @@ class OKJ_Admin {
                 fputcsv($output, [
                     $i++,
                     $r['transaction_no'] ?? '',
+                    $r['reference_no'] ?? '',
                     $r['created_at'] ?? '',
                     $r['customer_name'] ?: 'Pelanggan Umum',
                     $contact,

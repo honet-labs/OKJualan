@@ -129,6 +129,7 @@
                     <thead>
                         <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">No. Transaksi</th>
+                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Referensi Order ID</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Waktu</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
                             <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Item Produk</th>
@@ -141,7 +142,7 @@
                     <tbody>
                         <?php if (empty($transactions)): ?>
                             <tr>
-                                <td colspan="8" style="text-align: center; padding: 50px 20px; color: #64748b;">
+                                <td colspan="9" style="text-align: center; padding: 50px 20px; color: #64748b;">
                                     <div style="font-size: 42px; margin-bottom: 10px;">🧾</div>
                                     <h3 style="margin: 0 0 6px 0; color: #1e293b; font-size: 16px; font-weight: 700;">Belum Ada Transaksi Ditemukan</h3>
                                     <p style="margin: 0; font-size: 13px; color: #94a3b8;">Transaksi yang masuk melalui Kasir POS atau Checkout Online akan otomatis tercatat di sini.</p>
@@ -179,14 +180,58 @@
                             <tr id="tx-row-<?php echo esc_attr($tx['id']); ?>" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                                 <!-- No Transaksi -->
                                 <td style="padding: 14px 16px;">
+                                    <?php
+                                    $wc_order_id = 0;
+                                    if (preg_match('/^WC-(\d+)/i', $tx['transaction_no'], $m)) {
+                                        $wc_order_id = (int)$m[1];
+                                    } elseif (!empty($tx['notes']) && preg_match('/WooCommerce Order #(\d+)/i', $tx['notes'], $m)) {
+                                        $wc_order_id = (int)$m[1];
+                                    }
+                                    $wc_edit_url = '';
+                                    if ($wc_order_id > 0) {
+                                        $wc_edit_url = admin_url('post.php?post=' . $wc_order_id . '&action=edit');
+                                        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()) {
+                                            $wc_edit_url = admin_url('admin.php?page=wc-orders&action=edit&id=' . $wc_order_id);
+                                        }
+                                    }
+                                    ?>
                                     <div style="display: flex; align-items: center; gap: 6px;">
-                                        <strong style="font-family: monospace; font-size: 13px; color: #1e293b;"><?php echo esc_html($tx['transaction_no']); ?></strong>
+                                        <?php if ($wc_order_id > 0): ?>
+                                            <a href="<?php echo esc_url($wc_edit_url); ?>" target="_blank" title="Buka Pesanan WooCommerce #<?php echo $wc_order_id; ?> di Tab Baru" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                                <span class="dashicons dashicons-cart" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                                                WC #<?php echo $wc_order_id; ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <strong style="font-family: monospace; font-size: 13px; color: #1e293b;"><?php echo esc_html($tx['transaction_no']); ?></strong>
+                                        <?php endif; ?>
                                         <button type="button" class="okj-copy-btn" data-clipboard="<?php echo esc_attr($tx['transaction_no']); ?>" title="Salin No Transaksi" style="background: none; border: none; padding: 2px; cursor: pointer; color: #94a3b8;">
                                             <span class="dashicons dashicons-clipboard" style="font-size: 14px; width: 14px; height: 14px;"></span>
                                         </button>
                                     </div>
                                     <?php if (!empty($tx['notes'])): ?>
                                         <small style="display: block; font-size: 11px; color: #64748b; margin-top: 2px; font-style: italic;"><?php echo esc_html(wp_trim_words($tx['notes'], 6)); ?></small>
+                                    <?php endif; ?>
+                                </td>
+
+                                <!-- Referensi Order ID (SumoPod / Gateway) -->
+                                <td style="padding: 14px 16px; white-space: nowrap;">
+                                    <?php 
+                                    $ref_id = !empty($tx['reference_no']) ? $tx['reference_no'] : (strpos($tx['transaction_no'], 'INV-') === 0 ? $tx['transaction_no'] : '');
+                                    if ($ref_id): 
+                                    ?>
+                                        <div style="display: flex; align-items: center; gap: 5px;">
+                                            <span style="font-family: monospace; font-size: 11.5px; background: #eff6ff; color: #1e40af; padding: 3px 8px; border-radius: 5px; border: 1px solid #bfdbfe; font-weight: 600;" title="<?php echo esc_attr($ref_id); ?>">
+                                                <?php echo esc_html($ref_id); ?>
+                                            </span>
+                                            <button type="button" class="okj-copy-btn" data-clipboard="<?php echo esc_attr($ref_id); ?>" title="Salin Order ID SumoPod" style="background: none; border: none; padding: 2px; cursor: pointer; color: #3b82f6;">
+                                                <span class="dashicons dashicons-clipboard" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                                            </button>
+                                            <a href="https://sumopod.com/dashboard/managed-payment/payments" target="_blank" title="Buka di Dashboard Pembayaran SumoPod" style="color: #6366f1; display: inline-flex; align-items: center; text-decoration: none;">
+                                                <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                                            </a>
+                                        </div>
+                                    <?php else: ?>
+                                        <span style="color: #94a3b8; font-size: 12px;">-</span>
                                     <?php endif; ?>
                                 </td>
 
@@ -418,7 +463,11 @@ function okjOpenTxDetail(txId) {
         }
 
         var tx = res.data;
-        $('#okj-modal-tx-no').text('Faktur: ' + tx.transaction_no);
+        var headerTitle = 'Faktur: ' + tx.transaction_no;
+        if (tx.reference_no) {
+            headerTitle += ' (' + tx.reference_no + ')';
+        }
+        $('#okj-modal-tx-no').text(headerTitle);
         $('#okj-modal-tx-date').text(tx.formatted_date + ' WIB');
 
         var itemsHtml = '';
@@ -452,6 +501,7 @@ function okjOpenTxDetail(txId) {
                     <strong style="color: #0f172a; font-size: 14px; display: block;">${tx.customer_name || 'Pelanggan Umum'}</strong>
                     ${tx.cust_phone || tx.cust_whatsapp ? `<span style="color: #475569;">📱 ${tx.cust_whatsapp || tx.cust_phone}</span><br>` : ''}
                     ${tx.cust_email ? `<span style="color: #475569;">✉️ ${tx.cust_email}</span>` : ''}
+                    ${tx.wc_order_id ? `<div style="margin-top: 8px;"><a href="${tx.wc_edit_url}" target="_blank" style="color: #4f46e5; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; padding: 3px 8px; border-radius: 4px; font-size: 11.5px; border: 1px solid #c7d2fe;">🛒 Buka Order WooCommerce #${tx.wc_order_id} ↗</a></div>` : ''}
                 </div>
                 <div>
                     <span style="color: #64748b; display: block; margin-bottom: 2px;">Metode Pembayaran:</span>
@@ -460,6 +510,14 @@ function okjOpenTxDetail(txId) {
                         <span style="color: #64748b; font-size: 11px;">Status: </span>
                         ${statusBadge}
                     </div>
+                    ${tx.reference_no ? `
+                    <div style="margin-top: 8px; font-size: 11.5px;">
+                        <span style="color: #64748b; display: block; margin-bottom: 2px;">Ref Order ID (SumoPod):</span>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <code style="background: #eff6ff; color: #1e40af; padding: 2px 7px; border-radius: 4px; font-weight: 600; border: 1px solid #bfdbfe; font-size: 11.5px;">${tx.reference_no}</code>
+                            <a href="https://sumopod.com/dashboard/managed-payment/payments" target="_blank" title="Buka Dashboard SumoPod" style="color: #4f46e5; text-decoration: none; font-weight: 700; font-size: 12px; margin-left: 2px;">↗</a>
+                        </div>
+                    </div>` : ''}
                 </div>
             </div>
 
@@ -566,6 +624,7 @@ function okjPrintReceipt(txId) {
                 </div>
                 <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 6px 0; margin-bottom: 8px; font-size: 11px;">
                     <div>No: ${tx.transaction_no}</div>
+                    ${tx.reference_no ? `<div>Ref: ${tx.reference_no}</div>` : ''}
                     <div>Tgl: ${tx.formatted_date}</div>
                     <div>Cust: ${tx.customer_name || 'Umum'}</div>
                 </div>

@@ -338,17 +338,16 @@ class OKJ_WC_Sync {
             OKJ_DB::install();
         }
 
-        // Determine Transaction Number
+        // Determine Transaction Number & External Gateway Reference ID
         $sumopod_id = $order->get_meta('_okj_sumopod_order_id');
         if (!empty($override_tx_no)) {
-            $transaction_no = sanitize_text_field($override_tx_no);
-            $order->update_meta_data('_okj_sumopod_order_id', $transaction_no);
+            $sumopod_id = sanitize_text_field($override_tx_no);
+            $order->update_meta_data('_okj_sumopod_order_id', $sumopod_id);
             $order->save();
-        } elseif (!empty($sumopod_id)) {
-            $transaction_no = $sumopod_id;
-        } else {
-            $transaction_no = 'WC-' . $order_id;
         }
+
+        $transaction_no = 'WC-' . $order_id;
+        $reference_no   = !empty($sumopod_id) ? $sumopod_id : '';
 
         // Map status
         $wc_status = $order->get_status();
@@ -402,6 +401,10 @@ class OKJ_WC_Sync {
             $existing_tx = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_transactions} WHERE id = %s LIMIT 1", $existing_tx_id), ARRAY_A);
         }
 
+        if (!$existing_tx && !empty($reference_no)) {
+            $existing_tx = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_transactions} WHERE reference_no = %s OR transaction_no = %s LIMIT 1", $reference_no, $reference_no), ARRAY_A);
+        }
+
         if (!$existing_tx) {
             $existing_tx = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_transactions} WHERE transaction_no = %s LIMIT 1", $transaction_no), ARRAY_A);
         }
@@ -416,6 +419,7 @@ class OKJ_WC_Sync {
             $tx_id = $existing_tx['id'];
             $wpdb->update($t_transactions, [
                 'transaction_no' => $transaction_no,
+                'reference_no'   => $reference_no,
                 'customer_id'    => $customer_id,
                 'customer_name'  => $customer_name,
                 'subtotal'       => $subtotal,
@@ -432,6 +436,7 @@ class OKJ_WC_Sync {
             $wpdb->insert($t_transactions, [
                 'id'             => $tx_id,
                 'transaction_no' => $transaction_no,
+                'reference_no'   => $reference_no,
                 'customer_id'    => $customer_id,
                 'customer_name'  => $customer_name,
                 'seller_id'      => null,
