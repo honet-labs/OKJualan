@@ -73,12 +73,12 @@
                     <label class="okj-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Status Pembayaran</label>
                     <select name="status" class="okj-select" style="width: 100%;">
                         <option value="">Semua Status</option>
-                        <option value="paid" <?php selected($status, 'paid'); ?>>🟢 Lunas / Selesai</option>
-                        <option value="pending" <?php selected($status, 'pending'); ?>>🟡 Pending (Menunggu)</option>
-                        <option value="processing" <?php selected($status, 'processing'); ?>>🔵 Sedang Diproses</option>
-                        <option value="failed" <?php selected($status, 'failed'); ?>>🔴 Gagal</option>
-                        <option value="expired" <?php selected($status, 'expired'); ?>>⏰ Kadaluwarsa (Expired)</option>
-                        <option value="cancelled" <?php selected($status, 'cancelled'); ?>>⚪ Dibatalkan</option>
+                        <option value="paid" <?php selected($status, 'paid'); ?>>Lunas / Selesai</option>
+                        <option value="pending" <?php selected($status, 'pending'); ?>>Pending (Menunggu)</option>
+                        <option value="processing" <?php selected($status, 'processing'); ?>>Sedang Diproses</option>
+                        <option value="failed" <?php selected($status, 'failed'); ?>>Gagal</option>
+                        <option value="expired" <?php selected($status, 'expired'); ?>>Kadaluwarsa (Expired)</option>
+                        <option value="cancelled" <?php selected($status, 'cancelled'); ?>>Dibatalkan</option>
                     </select>
                 </div>
 
@@ -87,12 +87,12 @@
                     <label class="okj-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Metode Pembayaran</label>
                     <select name="payment_method" class="okj-select" style="width: 100%;">
                         <option value="">Semua Metode</option>
-                        <option value="cash" <?php selected($payment_method, 'cash'); ?>>💵 Cash / Tunai</option>
-                        <option value="qris" <?php selected($payment_method, 'qris'); ?>>📱 QRIS</option>
-                        <option value="sumopod" <?php selected($payment_method, 'sumopod'); ?>>⚡ QRIS (Otomatis)</option>
-                        <option value="transfer" <?php selected($payment_method, 'transfer'); ?>>🏦 Transfer Bank</option>
-                        <option value="midtrans" <?php selected($payment_method, 'midtrans'); ?>>💳 Midtrans</option>
-                        <option value="tripay" <?php selected($payment_method, 'tripay'); ?>>🌐 Tripay</option>
+                        <option value="cash" <?php selected($payment_method, 'cash'); ?>>Cash / Tunai</option>
+                        <option value="qris" <?php selected($payment_method, 'qris'); ?>>QRIS</option>
+                        <option value="sumopod" <?php selected($payment_method, 'sumopod'); ?>>QRIS (Otomatis)</option>
+                        <option value="transfer" <?php selected($payment_method, 'transfer'); ?>>Transfer Bank</option>
+                        <option value="midtrans" <?php selected($payment_method, 'midtrans'); ?>>Midtrans</option>
+                        <option value="tripay" <?php selected($payment_method, 'tripay'); ?>>Tripay</option>
                     </select>
                 </div>
 
@@ -144,7 +144,7 @@
                         <?php if (empty($transactions)): ?>
                             <tr>
                                 <td colspan="10" style="text-align: center; padding: 50px 20px; color: #64748b;">
-                                    <div style="font-size: 42px; margin-bottom: 10px;">🧾</div>
+                                    <span class="dashicons dashicons-media-document" style="font-size: 40px; width: 40px; height: 40px; color: #cbd5e1; margin-bottom: 8px; display: inline-block;"></span>
                                     <h3 style="margin: 0 0 6px 0; color: #1e293b; font-size: 16px; font-weight: 700;">Belum Ada Transaksi Ditemukan</h3>
                                     <p style="margin: 0; font-size: 13px; color: #94a3b8;">Transaksi yang masuk melalui Kasir POS atau Checkout Online akan otomatis tercatat di sini.</p>
                                 </td>
@@ -312,22 +312,22 @@
                                 <td style="padding: 14px 16px; white-space: nowrap;">
                                     <div class="status-cell-<?php echo esc_attr($tx['id']); ?>">
                                         <?php if ($status === 'paid' || $status === 'completed'): ?>
-                                            <span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Lunas 🟢</span>
+                                            <span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Lunas</span>
                                         <?php elseif ($status === 'pending'): ?>
                                             <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
-                                                <span class="okj-badge okj-badge-warning" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Pending 🟡</span>
+                                                <span class="okj-badge okj-badge-warning" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Pending</span>
                                                 <button type="button" class="okj-btn-link" onclick="okjQuickMarkPaid('<?php echo esc_js($tx['id']); ?>')" style="font-size: 11px; color: #16a34a; font-weight: 700; text-decoration: none; border: 1px solid #bbf7d0; background: #f0fdf4; padding: 2px 6px; border-radius: 4px;" title="Tandai pesanan lunas jika sudah menerima transfer">
-                                                    ✓ Tandai Lunas
+                                                    Tandai Lunas
                                                 </button>
                                             </div>
                                         <?php elseif ($status === 'processing'): ?>
-                                            <span class="okj-badge" style="background: #e0e7ff; color: #4338ca; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Diproses 🔵</span>
+                                            <span class="okj-badge" style="background: #e0e7ff; color: #4338ca; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Diproses</span>
                                         <?php elseif ($status === 'failed'): ?>
-                                            <span class="okj-badge okj-badge-danger" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Gagal 🔴</span>
+                                            <span class="okj-badge okj-badge-danger" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Gagal</span>
                                         <?php elseif ($status === 'expired'): ?>
-                                            <span class="okj-badge" style="background: #fee2e2; color: #991b1b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Expired ⏰</span>
+                                            <span class="okj-badge" style="background: #fee2e2; color: #991b1b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Expired</span>
                                         <?php else: ?>
-                                            <span class="okj-badge" style="background: #f1f5f9; color: #64748b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Batal ⚪</span>
+                                            <span class="okj-badge" style="background: #f1f5f9; color: #64748b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Batal</span>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -587,8 +587,8 @@ function okjOpenTxDetail(txId) {
                 <div>
                     <span style="color: #64748b; display: block; margin-bottom: 2px;">Data Pelanggan:</span>
                     <strong style="color: #0f172a; font-size: 14px; display: block;">${tx.customer_name || 'Pelanggan Umum'}</strong>
-                    ${tx.cust_phone || tx.cust_whatsapp ? `<span style="color: #475569;">📱 ${tx.cust_whatsapp || tx.cust_phone}</span><br>` : ''}
-                    ${tx.cust_email ? `<span style="color: #475569;">✉️ ${tx.cust_email}</span>` : ''}
+                    ${tx.cust_phone || tx.cust_whatsapp ? `<span style="color: #475569;"><span class="dashicons dashicons-phone" style="font-size:13px; width:13px; height:13px; color:#64748b; vertical-align:text-top;"></span> ${tx.cust_whatsapp || tx.cust_phone}</span><br>` : ''}
+                    ${tx.cust_email ? `<span style="color: #475569;"><span class="dashicons dashicons-email" style="font-size:13px; width:13px; height:13px; color:#64748b; vertical-align:text-top;"></span> ${tx.cust_email}</span>` : ''}
                 </div>
                 <div>
                     <span style="color: #64748b; display: block; margin-bottom: 2px;">Metode Pembayaran:</span>
@@ -651,7 +651,7 @@ function okjOpenTxDetail(txId) {
         if (tx.payment_status === 'pending') {
             $('#okj-modal-tx-status-actions').html(`
                 <button type="button" class="okj-btn okj-btn-primary okj-btn-small" onclick="okjQuickMarkPaid('${tx.id}'); document.getElementById('okjTxDetailModal').style.display='none';" style="background:#10b981; font-weight:700;">
-                    ✓ Konfirmasi Lunas Sekarang
+                    Konfirmasi Lunas Sekarang
                 </button>
             `);
         }
@@ -674,7 +674,7 @@ function okjQuickMarkPaid(txId) {
         status: 'paid'
     }, function(res) {
         if (res.success) {
-            $('.status-cell-' + txId).html('<span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Lunas 🟢</span>');
+            $('.status-cell-' + txId).html('<span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Lunas</span>');
         } else {
             alert(res.data.message || 'Gagal memperbarui status.');
         }

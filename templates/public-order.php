@@ -678,7 +678,7 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
                             $static_qris_enabled = !empty($settings['static_qris_enabled']) || $pos_enable_qris;
                             ?>
                             <?php if ($sumopod_enabled): ?>
-                                <option value="sumopod" selected>QRIS (Otomatis &amp; Real-time) ⚡</option>
+                                <option value="sumopod" selected>QRIS (Otomatis &amp; Real-time)</option>
                             <?php endif; ?>
                             <?php if ($static_qris_enabled): ?>
                                 <option value="qris" <?php echo !$sumopod_enabled ? 'selected' : ''; ?>>Scan QRIS Toko</option>

@@ -59,8 +59,8 @@
                             <label class="okj-label">Status Seller / Supplier / Provider</label>
                             <?php $curr_status = $row && !empty($row['status']) ? $row['status'] : 'active'; ?>
                             <select name="status" class="okj-select" style="width: 100%;">
-                                <option value="active" <?php selected($curr_status, 'active'); ?>>🟢 Aktif</option>
-                                <option value="inactive" <?php selected($curr_status, 'inactive'); ?>>🔴 Nonaktif</option>
+                                <option value="active" <?php selected($curr_status, 'active'); ?>>Aktif</option>
+                                <option value="inactive" <?php selected($curr_status, 'inactive'); ?>>Nonaktif</option>
                             </select>
                         </div>
 

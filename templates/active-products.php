@@ -88,12 +88,12 @@
                             <label class="okj-label">Status Layanan</label>
                             <?php $curr_status = $row && !empty($row['status']) ? $row['status'] : 'active'; ?>
                             <select name="status" class="okj-select" style="width: 100%;">
-                                <option value="active" <?php selected($curr_status, 'active'); ?>>🟢 Aktif</option>
-                                <option value="process" <?php selected($curr_status, 'process'); ?>>⏳ Dalam Proses (Perlu Akun)</option>
-                                <option value="pending" <?php selected($curr_status, 'pending'); ?>>🟡 Pending</option>
-                                <option value="completed" <?php selected($curr_status, 'completed'); ?>>✅ Selesai</option>
-                                <option value="expired" <?php selected($curr_status, 'expired'); ?>>🔴 Kedaluwarsa (Expired)</option>
-                                <option value="cancelled" <?php selected($curr_status, 'cancelled'); ?>>⚪ Dibatalkan</option>
+                                <option value="active" <?php selected($curr_status, 'active'); ?>>Aktif</option>
+                                <option value="process" <?php selected($curr_status, 'process'); ?>>Dalam Proses (Perlu Akun)</option>
+                                <option value="pending" <?php selected($curr_status, 'pending'); ?>>Pending</option>
+                                <option value="completed" <?php selected($curr_status, 'completed'); ?>>Selesai</option>
+                                <option value="expired" <?php selected($curr_status, 'expired'); ?>>Kedaluwarsa (Expired)</option>
+                                <option value="cancelled" <?php selected($curr_status, 'cancelled'); ?>>Dibatalkan</option>
                             </select>
                         </div>
 
@@ -319,31 +319,31 @@
                                         <td>
                                             <?php if ($p_status === 'process'): ?>
                                                 <span class="okj-badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                                                    ⏳ Dalam Proses
+                                                    Dalam Proses
                                                 </span>
                                             <?php elseif ($p_status === 'active' || $p_status === 'completed'): ?>
-                                                <span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🟢 Aktif</span>
+                                                <span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Aktif</span>
                                             <?php elseif ($p_status === 'pending'): ?>
-                                                <span class="okj-badge okj-badge-warning" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🟡 Pending</span>
+                                                <span class="okj-badge okj-badge-warning" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Pending</span>
                                             <?php elseif ($p_status === 'cancelled'): ?>
-                                                <span class="okj-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">⚪ Dibatalkan</span>
+                                                <span class="okj-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Dibatalkan</span>
                                             <?php else: ?>
-                                                <span class="okj-badge okj-badge-danger" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">🔴 Expired</span>
+                                                <span class="okj-badge okj-badge-danger" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Expired</span>
                                             <?php endif; ?>
                                         </td>
                                         <!-- Status Pembayaran -->
                                         <td>
                                             <?php if ($pay_status === 'paid'): ?>
                                                 <span class="okj-badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
-                                                    ✓ Lunas
+                                                    Lunas
                                                 </span>
                                             <?php elseif ($pay_status === 'cancelled' || $pay_status === 'failed'): ?>
                                                 <span class="okj-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
-                                                    ✕ Gagal
+                                                    Gagal
                                                 </span>
                                             <?php else: ?>
                                                 <span class="okj-badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
-                                                    ⏳ Belum Bayar
+                                                    Belum Bayar
                                                 </span>
                                             <?php endif; ?>
                                         </td>

@@ -116,8 +116,8 @@
                             <label class="okj-label">Status Produk</label>
                             <?php $curr_status = $row && !empty($row['status']) ? $row['status'] : 'active'; ?>
                             <select name="status" class="okj-select" style="width: 100%;">
-                                <option value="active" <?php selected($curr_status, 'active'); ?>>🟢 Aktif</option>
-                                <option value="inactive" <?php selected($curr_status, 'inactive'); ?>>🔴 Nonaktif</option>
+                                <option value="active" <?php selected($curr_status, 'active'); ?>>Aktif</option>
+                                <option value="inactive" <?php selected($curr_status, 'inactive'); ?>>Nonaktif</option>
                             </select>
                         </div>
 
@@ -326,7 +326,7 @@
                                             <?php elseif ($p_stock === 0): ?>
                                                 <span class="okj-badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-weight: 700;">Habis (0)</span>
                                             <?php elseif ($p_stock <= 3): ?>
-                                                <span class="okj-badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700;" title="Stok Menipis!">⚠️ <?php echo $p_stock; ?> pcs</span>
+                                                <span class="okj-badge okj-badge-warning" style="font-weight: 700;" title="Stok Menipis!"><?php echo $p_stock; ?> pcs</span>
                                             <?php else: ?>
                                                 <span class="okj-badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600;"><?php echo $p_stock; ?> pcs</span>
                                             <?php endif; ?>

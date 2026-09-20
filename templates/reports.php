@@ -30,8 +30,8 @@
                 <div class="okj-form-group" style="margin-bottom: 0;">
                     <label class="okj-label" style="font-size: 12px; margin-bottom: 4px;">Pilih Jenis Periode</label>
                     <select name="period_type" id="report_period_type" class="okj-select" style="min-width: 160px;" onchange="this.form.submit()">
-                        <option value="monthly" <?php selected($period_type, 'monthly'); ?>>📅 Laporan Bulanan</option>
-                        <option value="range" <?php selected($period_type, 'range'); ?>>📆 Rentang Tanggal / Mingguan</option>
+                        <option value="monthly" <?php selected($period_type, 'monthly'); ?>>Laporan Bulanan</option>
+                        <option value="range" <?php selected($period_type, 'range'); ?>>Rentang Tanggal / Mingguan</option>
                     </select>
                 </div>
 

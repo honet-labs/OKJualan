@@ -558,7 +558,7 @@ if (!in_array($active_tab, ['global', 'products', 'gateways', 'pos', 'support', 
                                    placeholder="netflix, spotify, canva, mikrotik, vpn, vps" 
                                    style="padding: 10px 14px; font-size: 14px; font-weight: 600; border-color: #c7d2fe;" />
                             <p class="okj-text-muted" style="margin-top: 8px; font-size: 12.5px; line-height: 1.6;">
-                                💡 <strong>Cara Kerja:</strong> Jika produk yang dibeli pelanggan memiliki salah satu tag/kata kunci di atas (misal <code>netflix</code>, <code>mikrotik</code>, <code>spotify</code>), saat pembayaran berhasil maka status di menu <strong>Pembelian &amp; Produk Aktif</strong> akan otomatis diset sebagai <strong>⏳ Dalam Proses</strong> (bukan langsung <em>Aktif</em>). Administrator dapat menyerahkan akun/kredensial kepada pelanggan secara manual via WhatsApp, lalu mengubah statusnya menjadi <strong>🟢 Aktif</strong>.
+                                <span class="dashicons dashicons-info" style="font-size: 15px; width: 15px; height: 15px; color: #4f46e5; vertical-align: text-bottom;"></span> <strong>Cara Kerja:</strong> Jika produk yang dibeli pelanggan memiliki salah satu tag/kata kunci di atas (misal <code>netflix</code>, <code>mikrotik</code>, <code>spotify</code>), saat pembayaran berhasil maka status di menu <strong>Pembelian &amp; Produk Aktif</strong> akan otomatis diset sebagai <strong>Dalam Proses</strong> (bukan langsung <em>Aktif</em>). Administrator dapat menyerahkan akun/kredensial kepada pelanggan secara manual via WhatsApp, lalu mengubah statusnya menjadi <strong>Aktif</strong>.
                             </p>
                         </div>
                     </div>
@@ -700,7 +700,7 @@ if (!in_array($active_tab, ['global', 'products', 'gateways', 'pos', 'support', 
                                     </button>
                                 </div>
                                 <small style="color: #15803d; font-size: 11px; display: block; margin-top: 6px;">
-                                    🔒 <strong>Keamanan Terjamin:</strong> Endpoint ini hanya merespons request <code>POST</code> resmi dari server SumoPod dengan verifikasi tanda tangan kriptografi (Svix HMAC-SHA256 / Token). Akses publik langsung via browser (GET) otomatis diblokir (405).
+                                    <span class="dashicons dashicons-shield" style="font-size: 14px; width: 14px; height: 14px; vertical-align: text-bottom;"></span> <strong>Keamanan Terjamin:</strong> Endpoint ini hanya merespons request <code>POST</code> resmi dari server SumoPod dengan verifikasi tanda tangan kriptografi (Svix HMAC-SHA256 / Token). Akses publik langsung via browser (GET) otomatis diblokir (405).
                                 </small>
                             </div>
 
@@ -709,8 +709,8 @@ if (!in_array($active_tab, ['global', 'products', 'gateways', 'pos', 'support', 
                                     <label class="okj-label">Environment Mode</label>
                                     <?php $sumo_mode = !empty($settings['sumopod_mode']) ? $settings['sumopod_mode'] : 'sandbox'; ?>
                                     <select name="sumopod_mode" class="okj-select" style="width: 100%;">
-                                        <option value="sandbox" <?php selected($sumo_mode, 'sandbox'); ?>>🧪 Sandbox Mode (https://api-pay-sandbox.sumopod.com)</option>
-                                        <option value="production" <?php selected($sumo_mode, 'production'); ?>>🚀 Production / Live (https://api-pay.sumopod.com)</option>
+                                        <option value="sandbox" <?php selected($sumo_mode, 'sandbox'); ?>>Sandbox Mode (https://api-pay-sandbox.sumopod.com)</option>
+                                        <option value="production" <?php selected($sumo_mode, 'production'); ?>>Production / Live (https://api-pay.sumopod.com)</option>
                                     </select>
                                 </div>
 
