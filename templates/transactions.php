@@ -155,23 +155,21 @@
                                 $clean_wa = preg_replace('/[^0-9]/', '', $contact);
                                 if (substr($clean_wa, 0, 1) === '0') $clean_wa = '62' . substr($clean_wa, 1);
 
-                                $method_label = strtoupper($tx['payment_method']);
+                                $raw_method = strtolower($tx['payment_method']);
+                                $method_label = class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method']);
                                 $method_badge_bg = '#f1f5f9';
                                 $method_badge_color = '#475569';
                                 $method_icon = 'dashicons-money';
 
-                                if ($tx['payment_method'] === 'cash') {
-                                    $method_label = 'Cash / Tunai';
+                                if (in_array($raw_method, ['cash', 'cod', 'tunai'])) {
                                     $method_badge_bg = '#ecfdf5';
                                     $method_badge_color = '#047857';
                                     $method_icon = 'dashicons-money';
-                                } elseif ($tx['payment_method'] === 'qris' || $tx['payment_method'] === 'sumopod') {
-                                    $method_label = 'QRIS SumoPod';
+                                } elseif (strpos($raw_method, 'sumopod') !== false || strpos($raw_method, 'qris') !== false) {
                                     $method_badge_bg = '#eff6ff';
                                     $method_badge_color = '#1d4ed8';
                                     $method_icon = 'dashicons-smartphone';
-                                } elseif ($tx['payment_method'] === 'transfer') {
-                                    $method_label = 'Transfer Bank';
+                                } elseif (in_array($raw_method, ['transfer', 'bacs', 'bank_transfer']) || strpos($raw_method, 'transfer') !== false || strpos($raw_method, 'bank') !== false) {
                                     $method_badge_bg = '#faf5ff';
                                     $method_badge_color = '#7e22ce';
                                     $method_icon = 'dashicons-bank';
@@ -444,6 +442,21 @@ jQuery(document).ready(function($) {
     });
 });
 
+// Helper to format payment method name in JS
+function okjFormatPaymentMethod(method) {
+    if (!method) return '-';
+    var m = String(method).toLowerCase();
+    if (m.indexOf('sumopod') !== -1) return 'QRIS SumoPod';
+    if (m.indexOf('qris') !== -1) return 'QRIS / E-Wallet';
+    if (m === 'cash' || m === 'cod' || m === 'tunai') return 'Cash / Tunai';
+    if (m === 'transfer' || m === 'bacs' || m.indexOf('transfer') !== -1 || m.indexOf('bank') !== -1) return 'Transfer Bank';
+    if (m.indexOf('midtrans') !== -1) return 'Midtrans';
+    if (m.indexOf('tripay') !== -1) return 'Tripay';
+    if (m.indexOf('xendit') !== -1) return 'Xendit';
+    var clean = m.replace(/^(okj_|wc_)/i, '').replace(/[_-]+/g, ' ');
+    return clean.replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+}
+
 // Open Transaction Detail Modal via AJAX
 function okjOpenTxDetail(txId) {
     var $ = jQuery;
@@ -505,7 +518,7 @@ function okjOpenTxDetail(txId) {
                 </div>
                 <div>
                     <span style="color: #64748b; display: block; margin-bottom: 2px;">Metode Pembayaran:</span>
-                    <strong style="color: #0f172a; text-transform: uppercase; font-size: 13px;">${tx.payment_method}</strong>
+                    <strong style="color: #0f172a; font-size: 13px;">${tx.formatted_payment_method || okjFormatPaymentMethod(tx.payment_method)}</strong>
                     <div style="margin-top: 6px;">
                         <span style="color: #64748b; font-size: 11px;">Status: </span>
                         ${statusBadge}
@@ -647,7 +660,7 @@ function okjPrintReceipt(txId) {
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size: 11px; margin-top: 4px;">
                         <span>Metode:</span>
-                        <span>${tx.payment_method.toUpperCase()}</span>
+                        <span>${tx.formatted_payment_method || okjFormatPaymentMethod(tx.payment_method)}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size: 11px;">
                         <span>Status:</span>

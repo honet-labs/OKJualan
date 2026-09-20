@@ -189,7 +189,7 @@ class OKJ_Notifier {
         $msg .= "Halo *{$name}*, pembayaran Anda telah berhasil diverifikasi!\n\n";
         $msg .= "No. Transaksi: `{$tx['transaction_no']}`\n";
         $msg .= "Total Bayar: Rp " . number_format((float)$tx['total'], 0, ',', '.') . "\n";
-        $msg .= "Metode: " . strtoupper($tx['payment_method'] ?? 'Online') . "\n";
+        $msg .= "Metode: " . (class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method'] ?? 'sumopod') : strtoupper($tx['payment_method'] ?? 'Online')) . "\n";
         $msg .= "Status: *LUNAS (COMPLETED) 🟢*\n";
         $msg .= "------------------------------------------\n";
         $msg .= "Terima kasih atas pesanan Anda di {$company_name}. Semoga berkah dan bermanfaat! 🙏";

@@ -934,6 +934,20 @@ jQuery(document).ready(function($) {
         });
     });
 
+    function okjFormatPaymentMethod(method) {
+        if (!method) return '-';
+        var m = String(method).toLowerCase();
+        if (m.indexOf('sumopod') !== -1) return 'QRIS SumoPod';
+        if (m.indexOf('qris') !== -1) return 'QRIS / E-Wallet';
+        if (m === 'cash' || m === 'cod' || m === 'tunai') return 'Cash / Tunai';
+        if (m === 'transfer' || m === 'bacs' || m.indexOf('transfer') !== -1 || m.indexOf('bank') !== -1) return 'Transfer Bank';
+        if (m.indexOf('midtrans') !== -1) return 'Midtrans';
+        if (m.indexOf('tripay') !== -1) return 'Tripay';
+        if (m.indexOf('xendit') !== -1) return 'Xendit';
+        var clean = m.replace(/^(okj_|wc_)/i, '').replace(/[_-]+/g, ' ');
+        return clean.replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    }
+
     function showReceiptModal(data) {
         $('#struk-no').text(': ' + data.transaction_no);
         $('#struk-date').text(': ' + data.created_at);
@@ -948,7 +962,7 @@ jQuery(document).ready(function($) {
         }
 
         $('#struk-total').text('Rp ' + data.total.toLocaleString('id-ID'));
-        $('#struk-pay-method').text(': ' + data.payment_method.toUpperCase());
+        $('#struk-pay-method').text(': ' + (data.formatted_payment_method || okjFormatPaymentMethod(data.payment_method)));
 
         let itemsHtml = '<table class="okj-struk-items-table" style="width:100%; border-collapse:collapse;">';
         data.items.forEach(function(item) {

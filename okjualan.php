@@ -2,7 +2,7 @@
 /**
  * Plugin Name: OKJualan
  * Description: Platform All-in-One Penjualan Produk, POS Kasir, Pelacakan Layanan & Pembelian, Notifikasi & Reminder, Payment Gateway (SumoPod QRIS), dan Laporan Penjualan.
- * Version: 0.2.2
+ * Version: 0.2.3
  * Author: HONET
  * License: GPLv2 or later
  * Text Domain: okjualan
@@ -24,7 +24,7 @@ register_shutdown_function(function() {
 if (!class_exists('OKJ_App')) {
 
 class OKJ_App {
-    const VERSION = '0.2.2';
+    const VERSION = '0.2.3';
 
     private static $instance = null;
     public static function instance() {
@@ -239,9 +239,59 @@ class OKJ_App {
     public static function deactivate() {
         wp_clear_scheduled_hook('okj_daily_cron');
     }
+
+    /**
+     * Format payment method code/slug to clean, human-friendly label
+     *
+     * @param string $method
+     * @return string
+     */
+    public static function format_payment_method($method) {
+        $raw = strtolower(trim((string)$method));
+        if (empty($raw)) {
+            return '-';
+        }
+
+        // SumoPod QRIS
+        if (strpos($raw, 'sumopod') !== false) {
+            return 'QRIS SumoPod';
+        }
+        // Generic QRIS
+        if (strpos($raw, 'qris') !== false) {
+            return 'QRIS / E-Wallet';
+        }
+        // Cash / Tunai / COD
+        if (in_array($raw, ['cash', 'cod', 'tunai'])) {
+            return 'Cash / Tunai';
+        }
+        // Transfer Bank / BACS
+        if (in_array($raw, ['transfer', 'bacs', 'bank_transfer']) || strpos($raw, 'transfer') !== false || strpos($raw, 'bank') !== false) {
+            return 'Transfer Bank';
+        }
+        // E-Payment Gateways
+        if (strpos($raw, 'midtrans') !== false) {
+            return 'Midtrans';
+        }
+        if (strpos($raw, 'tripay') !== false) {
+            return 'Tripay';
+        }
+        if (strpos($raw, 'xendit') !== false) {
+            return 'Xendit';
+        }
+
+        // Clean technical prefixes (okj_, wc_) and delimiters
+        $clean = preg_replace('/^(okj_|wc_)/i', '', $raw);
+        return ucwords(str_replace(['_', '-'], ' ', $clean));
+    }
 }
 
 } // end if class_exists
+
+if (!function_exists('okj_format_payment_method')) {
+    function okj_format_payment_method($method) {
+        return OKJ_App::format_payment_method($method);
+    }
+}
 
 register_activation_hook(__FILE__, ['OKJ_App', 'activate']);
 register_deactivation_hook(__FILE__, ['OKJ_App', 'deactivate']);

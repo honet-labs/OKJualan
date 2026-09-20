@@ -145,7 +145,7 @@
                                     <td><strong style="color: #0f172a;">Rp <?php echo number_format_i18n((float)$r['total'], 0); ?></strong></td>
                                     <td>
                                         <span class="okj-badge" style="background: #f1f5f9; color: #334155; font-size: 10px;">
-                                            <?php echo esc_html(strtoupper($r['payment_method'])); ?>
+                                            <?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_payment_method($r['payment_method']) : strtoupper($r['payment_method'])); ?>
                                         </span>
                                         <?php if ($status === 'paid' || $status === 'completed'): ?>
                                             <span class="okj-badge okj-badge-success" style="font-size: 10px; margin-left: 2px;">Lunas</span>

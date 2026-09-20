@@ -363,14 +363,20 @@ class OKJ_WC_Sync {
         }
 
         // Map payment method
-        $wc_method = $order->get_payment_method();
+        $wc_method = strtolower((string)$order->get_payment_method());
         $payment_method = 'sumopod';
-        if ($wc_method === 'okj_sumopod') {
+        if (strpos($wc_method, 'sumopod') !== false || strpos($wc_method, 'qris') !== false) {
             $payment_method = 'sumopod';
-        } elseif ($wc_method === 'cod') {
+        } elseif (in_array($wc_method, ['cod', 'cash', 'tunai'])) {
             $payment_method = 'cash';
-        } elseif (in_array($wc_method, ['bacs', 'bank_transfer'])) {
+        } elseif (in_array($wc_method, ['bacs', 'bank_transfer']) || strpos($wc_method, 'transfer') !== false || strpos($wc_method, 'bank') !== false) {
             $payment_method = 'transfer';
+        } elseif (strpos($wc_method, 'midtrans') !== false) {
+            $payment_method = 'midtrans';
+        } elseif (strpos($wc_method, 'tripay') !== false) {
+            $payment_method = 'tripay';
+        } elseif (strpos($wc_method, 'xendit') !== false) {
+            $payment_method = 'xendit';
         } elseif (!empty($wc_method)) {
             $payment_method = sanitize_text_field($wc_method);
         }

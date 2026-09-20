@@ -1612,7 +1612,7 @@ class OKJ_Admin {
                 $r['transaction_no'] ?? '',
                 $r['created_at'] ?? '',
                 $r['customer_name'] ?? '',
-                $r['payment_method'] ?? '',
+                class_exists('OKJ_App') ? OKJ_App::format_payment_method($r['payment_method'] ?? '') : ($r['payment_method'] ?? ''),
                 $r['payment_status'] ?? '',
                 $r['subtotal'] ?? 0,
                 $r['discount'] ?? 0,
@@ -1997,8 +1997,16 @@ class OKJ_Admin {
         }
 
         if (!empty($payment_method)) {
-            $where[] = "t.payment_method = %s";
-            $params[] = $payment_method;
+            if ($payment_method === 'sumopod') {
+                $where[] = "(t.payment_method = 'sumopod' OR t.payment_method LIKE '%sumopod%')";
+            } elseif ($payment_method === 'cash') {
+                $where[] = "(t.payment_method = 'cash' OR t.payment_method = 'cod')";
+            } elseif ($payment_method === 'transfer') {
+                $where[] = "(t.payment_method = 'transfer' OR t.payment_method IN ('bacs', 'bank_transfer'))";
+            } else {
+                $where[] = "t.payment_method = %s";
+                $params[] = $payment_method;
+            }
         }
 
         if (!empty($start_date)) {
@@ -2140,6 +2148,8 @@ class OKJ_Admin {
         $tx['formatted_subtotal'] = 'Rp ' . number_format_i18n((float)$tx['subtotal'], 0);
         $tx['formatted_discount'] = 'Rp ' . number_format_i18n((float)$tx['discount'], 0);
         $tx['formatted_total'] = 'Rp ' . number_format_i18n((float)$tx['total'], 0);
+        $tx['formatted_payment_method'] = class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method']);
+        $tx['payment_method_label'] = $tx['formatted_payment_method'];
 
         wp_send_json_success($tx);
     }
@@ -2179,8 +2189,16 @@ class OKJ_Admin {
         }
 
         if (!empty($payment_method)) {
-            $where[] = "t.payment_method = %s";
-            $params[] = $payment_method;
+            if ($payment_method === 'sumopod') {
+                $where[] = "(t.payment_method = 'sumopod' OR t.payment_method LIKE '%sumopod%')";
+            } elseif ($payment_method === 'cash') {
+                $where[] = "(t.payment_method = 'cash' OR t.payment_method = 'cod')";
+            } elseif ($payment_method === 'transfer') {
+                $where[] = "(t.payment_method = 'transfer' OR t.payment_method IN ('bacs', 'bank_transfer'))";
+            } else {
+                $where[] = "t.payment_method = %s";
+                $params[] = $payment_method;
+            }
         }
 
         if (!empty($start_date)) {
@@ -2263,7 +2281,7 @@ class OKJ_Admin {
                     $contact,
                     $r['cust_email'] ?? '',
                     $items_str,
-                    strtoupper($r['payment_method'] ?? ''),
+                    class_exists('OKJ_App') ? OKJ_App::format_payment_method($r['payment_method'] ?? '') : strtoupper($r['payment_method'] ?? ''),
                     $r['subtotal'] ?? 0,
                     $r['discount'] ?? 0,
                     $r['total'] ?? 0,
@@ -2577,7 +2595,7 @@ class OKJ_Admin {
             $msg .= "Diskon: -Rp " . number_format($tx['discount'], 0, ',', '.') . "\n";
         }
         $msg .= "*TOTAL BAYAR: Rp " . number_format($tx['total'], 0, ',', '.') . "*\n";
-        $msg .= "Metode Bayar: " . strtoupper($tx['payment_method']) . "\n";
+        $msg .= "Metode Bayar: " . (class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method'])) . "\n";
         $msg .= "Status: *LUNAS*\n";
         $msg .= "------------------------------------------\n";
         $msg .= "Terima kasih atas kunjungan/pembelian Anda! 🙏\n";
@@ -2863,7 +2881,7 @@ class OKJ_Admin {
             $msg .= "No. Transaksi: `{$transaction_no}`\n";
             $msg .= "Nama Pelanggan: {$name}\n";
             $msg .= "Total Bayar: Rp " . number_format($subtotal, 0, ',', '.') . "\n";
-            $msg .= "Metode Bayar: " . strtoupper($payment_method) . "\n";
+            $msg .= "Metode Bayar: " . (class_exists('OKJ_App') ? OKJ_App::format_payment_method($payment_method) : strtoupper($payment_method)) . "\n";
             $msg .= "Status: *MENUNGGU PEMBAYARAN*\n";
             $msg .= "------------------------------------------\n";
             $msg .= "Pantau status pesanan secara real-time di sini:\n{$track_url}\n";

@@ -391,6 +391,11 @@ class OKJ_DB {
                         $wpdb->query("ALTER TABLE {$t_pos_transactions} ADD COLUMN reference_no VARCHAR(100) NULL AFTER transaction_no");
                     }
                 }
+
+                // Clean up raw payment method slugs to standard internal keys
+                $wpdb->query("UPDATE {$t_pos_transactions} SET payment_method = 'sumopod' WHERE payment_method IN ('okj_sumopod_qris', 'okj_sumopod')");
+                $wpdb->query("UPDATE {$t_pos_transactions} SET payment_method = 'cash' WHERE payment_method IN ('cod')");
+                $wpdb->query("UPDATE {$t_pos_transactions} SET payment_method = 'transfer' WHERE payment_method IN ('bacs', 'bank_transfer')");
             }
         } catch (\Throwable $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {

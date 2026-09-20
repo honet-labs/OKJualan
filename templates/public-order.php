@@ -774,7 +774,7 @@ $wa_confirm_no = !empty($settings['waha_sender_number']) ? $settings['waha_sende
             <!-- Payment instructions box for bank/qris -->
             <div class="okj-payment-instruction-box">
                 <h3 style="font-size: 13.5px; font-weight:800; color:var(--dark);">Detail Pembayaran</h3>
-                <p style="font-size:11.5px; color:var(--gray); margin-top:2px;">Metode Pembayaran: <strong><?php echo esc_html(strtoupper($tx['payment_method'])); ?></strong></p>
+                <p style="font-size:11.5px; color:var(--gray); margin-top:2px;">Metode Pembayaran: <strong><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method'])); ?></strong></p>
                 <div style="font-size: 16px; font-weight:800; color:var(--primary); margin: 8px 0;">Rp <?php echo number_format($tx['total'], 0, ',', '.'); ?></div>
                 
                 <?php if ($tx['payment_method'] === 'sumopod'): ?>
