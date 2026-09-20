@@ -160,9 +160,24 @@ class OKJ_Payment_Gateway {
             return;
         }
 
-        // If accessed directly via web browser (GET request), display informative and friendly status page
-        if (isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'GET') {
-            self::render_webhook_status_page();
+        // Webhooks strictly accept POST requests.
+        // Direct browser GET requests will NOT expose any sensitive UI or internal information.
+        $method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+        if ($method !== 'POST') {
+            // If an authenticated admin opens this in browser, redirect them directly to settings
+            if (is_user_logged_in() && (current_user_can('manage_options') || current_user_can('okj_manage_settings'))) {
+                wp_safe_redirect(admin_url('admin.php?page=okj-settings&tab=gateways'));
+                exit;
+            }
+
+            // Public visitors / bots get a sterile 405 Method Not Allowed
+            status_header(405);
+            header('Content-Type: application/json; charset=utf-8');
+            header('Allow: POST');
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'Method Not Allowed. Webhook endpoint only accepts POST requests.'
+            ]);
             exit;
         }
 
@@ -194,225 +209,6 @@ class OKJ_Payment_Gateway {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['status' => 'ok', 'message' => 'Webhook received successfully']);
         exit;
-    }
-
-    /**
-     * Render friendly status page when webhook endpoint is opened in a browser
-     */
-    private static function render_webhook_status_page() {
-        status_header(200);
-        header('Content-Type: text/html; charset=utf-8');
-
-        $canonical_url = home_url('/?okj_webhook=payment');
-        $clean_url     = home_url('/webhook');
-        $site_name     = get_bloginfo('name');
-        $admin_url     = admin_url('admin.php?page=okj-settings');
-        ?>
-        <!DOCTYPE html>
-        <html lang="id">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>OKJualan Webhook Endpoint &mdash; <?php echo esc_html($site_name); ?></title>
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-            <style>
-                * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
-                body {
-                    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 24px 16px;
-                    color: #334155;
-                }
-                .container {
-                    background: #ffffff;
-                    max-width: 680px;
-                    width: 100%;
-                    border-radius: 20px;
-                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
-                    overflow: hidden;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                }
-                .header {
-                    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-                    padding: 32px 28px;
-                    color: #ffffff;
-                    text-align: center;
-                    position: relative;
-                }
-                .badge {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    background: rgba(255, 255, 255, 0.2);
-                    padding: 6px 14px;
-                    border-radius: 9999px;
-                    font-size: 12px;
-                    font-weight: 700;
-                    letter-spacing: 0.5px;
-                    text-transform: uppercase;
-                    margin-bottom: 12px;
-                    backdrop-filter: blur(4px);
-                }
-                .pulse-dot {
-                    width: 8px;
-                    height: 8px;
-                    background-color: #34d399;
-                    border-radius: 50%;
-                    display: inline-block;
-                    animation: pulse 1.8s infinite;
-                }
-                @keyframes pulse {
-                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
-                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(52, 211, 153, 0); }
-                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
-                }
-                .header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
-                .header p { font-size: 13.5px; color: #d1fae5; line-height: 1.5; }
-                .body { padding: 28px; }
-                .info-box {
-                    background: #f0fdf4;
-                    border: 1.5px solid #bbf7d0;
-                    border-radius: 12px;
-                    padding: 18px;
-                    margin-bottom: 22px;
-                }
-                .info-box h3 { color: #166534; font-size: 14.5px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-                .info-box p { color: #15803d; font-size: 13px; line-height: 1.6; }
-                .url-section { margin-bottom: 22px; }
-                .url-label { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
-                .url-card {
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 10px;
-                    padding: 12px 14px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    gap: 10px;
-                    margin-bottom: 10px;
-                }
-                .url-card code { font-family: monospace; font-size: 13px; color: #0f172a; word-break: break-all; font-weight: 600; }
-                .copy-btn {
-                    background: #4f46e5;
-                    color: white;
-                    border: none;
-                    padding: 7px 14px;
-                    border-radius: 7px;
-                    font-size: 12px;
-                    font-weight: 700;
-                    cursor: pointer;
-                    white-space: nowrap;
-                    transition: background 0.15s;
-                }
-                .copy-btn:hover { background: #4338ca; }
-                .features-list { list-style: none; margin-bottom: 24px; }
-                .features-list li {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 10px;
-                    font-size: 13px;
-                    color: #475569;
-                    margin-bottom: 10px;
-                    line-height: 1.5;
-                }
-                .features-list li span.icon {
-                    background: #e0e7ff;
-                    color: #4f46e5;
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 11px;
-                    font-weight: 800;
-                    flex-shrink: 0;
-                    margin-top: 1px;
-                }
-                .footer {
-                    border-top: 1px solid #f1f5f9;
-                    padding-top: 20px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    flex-wrap: wrap;
-                    gap: 12px;
-                }
-                .btn-link {
-                    color: #4f46e5;
-                    font-size: 13px;
-                    font-weight: 700;
-                    text-decoration: none;
-                }
-                .btn-link:hover { text-decoration: underline; }
-                .btn-home {
-                    background: #f1f5f9;
-                    color: #334155;
-                    padding: 9px 18px;
-                    border-radius: 8px;
-                    font-size: 13px;
-                    font-weight: 700;
-                    text-decoration: none;
-                    transition: background 0.15s;
-                }
-                .btn-home:hover { background: #e2e8f0; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <div class="badge"><span class="pulse-dot"></span> Endpoint Aktif &amp; Siap Menerima Data</div>
-                    <h1>OKJualan Webhook Gateway</h1>
-                    <p>Gerbang notifikasi otomatis untuk penerimaan konfirmasi pembayaran SumoPod QRIS &amp; e-commerce.</p>
-                </div>
-                <div class="body">
-                    <div class="info-box">
-                        <h3>✅ Webhook Berfungsi Normal</h3>
-                        <p>Halaman ini adalah <strong>Endpoint Webhook API</strong> yang dirancang untuk menerima kiriman data callback (metode <code>POST</code>) dari payment gateway saat pelanggan Anda menyelesaikan pembayaran secara realtime.</p>
-                    </div>
-
-                    <div class="url-section">
-                        <span class="url-label">URL Webhook Untuk Dashboard SumoPod:</span>
-                        <div class="url-card">
-                            <code id="can-url"><?php echo esc_html($canonical_url); ?></code>
-                            <button type="button" class="copy-btn" onclick="navigator.clipboard.writeText('<?php echo esc_js($canonical_url); ?>'); this.innerText='Tersalin!'; setTimeout(()=>this.innerText='Salin', 1500);">Salin</button>
-                        </div>
-                        <div class="url-card">
-                            <code id="clean-url"><?php echo esc_html($clean_url); ?></code>
-                            <button type="button" class="copy-btn" style="background: #059669;" onclick="navigator.clipboard.writeText('<?php echo esc_js($clean_url); ?>'); this.innerText='Tersalin!'; setTimeout(()=>this.innerText='Salin', 1500);">Salin</button>
-                        </div>
-                        <small style="color: #64748b; font-size: 11.5px; display: block; margin-top: 4px;">Kedua URL di atas didukung penuh dan siap digunakan di menu Webhooks SumoPod.</small>
-                    </div>
-
-                    <ul class="features-list">
-                        <li>
-                            <span class="icon">✓</span>
-                            <div><strong>Verifikasi Svix Signature:</strong> Mendukung validasi keamanan tinggi HMAC-SHA256 dengan secret key <code>whsec_...</code>.</div>
-                        </li>
-                        <li>
-                            <span class="icon">✓</span>
-                            <div><strong>Verifikasi Webhook Token:</strong> Mendukung fallback otentikasi header <code>X-Webhook-Token</code>.</div>
-                        </li>
-                        <li>
-                            <span class="icon">✓</span>
-                            <div><strong>Event Terintegrasi:</strong> Mendukung <code>payment.completed</code> (Lunas), <code>payment.failed</code>, <code>payment.expired</code>, dan <code>payment.test</code>.</div>
-                        </li>
-                    </ul>
-
-                    <div class="footer">
-                        <a href="<?php echo esc_url($admin_url); ?>" class="btn-link">⚙️ Buka Pengaturan OKJualan Admin &raquo;</a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>" class="btn-home">&larr; Kembali ke Website</a>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-        <?php
     }
 
     /**

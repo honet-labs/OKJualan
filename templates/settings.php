@@ -557,9 +557,9 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) 
                             <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 8px; padding: 14px; margin-top: 12px; margin-bottom: 16px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                     <label class="okj-label" style="font-size: 12px; font-weight: 700; color: #166534; margin: 0;">Webhook Notification URL (Salin ke Dashboard SumoPod)</label>
-                                    <a href="<?php echo esc_url(home_url('/webhook')); ?>" target="_blank" style="font-size: 11.5px; color: #059669; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
-                                        <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px;"></span> Uji Status Webhook di Browser
-                                    </a>
+                                    <span style="font-size: 11.5px; color: #15803d; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                        <span class="dashicons dashicons-lock" style="font-size: 14px; width: 14px; height: 14px; color: #16a34a;"></span> Terproteksi (Hanya POST)
+                                    </span>
                                 </div>
                                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                                     <input type="text" id="okj_sumopod_webhook_url" class="okj-input" value="<?php echo esc_url(home_url('/?okj_webhook=payment')); ?>" readonly style="background: #ffffff; font-family: monospace; font-size: 12.5px;" />
@@ -574,7 +574,7 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) 
                                     </button>
                                 </div>
                                 <small style="color: #15803d; font-size: 11px; display: block; margin-top: 6px;">
-                                    Kedua URL di atas aktif &amp; didukung. Event SumoPod: <code>payment.completed</code>, <code>payment.failed</code>, <code>payment.expired</code>, <code>payment.test</code>
+                                    🔒 <strong>Keamanan Terjamin:</strong> Endpoint ini hanya merespons request <code>POST</code> resmi dari server SumoPod dengan verifikasi tanda tangan kriptografi (Svix HMAC-SHA256 / Token). Akses publik langsung via browser (GET) otomatis diblokir (405).
                                 </small>
                             </div>
 
