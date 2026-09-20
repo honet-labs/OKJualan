@@ -186,7 +186,30 @@ class OKJ_Updater {
             'headers' => $headers,
         ];
 
-        // 1. Try Releases API
+        $candidates = [];
+
+        // 1. Check raw plugin file directly from GitHub main branch
+        $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualan.php';
+        $raw_resp = wp_remote_get($raw_url, $args);
+        if (is_wp_error($raw_resp) || (int)wp_remote_retrieve_response_code($raw_resp) !== 200) {
+            $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualin.php';
+            $raw_resp = wp_remote_get($raw_url, $args);
+        }
+
+        if (!is_wp_error($raw_resp) && (int)wp_remote_retrieve_response_code($raw_resp) === 200) {
+            $content = wp_remote_retrieve_body($raw_resp);
+            if (preg_match('/Version:\s*([0-9\.]+)/i', $content, $m)) {
+                $version = trim($m[1]);
+                $candidates[] = [
+                    'version'      => $version,
+                    'tag_name'     => 'v' . $version,
+                    'download_url' => 'https://github.com/' . $repo . '/archive/refs/heads/main.zip',
+                    'changelog'    => 'Pembaruan terkini langsung dari branch main GitHub.',
+                ];
+            }
+        }
+
+        // 2. Try Releases API
         $url = 'https://api.github.com/repos/' . $repo . '/releases/latest';
         $resp = wp_remote_get($url, $args);
 
@@ -201,7 +224,7 @@ class OKJ_Updater {
                     $download_url = $data['assets'][0]['browser_download_url'];
                 }
 
-                return [
+                $candidates[] = [
                     'version'      => $version,
                     'tag_name'     => $data['tag_name'],
                     'download_url' => $download_url,
@@ -210,7 +233,7 @@ class OKJ_Updater {
             }
         }
 
-        // 2. Try Tags API
+        // 3. Try Tags API
         $url_tags = 'https://api.github.com/repos/' . $repo . '/tags';
         $resp_tags = wp_remote_get($url_tags, $args);
 
@@ -221,7 +244,7 @@ class OKJ_Updater {
                 $version = ltrim((string)$tag_name, 'v');
                 $download_url = $tags[0]['zipball_url'] ?? ('https://github.com/' . $repo . '/archive/refs/tags/' . $tag_name . '.zip');
 
-                return [
+                $candidates[] = [
                     'version'      => $version,
                     'tag_name'     => $tag_name,
                     'download_url' => $download_url,
@@ -230,28 +253,16 @@ class OKJ_Updater {
             }
         }
 
-        // 3. Try Raw okjualan.php (or okjualin.php) file from main branch
-        $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualan.php';
-        $raw_resp = wp_remote_get($raw_url, $args);
-        if (is_wp_error($raw_resp) || (int)wp_remote_retrieve_response_code($raw_resp) !== 200) {
-            $raw_url = 'https://raw.githubusercontent.com/' . $repo . '/main/okjualin.php';
-            $raw_resp = wp_remote_get($raw_url, $args);
+        if (empty($candidates)) {
+            return null;
         }
 
-        if (!is_wp_error($raw_resp) && (int)wp_remote_retrieve_response_code($raw_resp) === 200) {
-            $content = wp_remote_retrieve_body($raw_resp);
-            if (preg_match('/Version:\s*([0-9\.]+)/i', $content, $m)) {
-                $version = trim($m[1]);
-                return [
-                    'version'      => $version,
-                    'tag_name'     => 'v' . $version,
-                    'download_url' => 'https://github.com/' . $repo . '/archive/refs/heads/main.zip',
-                    'changelog'    => 'Pembaruan terkini dari branch main.',
-                ];
-            }
-        }
+        // Sort descending by semantic version so the newest release/commit is always chosen
+        usort($candidates, function($a, $b) {
+            return version_compare($b['version'], $a['version']);
+        });
 
-        return null;
+        return $candidates[0];
     }
 
     /**

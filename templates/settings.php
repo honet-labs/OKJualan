@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) { exit; } 
 
 $active_tab = !empty($_GET['tab']) ? sanitize_key($_GET['tab']) : 'global';
-if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support'])) {
+if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) {
     $active_tab = 'global';
 }
 ?>
@@ -30,30 +30,31 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support'])) {
         </div>
     <?php endif; ?>
 
-    <div class="okj-grid okj-grid-3 okj-mt-2">
-        <!-- Settings Form Column -->
-        <div class="okj-settings-main">
-            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
-                <?php wp_nonce_field('okj_save_settings'); ?>
-                <input type="hidden" name="action" value="okj_save_settings" />
+    <div class="okj-settings-container okj-mt-2">
+        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+            <?php wp_nonce_field('okj_save_settings'); ?>
+            <input type="hidden" name="action" value="okj_save_settings" />
 
-                <!-- NAVIGATION TABS -->
-                <div class="okj-tabs-wrapper" style="margin-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
-                    <ul class="okj-tabs-nav" style="display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap;">
-                        <li class="okj-tab-item <?php echo $active_tab === 'global' ? 'active' : ''; ?>" data-tab="global" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'global' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'global' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'global' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
-                            <span class="dashicons dashicons-admin-generic" style="font-size: 18px; width: 18px; height: 18px;"></span> Pengaturan Global &amp; Integrasi
-                        </li>
-                        <li class="okj-tab-item <?php echo $active_tab === 'gateways' ? 'active' : ''; ?>" data-tab="gateways" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'gateways' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'gateways' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'gateways' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
-                            <span class="dashicons dashicons-money-alt" style="font-size: 18px; width: 18px; height: 18px;"></span> Payment Gateway
-                        </li>
-                        <li class="okj-tab-item <?php echo $active_tab === 'pos' ? 'active' : ''; ?>" data-tab="pos" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'pos' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'pos' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'pos' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
-                            <span class="dashicons dashicons-calculator" style="font-size: 18px; width: 18px; height: 18px;"></span> Kasir POS
-                        </li>
-                        <li class="okj-tab-item <?php echo $active_tab === 'support' ? 'active' : ''; ?>" data-tab="support" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'support' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'support' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'support' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
-                            <span class="dashicons dashicons-format-chat" style="font-size: 18px; width: 18px; height: 18px;"></span> Dukungan Pelanggan
-                        </li>
-                    </ul>
-                </div>
+            <!-- NAVIGATION TABS -->
+            <div class="okj-tabs-wrapper" style="margin-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
+                <ul class="okj-tabs-nav" style="display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap;">
+                    <li class="okj-tab-item <?php echo $active_tab === 'global' ? 'active' : ''; ?>" data-tab="global" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'global' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'global' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'global' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <span class="dashicons dashicons-admin-generic" style="font-size: 18px; width: 18px; height: 18px;"></span> Pengaturan Global &amp; Integrasi
+                    </li>
+                    <li class="okj-tab-item <?php echo $active_tab === 'gateways' ? 'active' : ''; ?>" data-tab="gateways" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'gateways' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'gateways' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'gateways' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <span class="dashicons dashicons-money-alt" style="font-size: 18px; width: 18px; height: 18px;"></span> Payment Gateway
+                    </li>
+                    <li class="okj-tab-item <?php echo $active_tab === 'pos' ? 'active' : ''; ?>" data-tab="pos" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'pos' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'pos' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'pos' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <span class="dashicons dashicons-calculator" style="font-size: 18px; width: 18px; height: 18px;"></span> Kasir POS
+                    </li>
+                    <li class="okj-tab-item <?php echo $active_tab === 'support' ? 'active' : ''; ?>" data-tab="support" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'support' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'support' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'support' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <span class="dashicons dashicons-format-chat" style="font-size: 18px; width: 18px; height: 18px;"></span> Dukungan Pelanggan
+                    </li>
+                    <li class="okj-tab-item <?php echo $active_tab === 'backup' ? 'active' : ''; ?>" data-tab="backup" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'backup' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'backup' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'backup' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <span class="dashicons dashicons-database-export" style="font-size: 18px; width: 18px; height: 18px;"></span> Backup &amp; Restorasi
+                    </li>
+                </ul>
+            </div>
 
                 <!-- TAB 1: GLOBAL SETTINGS -->
                 <div class="okj-tab-content" id="okj-tab-global-content" style="<?php echo $active_tab === 'global' ? '' : 'display: none;'; ?>">
@@ -425,165 +426,6 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support'])) {
 }
 </style>
 
-<script>
-jQuery(document).ready(function($) {
-    var safeAjaxUrl = typeof ajaxurl !== 'undefined' ? ajaxurl.replace(/^http:/i, window.location.protocol) : '/wp-admin/admin-ajax.php';
-
-    // Tabs Navigation Switcher
-    $('.okj-tab-item').on('click', function() {
-        var targetTab = $(this).data('tab');
-        
-        // Active nav state
-        $('.okj-tab-item').removeClass('active').css({
-            'color': '#64748b',
-            'border-bottom-color': 'transparent',
-            'font-weight': '600'
-        });
-        
-        $(this).addClass('active').css({
-            'color': '#4f46e5',
-            'border-bottom-color': '#4f46e5',
-            'font-weight': '700'
-        });
-        
-        // Active content state
-        $('.okj-tab-content').hide();
-        $('#okj-tab-' + targetTab + '-content').fadeIn(200);
-    });
-
-    // Show Modal
-    $('#okj-btn-show-shortcodes').on('click', function(e) {
-        e.preventDefault();
-        $('#okj-shortcode-modal').css('display', 'flex');
-    });
-
-    // Close Modal
-    $('#okj-modal-close, #okj-modal-close-btn').on('click', function() {
-        $('#okj-shortcode-modal').hide();
-    });
-
-    // Close on outer click
-    $(window).on('click', function(e) {
-        if ($(e.target).is('#okj-shortcode-modal')) {
-            $('#okj-shortcode-modal').hide();
-        }
-    });
-
-    // Click to Copy Shortcode
-    $('.okj-copyable-code').on('click', function() {
-        var code = $(this).text();
-        var $el = $(this);
-        navigator.clipboard.writeText(code).then(function() {
-            var origColor = $el.css('color');
-            var origBg = $el.css('background');
-            
-            $el.css({
-                'color': '#fff',
-                'background': '#10b981'
-            }).attr('title', 'Tersalin!');
-            
-            setTimeout(function() {
-                $el.css({
-                    'color': origColor,
-                    'background': origBg
-                }).attr('title', 'Klik untuk menyalin');
-            }, 1000);
-        });
-    });
-
-    // Test WAHA Gateway
-    $('#okj-btn-test-waha').on('click', function(e) {
-        e.preventDefault();
-        var $btn = $(this);
-        var $status = $('#okj-waha-test-status');
-        var phone = $('#okj-waha-test-phone').val().trim();
-        
-        if (!phone) {
-            $status.css('color', '#ef4444').text('Nomor HP wajib diisi untuk tes!');
-            return;
-        }
-
-        $btn.prop('disabled', true).text('Mengirim...');
-        $status.css('color', '#4b5563').text('Menghubungkan ke WAHA...');
-
-        $.post(safeAjaxUrl, {
-            action: 'okj_test_waha',
-            waha_api_url: $('#okj-waha-url').val(),
-            waha_api_token: $('#okj-waha-token').val(),
-            waha_session_name: $('#okj-waha-session').val(),
-            target_phone: phone
-        }, function(resp) {
-            $btn.prop('disabled', false).html('<span class="dashicons dashicons-phone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim WA');
-            if (resp.success) {
-                $status.css('color', '#10b981').text(resp.data.message);
-            } else {
-                $status.css('color', '#ef4444').text(resp.data.message);
-            }
-        }).fail(function() {
-            $btn.prop('disabled', false).html('<span class="dashicons dashicons-phone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim WA');
-            $status.css('color', '#ef4444').text('Terjadi error jaringan atau server.');
-        });
-    });
-
-    // Test Telegram Bot
-    $('#okj-btn-test-telegram').on('click', function(e) {
-        e.preventDefault();
-        var $btn = $(this);
-        var $status = $('#okj-tele-test-status');
-        
-        $btn.prop('disabled', true).text('Mengirim...');
-        $status.css('color', '#4b5563').text('Menghubungkan ke Telegram...');
-
-        $.post(safeAjaxUrl, {
-            action: 'okj_test_telegram',
-            telegram_bot_token: $('#okj-tele-token').val(),
-            telegram_default_chat_id: $('#okj-tele-chatid').val()
-        }, function(resp) {
-            $btn.prop('disabled', false).html('<span class="dashicons dashicons-megaphone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Telegram');
-            if (resp.success) {
-                $status.css('color', '#10b981').text(resp.data.message);
-            } else {
-                $status.css('color', '#ef4444').text(resp.data.message);
-            }
-        }).fail(function() {
-            $btn.prop('disabled', false).html('<span class="dashicons dashicons-megaphone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Telegram');
-            $status.css('color', '#ef4444').text('Terjadi error jaringan atau server.');
-        });
-    });
-
-    // Test SMTP Email
-    $('#okj-btn-test-smtp').on('click', function(e) {
-        e.preventDefault();
-        var $btn = $(this);
-        var $status = $('#okj-smtp-test-status');
-        
-        $btn.prop('disabled', true).text('Mengirim...');
-        $status.css('color', '#4b5563').text('Mengirim email uji coba...');
-
-        $.post(safeAjaxUrl, {
-            action: 'okj_test_smtp',
-            smtp_host: $('#okj-smtp-host').val(),
-            smtp_port: $('#okj-smtp-port').val(),
-            smtp_user: $('#okj-smtp-user').val(),
-            smtp_pass: $('#okj-smtp-pass').val(),
-            smtp_secure: $('#okj-smtp-secure').val(),
-            smtp_from_email: $('#okj-smtp-from-email').val(),
-            smtp_from_name: $('#okj-smtp-from-name').val()
-        }, function(resp) {
-            $btn.prop('disabled', false).html('<span class="dashicons dashicons-email" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Email SMTP (Ke Sender Email)');
-            if (resp.success) {
-                $status.css('color', '#10b981').text(resp.data.message);
-            } else {
-                $status.css('color', '#ef4444').text(resp.data.message);
-            }
-        }).fail(function() {
-            $btn.prop('disabled', false).html('<span class="dashicons dashicons-email" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Email SMTP (Ke Sender Email)');
-            $status.css('color', '#ef4444').text('Terjadi error jaringan atau server.');
-        });
-    });
-});
-</script>
-
                 <!-- GitHub Updater API Config -->
                 <div class="okj-card okj-mt-2">
                     <div class="okj-card-header">
@@ -665,59 +507,15 @@ jQuery(document).ready(function($) {
                             <?php endif; ?>
                         </div>
                     </div>
+
+                    <div class="okj-form-actions okj-mt-2">
+                        <button type="submit" class="okj-btn okj-btn-primary">
+                            <span class="dashicons dashicons-saved" style="margin-right: 5px;"></span> Simpan Pengaturan Global
+                        </button>
+                    </div>
                 </div>
             </div> <!-- End #okj-tab-global-content -->
 
-                <!-- TAB 2: POS SETTINGS -->
-                <div class="okj-tab-content" id="okj-tab-pos-content" style="<?php echo $active_tab === 'pos' ? '' : 'display: none;'; ?>">
-                    <!-- POS Specific Settings Card -->
-                    <div class="okj-card">
-                        <div class="okj-card-header">
-                            <h2>Metode Pembayaran Mesin Kasir POS</h2>
-                        </div>
-                        <div class="okj-card-body">
-                            <p class="okj-text-muted" style="margin-bottom: 20px;">Pilih metode pembayaran apa saja yang ingin Anda aktifkan saat kasir melakukan checkout pesanan di aplikasi POS.</p>
-                            
-                            <div class="okj-form-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                                <!-- Cash/Tunai -->
-                                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s;">
-                                    <input type="checkbox" name="pos_enable_cash" value="1" <?php checked(!isset($settings['pos_enable_cash']) || $settings['pos_enable_cash'] == 1, 1); ?> style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;" />
-                                    <div>
-                                        <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; cursor: pointer;">
-                                            <span class="dashicons dashicons-money" style="color: #10b981; font-size: 18px; width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 4px;"></span> Cash / Tunai
-                                        </label>
-                                        <small class="okj-text-muted" style="font-size: 11px;">Menerima pembayaran tunai langsung di toko/kasir.</small>
-                                    </div>
-                                </div>
-
-                                <!-- Transfer Bank -->
-                                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s;">
-                                    <input type="checkbox" name="pos_enable_transfer" value="1" <?php checked(!isset($settings['pos_enable_transfer']) || $settings['pos_enable_transfer'] == 1, 1); ?> style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;" />
-                                    <div>
-                                        <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; cursor: pointer;">
-                                            <span class="dashicons dashicons-bank" style="color: #3b82f6; font-size: 18px; width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 4px;"></span> Transfer Bank
-                                        </label>
-                                        <small class="okj-text-muted" style="font-size: 11px;">Menerima pembayaran transfer bank manual.</small>
-                                    </div>
-                                </div>
-
-                                <!-- QRIS / E-Wallet -->
-                                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s;">
-                                    <input type="checkbox" name="pos_enable_qris" value="1" <?php checked(!isset($settings['pos_enable_qris']) || $settings['pos_enable_qris'] == 1, 1); ?> style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;" />
-                                    <div>
-                                        <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; cursor: pointer;">
-                                            <span class="dashicons dashicons-smartphone" style="color: #a855f7; font-size: 18px; width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 4px;"></span> QRIS / E-Wallet
-                                        </label>
-                                        <small class="okj-text-muted" style="font-size: 11px;">Menerima scan barcode QRIS dan e-wallet digital.</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> <!-- End #okj-tab-pos-content -->
-
-                <!-- ======================================================================= -->
-                <!-- TAB: PAYMENT GATEWAYS (SumoPod, Midtrans, Tripay, Manual, QRIS)        -->
                 <!-- ======================================================================= -->
                 <div class="okj-tab-content" id="okj-tab-gateways-content" style="<?php echo $active_tab === 'gateways' ? '' : 'display: none;'; ?>">
                     <!-- SumoPod Payment Gateway -->
@@ -907,10 +705,68 @@ jQuery(document).ready(function($) {
                             </div>
                         </div>
                     </div>
+
+                    <div class="okj-form-actions okj-mt-2">
+                        <button type="submit" class="okj-btn okj-btn-primary">
+                            <span class="dashicons dashicons-saved" style="margin-right: 5px;"></span> Simpan Pengaturan Payment Gateway
+                        </button>
+                    </div>
                 </div> <!-- End #okj-tab-gateways-content -->
 
-                <!-- ======================================================================= -->
-                <!-- TAB: DUKUNGAN PELANGGAN (Feature 10: WhatsApp, Email, FAQ)             -->
+                <!-- TAB 2: POS SETTINGS -->
+                <div class="okj-tab-content" id="okj-tab-pos-content" style="<?php echo $active_tab === 'pos' ? '' : 'display: none;'; ?>">
+                    <!-- POS Specific Settings Card -->
+                    <div class="okj-card">
+                        <div class="okj-card-header">
+                            <h2>Metode Pembayaran Mesin Kasir POS</h2>
+                        </div>
+                        <div class="okj-card-body">
+                            <p class="okj-text-muted" style="margin-bottom: 20px;">Pilih metode pembayaran apa saja yang ingin Anda aktifkan saat kasir melakukan checkout pesanan di aplikasi POS.</p>
+                            
+                            <div class="okj-form-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <!-- Cash/Tunai -->
+                                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s;">
+                                    <input type="checkbox" name="pos_enable_cash" value="1" <?php checked(!isset($settings['pos_enable_cash']) || $settings['pos_enable_cash'] == 1, 1); ?> style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;" />
+                                    <div>
+                                        <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; cursor: pointer;">
+                                            <span class="dashicons dashicons-money" style="color: #10b981; font-size: 18px; width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 4px;"></span> Cash / Tunai
+                                        </label>
+                                        <small class="okj-text-muted" style="font-size: 11px;">Menerima pembayaran tunai langsung di toko/kasir.</small>
+                                    </div>
+                                </div>
+
+                                <!-- Transfer Bank -->
+                                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s;">
+                                    <input type="checkbox" name="pos_enable_transfer" value="1" <?php checked(!isset($settings['pos_enable_transfer']) || $settings['pos_enable_transfer'] == 1, 1); ?> style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;" />
+                                    <div>
+                                        <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; cursor: pointer;">
+                                            <span class="dashicons dashicons-bank" style="color: #3b82f6; font-size: 18px; width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 4px;"></span> Transfer Bank
+                                        </label>
+                                        <small class="okj-text-muted" style="font-size: 11px;">Menerima pembayaran transfer bank manual.</small>
+                                    </div>
+                                </div>
+
+                                <!-- QRIS / E-Wallet -->
+                                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; transition: all 0.2s;">
+                                    <input type="checkbox" name="pos_enable_qris" value="1" <?php checked(!isset($settings['pos_enable_qris']) || $settings['pos_enable_qris'] == 1, 1); ?> style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;" />
+                                    <div>
+                                        <label style="font-weight: 700; color: #1e293b; display: block; margin-bottom: 4px; font-size: 14px; cursor: pointer;">
+                                            <span class="dashicons dashicons-smartphone" style="color: #a855f7; font-size: 18px; width: 18px; height: 18px; vertical-align: text-bottom; margin-right: 4px;"></span> QRIS / E-Wallet
+                                        </label>
+                                        <small class="okj-text-muted" style="font-size: 11px;">Menerima scan barcode QRIS dan e-wallet digital.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="okj-form-actions okj-mt-2">
+                        <button type="submit" class="okj-btn okj-btn-primary">
+                            <span class="dashicons dashicons-saved" style="margin-right: 5px;"></span> Simpan Pengaturan Kasir POS
+                        </button>
+                    </div>
+                </div> <!-- End #okj-tab-pos-content -->
+
                 <!-- ======================================================================= -->
                 <div class="okj-tab-content" id="okj-tab-support-content" style="<?php echo $active_tab === 'support' ? '' : 'display: none;'; ?>">
                     <!-- WhatsApp CS & Email Helpdesk -->
@@ -964,58 +820,79 @@ jQuery(document).ready(function($) {
                             </div>
                         </div>
                     </div>
+
+                    <div class="okj-form-actions okj-mt-2">
+                        <button type="submit" class="okj-btn okj-btn-primary">
+                            <span class="dashicons dashicons-saved" style="margin-right: 5px;"></span> Simpan Pengaturan Dukungan
+                        </button>
+                    </div>
                 </div> <!-- End #okj-tab-support-content -->
 
-                <div class="okj-form-actions okj-mt-2">
-                    <button type="submit" class="okj-btn okj-btn-primary">Simpan Semua Pengaturan</button>
-                </div>
-            </form>
-        </div>
+        </form>
 
-        <!-- Sidebar Actions Column (Backup & Restore) -->
-        <div>
-            <!-- JSON Backup Card -->
-            <div class="okj-card">
-                <div class="okj-card-header">
-                    <h2>Ekspor Data Backup JSON</h2>
+        <!-- ======================================================================= -->
+        <!-- TAB 5: BACKUP & RESTORASI (JSON Export & Import)                       -->
+        <!-- ======================================================================= -->
+        <div class="okj-tab-content" id="okj-tab-backup-content" style="<?php echo $active_tab === 'backup' ? '' : 'display: none;'; ?>">
+            <div class="okj-grid okj-grid-2">
+                <!-- JSON Backup Card -->
+                <div class="okj-card">
+                    <div class="okj-card-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 18px 20px; color: #ffffff;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                            <span class="dashicons dashicons-database-export" style="font-size: 20px; width: 20px; height: 20px;"></span>
+                            Ekspor Data Backup JSON
+                        </h2>
+                    </div>
+                    <div class="okj-card-body">
+                        <p class="okj-text-muted" style="margin-bottom: 20px; font-size: 13.5px; line-height: 1.6;">
+                            Ekspor seluruh basis data master harga, reseller product, customer, active product, reminder, logs, dan pengaturan plugin ke dalam 1 berkas format JSON untuk cadangan keamanan data Anda.
+                        </p>
+                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+                            <?php wp_nonce_field('okj_backup_data'); ?>
+                            <input type="hidden" name="action" value="okj_backup_data" />
+                            <button type="submit" class="okj-btn okj-btn-primary" style="width: 100%; padding: 12px 20px; font-weight: 700;">
+                                <span class="dashicons dashicons-download" style="margin-right: 6px;"></span> Unduh Cadangan Data (JSON)
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <div class="okj-card-body">
-                    <p class="okj-text-muted" style="margin-bottom:15px;">Ekspor seluruh basis data master harga, reseller product, customer, active product, reminder, logs, dan pengaturan plugin ke dalam 1 file JSON.</p>
-                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
-                        <?php wp_nonce_field('okj_backup_data'); ?>
-                        <input type="hidden" name="action" value="okj_backup_data" />
-                        <button type="submit" class="okj-btn okj-btn-primary" style="width: 100%;">
-                            <span class="dashicons dashicons-download"></span> Ekspor Data (JSON)
-                        </button>
-                    </form>
+
+                <!-- JSON Restore Card -->
+                <div class="okj-card">
+                    <div class="okj-card-header" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 18px 20px; color: #ffffff;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                            <span class="dashicons dashicons-database-import" style="font-size: 20px; width: 20px; height: 20px;"></span>
+                            Impor Data &amp; Restorasi
+                        </h2>
+                    </div>
+                    <div class="okj-card-body">
+                        <p class="okj-text-muted" style="margin-bottom: 20px; font-size: 13.5px; line-height: 1.6;">
+                            Unggah berkas backup JSON yang sebelumnya telah diekspor untuk memulihkan seluruh data dan pengaturan secara otomatis dan instan.
+                        </p>
+                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" enctype="multipart/form-data">
+                            <?php wp_nonce_field('okj_restore_data'); ?>
+                            <input type="hidden" name="action" value="okj_restore_data" />
+                            <div class="okj-form-group">
+                                <label class="okj-label" style="font-weight: 600;">Pilih Berkas Cadangan (.json):</label>
+                                <input type="file" name="restore_file" accept=".json" required class="okj-input" style="padding: 8px;" />
+                            </div>
+                            <button type="submit" class="okj-btn okj-btn-secondary" style="width: 100%; margin-top: 20px; padding: 12px 20px; font-weight: 700;" onclick="return confirm('PENTING: Mengimpor backup akan mengosongkan dan menimpa database aktif saat ini. Pastikan Anda memiliki cadangan data terbaru. Lanjutkan?');">
+                                <span class="dashicons dashicons-upload" style="margin-right: 6px;"></span> Mulai Impor &amp; Restorasi
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
+        </div> <!-- End #okj-tab-backup-content -->
 
-            <!-- JSON Restore Card -->
-            <div class="okj-card okj-mt-2">
-                <div class="okj-card-header">
-                    <h2>Impor Data & Restorasi</h2>
-                </div>
-                <div class="okj-card-body">
-                    <p class="okj-text-muted" style="margin-bottom:15px;">Unggah file backup JSON yang sebelumnya diekspor untuk melakukan restorasi database secara cepat.</p>
-                    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" enctype="multipart/form-data">
-                        <?php wp_nonce_field('okj_restore_data'); ?>
-                        <input type="hidden" name="action" value="okj_restore_data" />
-                        <div class="okj-form-group">
-                            <input type="file" name="restore_file" accept=".json" required />
-                        </div>
-                        <button type="submit" class="okj-btn okj-btn-secondary" style="width: 100%; margin-top:15px;" onclick="return confirm('PENTING: Mengimpor backup akan mengosongkan dan menimpa database aktif saat ini. Lanjutkan?');">
-                            <span class="dashicons dashicons-upload"></span> Mulai Impor & Restorasi
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    </div> <!-- End .okj-settings-container -->
+</div> <!-- End .okj-wrap -->
 
 <script>
 jQuery(document).ready(function($) {
+    var safeAjaxUrl = typeof ajaxurl !== 'undefined' ? ajaxurl.replace(/^http:/i, window.location.protocol) : '/wp-admin/admin-ajax.php';
+
+    // Authoritative Tab Navigation Switcher
     function activateTab(tabName) {
         if (!tabName) return;
         var $item = $('.okj-tab-item[data-tab="' + tabName + '"]');
@@ -1036,21 +913,159 @@ jQuery(document).ready(function($) {
         $('#okj-tab-' + tabName + '-content').show();
 
         if (window.history && window.history.replaceState) {
-            window.history.replaceState(null, null, window.location.pathname + window.location.search.replace(/&tab=[^&]*/g, '') + '&tab=' + tabName);
+            var searchParams = new URLSearchParams(window.location.search);
+            searchParams.set('tab', tabName);
+            window.history.replaceState(null, null, window.location.pathname + '?' + searchParams.toString());
         }
     }
 
-    $('.okj-tab-item').on('click', function(e) {
+    $(document).off('click', '.okj-tab-item').on('click', '.okj-tab-item', function(e) {
         e.preventDefault();
         var target = $(this).data('tab');
         activateTab(target);
     });
 
-    // Check hash or URL params on page load
-    var hash = window.location.hash;
-    if (hash && hash.indexOf('#tab-') === 0) {
-        var hashTab = hash.replace('#tab-', '');
-        activateTab(hashTab);
+    // Handle initial tab from URL query params or hash
+    var urlParams = new URLSearchParams(window.location.search);
+    var queryTab = urlParams.get('tab');
+    if (queryTab) {
+        activateTab(queryTab);
+    } else {
+        var hash = window.location.hash;
+        if (hash && hash.indexOf('#tab-') === 0) {
+            activateTab(hash.replace('#tab-', ''));
+        }
     }
+
+    // Show Shortcode Modal
+    $('#okj-btn-show-shortcodes').on('click', function(e) {
+        e.preventDefault();
+        $('#okj-shortcode-modal').css('display', 'flex');
+    });
+
+    // Close Modal
+    $('#okj-modal-close, #okj-modal-close-btn').on('click', function() {
+        $('#okj-shortcode-modal').hide();
+    });
+
+    // Close Modal on outer click
+    $(window).on('click', function(e) {
+        if ($(e.target).is('#okj-shortcode-modal')) {
+            $('#okj-shortcode-modal').hide();
+        }
+    });
+
+    // Click to Copy Shortcode
+    $('.okj-copyable-code').on('click', function() {
+        var code = $(this).text();
+        var $el = $(this);
+        navigator.clipboard.writeText(code).then(function() {
+            var origColor = $el.css('color');
+            var origBg = $el.css('background');
+            
+            $el.css({
+                'color': '#fff',
+                'background': '#10b981'
+            }).attr('title', 'Tersalin!');
+            
+            setTimeout(function() {
+                $el.css({
+                    'color': origColor,
+                    'background': origBg
+                }).attr('title', 'Klik untuk menyalin');
+            }, 1000);
+        });
+    });
+
+    // Test WAHA Gateway
+    $('#okj-btn-test-waha').on('click', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var $status = $('#okj-waha-test-status');
+        var phone = $('#okj-waha-test-phone').val().trim();
+        
+        if (!phone) {
+            $status.css('color', '#ef4444').text('Nomor HP wajib diisi untuk tes!');
+            return;
+        }
+
+        $btn.prop('disabled', true).text('Mengirim...');
+        $status.css('color', '#4b5563').text('Menghubungkan ke WAHA...');
+
+        $.post(safeAjaxUrl, {
+            action: 'okj_test_waha',
+            waha_api_url: $('#okj-waha-url').val(),
+            waha_api_token: $('#okj-waha-token').val(),
+            waha_session_name: $('#okj-waha-session').val(),
+            target_phone: phone
+        }, function(resp) {
+            $btn.prop('disabled', false).html('<span class="dashicons dashicons-phone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim WA');
+            if (resp.success) {
+                $status.css('color', '#10b981').text(resp.data.message);
+            } else {
+                $status.css('color', '#ef4444').text(resp.data.message);
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).html('<span class="dashicons dashicons-phone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim WA');
+            $status.css('color', '#ef4444').text('Terjadi error jaringan atau server.');
+        });
+    });
+
+    // Test Telegram Bot
+    $('#okj-btn-test-telegram').on('click', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var $status = $('#okj-tele-test-status');
+        
+        $btn.prop('disabled', true).text('Mengirim...');
+        $status.css('color', '#4b5563').text('Menghubungkan ke Telegram...');
+
+        $.post(safeAjaxUrl, {
+            action: 'okj_test_telegram',
+            telegram_bot_token: $('#okj-tele-token').val(),
+            telegram_default_chat_id: $('#okj-tele-chatid').val()
+        }, function(resp) {
+            $btn.prop('disabled', false).html('<span class="dashicons dashicons-megaphone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Telegram');
+            if (resp.success) {
+                $status.css('color', '#10b981').text(resp.data.message);
+            } else {
+                $status.css('color', '#ef4444').text(resp.data.message);
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).html('<span class="dashicons dashicons-megaphone" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Telegram');
+            $status.css('color', '#ef4444').text('Terjadi error jaringan atau server.');
+        });
+    });
+
+    // Test SMTP Email
+    $('#okj-btn-test-smtp').on('click', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var $status = $('#okj-smtp-test-status');
+        
+        $btn.prop('disabled', true).text('Mengirim...');
+        $status.css('color', '#4b5563').text('Mengirim email uji coba...');
+
+        $.post(safeAjaxUrl, {
+            action: 'okj_test_smtp',
+            smtp_host: $('#okj-smtp-host').val(),
+            smtp_port: $('#okj-smtp-port').val(),
+            smtp_user: $('#okj-smtp-user').val(),
+            smtp_pass: $('#okj-smtp-pass').val(),
+            smtp_secure: $('#okj-smtp-secure').val(),
+            smtp_from_email: $('#okj-smtp-from-email').val(),
+            smtp_from_name: $('#okj-smtp-from-name').val()
+        }, function(resp) {
+            $btn.prop('disabled', false).html('<span class="dashicons dashicons-email" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Email SMTP (Ke Sender Email)');
+            if (resp.success) {
+                $status.css('color', '#10b981').text(resp.data.message);
+            } else {
+                $status.css('color', '#ef4444').text(resp.data.message);
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).html('<span class="dashicons dashicons-email" style="margin-right: 5px; font-size: 16px; width: 16px; height: 16px;"></span> Test Kirim Email SMTP (Ke Sender Email)');
+            $status.css('color', '#ef4444').text('Terjadi error jaringan atau server.');
+        });
+    });
 });
 </script>
