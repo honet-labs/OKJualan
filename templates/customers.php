@@ -5,6 +5,11 @@
             <p style="margin: 0; font-weight: 600;">Data customer berhasil dihapus.</p>
         </div>
     <?php endif; ?>
+    <?php if (isset($_GET['synced_wp_customers'])): ?>
+        <div class="notice notice-success is-dismissible okj-mb-2" style="margin: 0 0 20px 0; padding: 12px 16px; border-left-color: #10b981; background: #ecfdf5; color: #065f46; border-radius: 8px; border-left-width: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <p style="margin: 0; font-weight: 600;">Data akun pengguna WordPress (Role Customer) berhasil disinkronkan ke OKJualan.</p>
+        </div>
+    <?php endif; ?>
 
     <?php if ($action === 'add' || $action === 'edit'): ?>
         <!-- Add / Edit Page -->
@@ -91,7 +96,10 @@
                 <h1>List Customer</h1>
                 <p class="okj-subtitle">Daftar pelanggan yang membeli produk di platform OKJualan.</p>
             </div>
-            <div class="okj-actions">
+            <div class="okj-actions" style="display: flex; gap: 8px; align-items: center;">
+                <a class="okj-btn okj-btn-secondary" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_sync_wp_customers'), 'okj_sync_wp_customers'); ?>" title="Tarik dan sinkronkan seluruh akun pengguna WordPress dengan role Customer ke OKJualan">
+                    <span class="dashicons dashicons-update" style="font-size: 15px; width: 15px; height: 15px; margin-right: 4px; vertical-align: middle;"></span> Sync Akun Customer WP
+                </a>
                 <a class="okj-btn okj-btn-primary" href="<?php echo admin_url('admin.php?page=okj-customers&action=add'); ?>">
                     <span class="dashicons dashicons-plus"></span> Tambah Customer
                 </a>

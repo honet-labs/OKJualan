@@ -15,6 +15,7 @@ class OKJ_Admin {
         add_action('admin_post_okj_delete_seller', [$this, 'delete_seller']);
         add_action('admin_post_okj_save_customer', [$this, 'save_customer']);
         add_action('admin_post_okj_delete_customer', [$this, 'delete_customer']);
+        add_action('admin_post_okj_sync_wp_customers', [$this, 'post_sync_wp_customers']);
         add_action('admin_post_okj_save_reseller_product', [$this, 'save_reseller_product']);
         add_action('admin_post_okj_delete_reseller_product', [$this, 'delete_reseller_product']);
         add_action('admin_post_okj_save_active_product', [$this, 'save_active_product']);
@@ -334,6 +335,11 @@ class OKJ_Admin {
             $row = $id ? $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $id), ARRAY_A) : null;
             $this->render_template('customers', ['action' => $action, 'row' => $row]);
         } else {
+            // Auto-sync WordPress users with role 'customer' on the first page of List Customer
+            if (class_exists('OKJ_WC_Sync') && (!isset($_GET['paged']) || (int)$_GET['paged'] <= 1)) {
+                OKJ_WC_Sync::sync_all_wp_customers();
+            }
+
             $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
@@ -929,6 +935,22 @@ class OKJ_Admin {
         OKJ_Reseller_Manager::log('delete', 'customer', $id, "Deleted customer: " . $name);
 
         $this->redirect(admin_url('admin.php?page=okj-customers&deleted=1'));
+    }
+
+    /**
+     * Manual Trigger to synchronize all WordPress users with role 'customer' to OKJualan
+     */
+    public function post_sync_wp_customers() {
+        check_admin_referer('okj_sync_wp_customers');
+        if (!current_user_can('okj_manage')) {
+            wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
+        }
+
+        if (class_exists('OKJ_WC_Sync')) {
+            OKJ_WC_Sync::sync_all_wp_customers();
+        }
+
+        $this->redirect(admin_url('admin.php?page=okj-customers&synced_wp_customers=1'));
     }
 
     public function save_shortlink() {

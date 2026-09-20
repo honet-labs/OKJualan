@@ -33,6 +33,12 @@ class OKJ_WC_Sync {
         add_action('woocommerce_new_order', [__CLASS__, 'on_wc_order_created'], 10, 1);
         add_action('woocommerce_order_status_changed', [__CLASS__, 'on_order_status_changed'], 10, 3);
 
+        // Listen to user registration and role updates to sync WordPress users with role Customer
+        add_action('woocommerce_created_customer', [__CLASS__, 'on_wc_customer_created'], 10, 3);
+        add_action('user_register', [__CLASS__, 'on_user_registered'], 10, 1);
+        add_action('set_user_role', [__CLASS__, 'on_user_role_changed'], 10, 3);
+        add_action('profile_update', [__CLASS__, 'on_user_profile_updated'], 10, 2);
+
         // Register SumoPod QRIS Payment Gateway into WooCommerce
         add_filter('woocommerce_payment_gateways', [__CLASS__, 'register_payment_gateway']);
     }
@@ -269,6 +275,20 @@ class OKJ_WC_Sync {
      */
     public static function get_or_create_customer($order) {
         if (!$order) return null;
+
+        // If order belongs to a registered WordPress customer user, sync that user first
+        $customer_user_id = method_exists($order, 'get_customer_id') ? (int)$order->get_customer_id() : 0;
+        if ($customer_user_id > 0) {
+            $synced_id = self::sync_wp_user_to_customer($customer_user_id);
+            if ($synced_id) {
+                return [
+                    'id'    => $synced_id,
+                    'name'  => trim($order->get_formatted_billing_full_name()) ?: ('WC Customer #' . $order->get_id()),
+                    'email' => sanitize_email($order->get_billing_email()),
+                    'phone' => sanitize_text_field($order->get_billing_phone()),
+                ];
+            }
+        }
 
         global $wpdb;
         $t_customers = OKJ_DB::get_table('customers');
@@ -625,6 +645,175 @@ class OKJ_WC_Sync {
         }
 
         update_post_meta($order_id, '_okj_order_captured', current_time('mysql'));
+    }
+
+    /**
+     * Listener when a customer account is created via WooCommerce checkout or registration
+     */
+    public static function on_wc_customer_created($customer_id, $new_customer_data = [], $password_generated = false) {
+        if (!$customer_id) return;
+        self::sync_wp_user_to_customer($customer_id);
+    }
+
+    /**
+     * Listener when a generic WordPress user is registered
+     */
+    public static function on_user_registered($user_id) {
+        if (!$user_id) return;
+        self::sync_wp_user_to_customer($user_id);
+    }
+
+    /**
+     * Listener when a user's role changes to 'customer'
+     */
+    public static function on_user_role_changed($user_id, $role, $old_roles = []) {
+        if ($role === 'customer') {
+            self::sync_wp_user_to_customer($user_id);
+        }
+    }
+
+    /**
+     * Listener when user profile is updated
+     */
+    public static function on_user_profile_updated($user_id, $old_user_data = null) {
+        if (!$user_id) return;
+        self::sync_wp_user_to_customer($user_id);
+    }
+
+    /**
+     * Synchronize a WordPress user with role 'customer' to OKJualan customers table.
+     * Only users with the 'customer' role are synchronized (ignoring administrators, editors, etc.).
+     *
+     * @param int|WP_User $user_id_or_user
+     * @return string|null Customer ID in OKJualan or null if not a customer
+     */
+    public static function sync_wp_user_to_customer($user_id_or_user) {
+        if (!$user_id_or_user) return null;
+        $user = is_a($user_id_or_user, 'WP_User') ? $user_id_or_user : get_userdata($user_id_or_user);
+        if (!$user || !is_a($user, 'WP_User')) return null;
+
+        // Strictly verify that the user has the 'customer' role
+        $roles = (array)$user->roles;
+        if (!in_array('customer', $roles, true)) {
+            return null;
+        }
+
+        global $wpdb;
+        $t_customers = OKJ_DB::get_table('customers');
+
+        // Self-healing database check
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$t_customers}'") !== $t_customers) {
+            OKJ_DB::install();
+        }
+
+        $user_id = $user->ID;
+        $email = sanitize_email($user->user_email);
+
+        // Determine customer name: first check billing names, then first/last, then display_name
+        $billing_first = get_user_meta($user_id, 'billing_first_name', true);
+        $billing_last  = get_user_meta($user_id, 'billing_last_name', true);
+        $first_name    = get_user_meta($user_id, 'first_name', true);
+        $last_name     = get_user_meta($user_id, 'last_name', true);
+
+        $name = trim($billing_first . ' ' . $billing_last);
+        if (empty($name)) {
+            $name = trim($first_name . ' ' . $last_name);
+        }
+        if (empty($name)) {
+            $name = $user->display_name ?: $user->user_login;
+        }
+
+        // Phone and WhatsApp
+        $billing_phone = get_user_meta($user_id, 'billing_phone', true);
+        $custom_wa     = get_user_meta($user_id, 'whatsapp', true);
+        $phone         = sanitize_text_field($billing_phone ?: $custom_wa);
+        $whatsapp      = sanitize_text_field($custom_wa ?: $billing_phone);
+
+        // Address
+        $addr1    = get_user_meta($user_id, 'billing_address_1', true);
+        $addr2    = get_user_meta($user_id, 'billing_address_2', true);
+        $city     = get_user_meta($user_id, 'billing_city', true);
+        $state    = get_user_meta($user_id, 'billing_state', true);
+        $postcode = get_user_meta($user_id, 'billing_postcode', true);
+        $address  = implode(', ', array_filter([$addr1, $addr2, $city, $state, $postcode]));
+
+        $notes = "Akun WordPress User #{$user_id} (Username: {$user->user_login})";
+
+        // Check if customer already exists in wp_okj_customers by email or phone
+        $existing = null;
+        if (!empty($email)) {
+            $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_customers} WHERE email = %s LIMIT 1", $email), ARRAY_A);
+        }
+        if (!$existing && !empty($phone)) {
+            $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_customers} WHERE phone = %s OR whatsapp = %s LIMIT 1", $phone, $phone), ARRAY_A);
+        }
+
+        if ($existing) {
+            $cust_id = $existing['id'];
+            // Update fields if they have new/better data
+            $update_data = [
+                'updated_at' => current_time('mysql'),
+            ];
+            if (empty($existing['phone']) && !empty($phone)) $update_data['phone'] = $phone;
+            if (empty($existing['whatsapp']) && !empty($whatsapp)) $update_data['whatsapp'] = $whatsapp;
+            if (empty($existing['address']) && !empty($address)) $update_data['address'] = $address;
+            if ($existing['name'] === $user->user_login && $name !== $user->user_login) $update_data['name'] = $name;
+
+            $wpdb->update($t_customers, $update_data, ['id' => $cust_id]);
+            return $cust_id;
+        }
+
+        // Create new customer
+        $cust_id = wp_generate_uuid4();
+        $wpdb->insert($t_customers, [
+            'id'         => $cust_id,
+            'name'       => $name,
+            'email'      => $email,
+            'phone'      => $phone,
+            'telegram'   => '',
+            'whatsapp'   => $whatsapp,
+            'address'    => $address,
+            'notes'      => $notes,
+            'status'     => 'active',
+            'created_at' => $user->user_registered ? $user->user_registered : current_time('mysql'),
+            'updated_at' => current_time('mysql'),
+            'updated_by' => 0,
+        ]);
+
+        if (class_exists('OKJ_Reseller_Manager')) {
+            OKJ_Reseller_Manager::log('sync_wp_customer', 'customer', $cust_id, "Customer otomatis disinkronkan dari akun WordPress #{$user_id} ({$user->user_login}): {$name}");
+        }
+
+        return $cust_id;
+    }
+
+    /**
+     * Batch synchronize all existing WordPress users with role 'customer' to OKJualan
+     *
+     * @return array
+     */
+    public static function sync_all_wp_customers() {
+        $users = get_users([
+            'role'   => 'customer',
+            'number' => -1,
+        ]);
+
+        if (empty($users)) {
+            return ['total' => 0, 'synced' => 0];
+        }
+
+        $synced = 0;
+        foreach ($users as $u) {
+            $res = self::sync_wp_user_to_customer($u);
+            if ($res) {
+                $synced++;
+            }
+        }
+
+        return [
+            'total'  => count($users),
+            'synced' => $synced,
+        ];
     }
 }
 }
