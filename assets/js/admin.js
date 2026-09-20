@@ -498,4 +498,28 @@ jQuery(document).ready(function($) {
             alert('❌ Terjadi kesalahan jaringan saat mensinkronkan produk.');
         });
     });
+
+    // Universal Tab Switcher for Settings & Dashboard Tabs
+    $(document).on('click', '.okj-tab-item', function(e) {
+        var targetTab = $(this).data('tab');
+        if (!targetTab) return;
+
+        $('.okj-tab-item').removeClass('active').css({
+            'color': '#64748b',
+            'border-bottom-color': 'transparent',
+            'font-weight': '600'
+        });
+        $(this).addClass('active').css({
+            'color': '#4f46e5',
+            'border-bottom-color': '#4f46e5',
+            'font-weight': '700'
+        });
+
+        $('.okj-tab-content').hide();
+        $('#okj-tab-' + targetTab + '-content').show();
+
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.pathname + window.location.search.replace(/&tab=[^&]*/g, '') + '&tab=' + targetTab);
+        }
+    });
 });

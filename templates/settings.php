@@ -1,4 +1,11 @@
-<?php if (!defined('ABSPATH')) { exit; } ?>
+<?php 
+if (!defined('ABSPATH')) { exit; } 
+
+$active_tab = !empty($_GET['tab']) ? sanitize_key($_GET['tab']) : 'global';
+if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support'])) {
+    $active_tab = 'global';
+}
+?>
 <div class="okj-wrap">
     <div class="okj-header">
         <div>
@@ -33,23 +40,23 @@
                 <!-- NAVIGATION TABS -->
                 <div class="okj-tabs-wrapper" style="margin-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
                     <ul class="okj-tabs-nav" style="display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap;">
-                        <li class="okj-tab-item active" data-tab="global" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 700; font-size: 15px; color: #4f46e5; border-bottom: 3px solid #4f46e5; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <li class="okj-tab-item <?php echo $active_tab === 'global' ? 'active' : ''; ?>" data-tab="global" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'global' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'global' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'global' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
                             <span class="dashicons dashicons-admin-generic" style="font-size: 18px; width: 18px; height: 18px;"></span> Pengaturan Global &amp; Integrasi
                         </li>
-                        <li class="okj-tab-item" data-tab="gateways" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 600; font-size: 15px; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <li class="okj-tab-item <?php echo $active_tab === 'gateways' ? 'active' : ''; ?>" data-tab="gateways" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'gateways' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'gateways' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'gateways' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
                             <span class="dashicons dashicons-money-alt" style="font-size: 18px; width: 18px; height: 18px;"></span> Payment Gateway
                         </li>
-                        <li class="okj-tab-item" data-tab="pos" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 600; font-size: 15px; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <li class="okj-tab-item <?php echo $active_tab === 'pos' ? 'active' : ''; ?>" data-tab="pos" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'pos' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'pos' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'pos' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
                             <span class="dashicons dashicons-calculator" style="font-size: 18px; width: 18px; height: 18px;"></span> Kasir POS
                         </li>
-                        <li class="okj-tab-item" data-tab="support" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: 600; font-size: 15px; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <li class="okj-tab-item <?php echo $active_tab === 'support' ? 'active' : ''; ?>" data-tab="support" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'support' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'support' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'support' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
                             <span class="dashicons dashicons-format-chat" style="font-size: 18px; width: 18px; height: 18px;"></span> Dukungan Pelanggan
                         </li>
                     </ul>
                 </div>
 
                 <!-- TAB 1: GLOBAL SETTINGS -->
-                <div class="okj-tab-content" id="okj-tab-global-content">
+                <div class="okj-tab-content" id="okj-tab-global-content" style="<?php echo $active_tab === 'global' ? '' : 'display: none;'; ?>">
                     <!-- General Reminder Offsets -->
                 <div class="okj-card">
                     <div class="okj-card-header">
@@ -661,7 +668,7 @@ jQuery(document).ready(function($) {
                 </div> <!-- End #okj-tab-global-content -->
 
                 <!-- TAB 2: POS SETTINGS -->
-                <div class="okj-tab-content" id="okj-tab-pos-content" style="display: none;">
+                <div class="okj-tab-content" id="okj-tab-pos-content" style="<?php echo $active_tab === 'pos' ? '' : 'display: none;'; ?>">
                     <!-- POS Specific Settings Card -->
                     <div class="okj-card">
                         <div class="okj-card-header">
@@ -711,7 +718,7 @@ jQuery(document).ready(function($) {
                 <!-- ======================================================================= -->
                 <!-- TAB: PAYMENT GATEWAYS (SumoPod, Midtrans, Tripay, Manual, QRIS)        -->
                 <!-- ======================================================================= -->
-                <div class="okj-tab-content" id="okj-tab-gateways-content" style="display: none;">
+                <div class="okj-tab-content" id="okj-tab-gateways-content" style="<?php echo $active_tab === 'gateways' ? '' : 'display: none;'; ?>">
                     <!-- SumoPod Payment Gateway -->
                     <div class="okj-card">
                         <div class="okj-card-header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 18px 20px; color: #ffffff;">
@@ -904,7 +911,7 @@ jQuery(document).ready(function($) {
                 <!-- ======================================================================= -->
                 <!-- TAB: DUKUNGAN PELANGGAN (Feature 10: WhatsApp, Email, FAQ)             -->
                 <!-- ======================================================================= -->
-                <div class="okj-tab-content" id="okj-tab-support-content" style="display: none;">
+                <div class="okj-tab-content" id="okj-tab-support-content" style="<?php echo $active_tab === 'support' ? '' : 'display: none;'; ?>">
                     <!-- WhatsApp CS & Email Helpdesk -->
                     <div class="okj-card">
                         <div class="okj-card-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 18px 20px; color: #ffffff;">
@@ -1005,3 +1012,44 @@ jQuery(document).ready(function($) {
         </div>
     </div>
 </div>
+
+<script>
+jQuery(document).ready(function($) {
+    function activateTab(tabName) {
+        if (!tabName) return;
+        var $item = $('.okj-tab-item[data-tab="' + tabName + '"]');
+        if (!$item.length) return;
+
+        $('.okj-tab-item').removeClass('active').css({
+            'color': '#64748b',
+            'border-bottom-color': 'transparent',
+            'font-weight': '600'
+        });
+        $item.addClass('active').css({
+            'color': '#4f46e5',
+            'border-bottom-color': '#4f46e5',
+            'font-weight': '700'
+        });
+
+        $('.okj-tab-content').hide();
+        $('#okj-tab-' + tabName + '-content').show();
+
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.pathname + window.location.search.replace(/&tab=[^&]*/g, '') + '&tab=' + tabName);
+        }
+    }
+
+    $('.okj-tab-item').on('click', function(e) {
+        e.preventDefault();
+        var target = $(this).data('tab');
+        activateTab(target);
+    });
+
+    // Check hash or URL params on page load
+    var hash = window.location.hash;
+    if (hash && hash.indexOf('#tab-') === 0) {
+        var hashTab = hash.replace('#tab-', '');
+        activateTab(hashTab);
+    }
+});
+</script>
