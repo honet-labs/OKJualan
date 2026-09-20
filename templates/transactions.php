@@ -771,4 +771,15 @@ function okjSendWaReceipt(txId, phone) {
         }
     });
 }
+
+// Auto open modal on page load if open_detail / tx_id is present in URL
+jQuery(document).ready(function($) {
+    var urlParams = new URLSearchParams(window.location.search);
+    var autoOpenTx = urlParams.get('open_detail') || urlParams.get('tx_id') || urlParams.get('detail');
+    if (autoOpenTx) {
+        setTimeout(function() {
+            okjOpenTxDetail(autoOpenTx);
+        }, 150);
+    }
+});
 </script>

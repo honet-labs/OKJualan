@@ -260,17 +260,26 @@
                                     ?>
                                     <tr>
                                         <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
-                                        <td>
-                                            <?php if ($wc_id > 0): ?>
-                                                <a href="<?php echo esc_url($wc_url); ?>" target="_blank" title="Buka Pesanan WooCommerce #<?php echo $wc_id; ?> di Tab Baru" style="font-family: monospace; font-size: 12px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #c7d2fe;">
-                                                    <span class="dashicons dashicons-cart" style="font-size: 13px; width: 13px; height: 13px;"></span>
-                                                    WC #<?php echo $wc_id; ?>
-                                                </a>
-                                            <?php elseif (!empty($tx_no)): ?>
-                                                <a href="<?php echo esc_url(admin_url('admin.php?page=okj-transactions&s=' . urlencode($tx_no))); ?>" target="_blank" title="Cari di List Transaksi" style="font-family: monospace; font-size: 12px; font-weight: 600; color: #1e293b; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #f8fafc; padding: 3px 8px; border-radius: 5px; border: 1px solid #e2e8f0;">
-                                                    <span class="dashicons dashicons-media-text" style="font-size: 13px; width: 13px; height: 13px; color: #64748b;"></span>
-                                                    <?php echo esc_html($tx_no); ?>
-                                                </a>
+                                        <td style="white-space: nowrap;">
+                                            <?php if (!empty($tx_no) || $wc_id > 0): ?>
+                                                <?php 
+                                                $tx_lookup = $wc_id > 0 ? ('WC-' . $wc_id) : $tx_no;
+                                                $tx_label  = $wc_id > 0 ? ('WC #' . $wc_id) : $tx_no;
+                                                $tx_detail_url = admin_url('admin.php?page=okj-transactions&s=' . urlencode($tx_lookup) . '&open_detail=' . urlencode($tx_lookup));
+                                                ?>
+                                                <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                                    <a href="<?php echo esc_url($tx_detail_url); ?>" 
+                                                       title="Buka Detail Transaksi di Menu List Transaksi" 
+                                                       style="font-family: monospace; font-size: 12px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #eef2ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #c7d2fe; transition: all 0.2s;">
+                                                        <span class="dashicons dashicons-media-text" style="font-size: 13px; width: 13px; height: 13px; color: #4f46e5;"></span>
+                                                        <?php echo esc_html($tx_label); ?>
+                                                    </a>
+                                                    <?php if ($wc_id > 0 && !empty($wc_url)): ?>
+                                                        <a href="<?php echo esc_url($wc_url); ?>" target="_blank" title="Buka Pesanan Asli di WooCommerce #<?php echo $wc_id; ?> (Tab Baru)" style="color: #94a3b8; display: inline-flex; align-items: center; text-decoration: none; padding: 2px;">
+                                                            <span class="dashicons dashicons-external" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
                                             <?php else: ?>
                                                 <span class="okj-text-muted">-</span>
                                             <?php endif; ?>
@@ -378,6 +387,11 @@
                                                     <a class="okj-btn-link" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_invoice_pdf&id=' . $r['id']), 'okj_invoice_pdf_' . $r['id']); ?>" target="_blank" style="font-size: 11px; color: #0284c7;">
                                                         <span class="dashicons dashicons-pdf" style="font-size: 13px; width: 13px; height: 13px;"></span> Invoice
                                                     </a>
+                                                    <?php if ($p_status === 'active'): ?>
+                                                        <a class="okj-btn-link" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_mark_active_product_status&id=' . $r['id'] . '&status=process'), 'okj_mark_status_' . $r['id']); ?>" onclick="return confirm('Ubah status produk ini ke Dalam Proses (perlu serah terima akun)?');" style="font-size: 11px; color: #d97706;" title="Ubah ke status Dalam Proses">
+                                                            <span class="dashicons dashicons-clock" style="font-size: 13px; width: 13px; height: 13px;"></span> Proses
+                                                        </a>
+                                                    <?php endif; ?>
                                                     <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-active-products&action=edit&id=' . $r['id']); ?>" style="font-size: 11px;">
                                                         <span class="dashicons dashicons-edit" style="font-size: 13px; width: 13px; height: 13px;"></span> Edit
                                                     </a>

@@ -1570,6 +1570,8 @@ class OKJ_Admin {
             'support_email' => !empty($_POST['support_email']) ? sanitize_email($_POST['support_email']) : '',
             'support_faq_json' => !empty($_POST['support_faq_json']) ? sanitize_textarea_field($_POST['support_faq_json']) : '',
             'manual_fulfillment_tags' => !empty($_POST['manual_fulfillment_tags']) ? sanitize_text_field($_POST['manual_fulfillment_tags']) : '',
+            'default_service_duration_days' => !empty($_POST['default_service_duration_days']) ? (int)$_POST['default_service_duration_days'] : 30,
+            'auto_sync_active_products' => isset($_POST['auto_sync_active_products']) ? (!empty($_POST['auto_sync_active_products']) ? 1 : 0) : 1,
         ];
 
         $existing = get_option('okj_settings_v1', []);
@@ -1577,7 +1579,8 @@ class OKJ_Admin {
         update_option('okj_settings_v1', $updated);
         OKJ_Reseller_Manager::log('save_settings', 'settings', '', 'Updated plugin settings configuration');
 
-        wp_safe_redirect(admin_url('admin.php?page=okj-settings'));
+        $redirect_tab = !empty($_POST['current_tab']) ? '&tab=' . sanitize_key($_POST['current_tab']) : '';
+        wp_safe_redirect(admin_url('admin.php?page=okj-settings' . $redirect_tab . '&msg=' . urlencode('Pengaturan berhasil disimpan.')));
         exit;
     }
 
@@ -2185,8 +2188,21 @@ class OKJ_Admin {
             SELECT t.*, c.phone AS cust_phone, c.whatsapp AS cust_whatsapp, c.email AS cust_email
             FROM {$t_trans} t
             LEFT JOIN {$t_cust} c ON t.customer_id = c.id
-            WHERE t.id = %s
-        ", $id), ARRAY_A);
+            WHERE t.id = %s OR t.transaction_no = %s OR t.reference_no = %s
+            ORDER BY (t.id = %s) DESC, t.created_at DESC
+            LIMIT 1
+        ", $id, $id, $id, $id), ARRAY_A);
+
+        if (!$tx && is_numeric($id)) {
+            $tx = $wpdb->get_row($wpdb->prepare("
+                SELECT t.*, c.phone AS cust_phone, c.whatsapp AS cust_whatsapp, c.email AS cust_email
+                FROM {$t_trans} t
+                LEFT JOIN {$t_cust} c ON t.customer_id = c.id
+                WHERE t.transaction_no = %s OR t.transaction_no = %s OR t.reference_no = %s
+                ORDER BY t.created_at DESC
+                LIMIT 1
+            ", 'WC-' . $id, 'WC #' . $id, $id), ARRAY_A);
+        }
 
         if (!$tx) {
             wp_send_json_error(['message' => 'Transaksi tidak ditemukan di database.']);
@@ -2194,7 +2210,7 @@ class OKJ_Admin {
 
         $items = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$t_items} WHERE transaction_id = %s ORDER BY id ASC",
-            $id
+            $tx['id']
         ), ARRAY_A);
 
         $wc_order_id = 0;

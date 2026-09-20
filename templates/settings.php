@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) { exit; } 
 
 $active_tab = !empty($_GET['tab']) ? sanitize_key($_GET['tab']) : 'global';
-if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) {
+if (!in_array($active_tab, ['global', 'products', 'gateways', 'pos', 'support', 'backup'])) {
     $active_tab = 'global';
 }
 ?>
@@ -34,12 +34,16 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) 
         <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
             <?php wp_nonce_field('okj_save_settings'); ?>
             <input type="hidden" name="action" value="okj_save_settings" />
+            <input type="hidden" name="current_tab" id="okj-current-tab-input" value="<?php echo esc_attr($active_tab); ?>" />
 
             <!-- NAVIGATION TABS -->
             <div class="okj-tabs-wrapper" style="margin-bottom: 25px; border-bottom: 2px solid #e2e8f0;">
                 <ul class="okj-tabs-nav" style="display: flex; gap: 24px; list-style: none; margin: 0; padding: 0; flex-wrap: wrap;">
                     <li class="okj-tab-item <?php echo $active_tab === 'global' ? 'active' : ''; ?>" data-tab="global" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'global' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'global' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'global' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
                         <span class="dashicons dashicons-admin-generic" style="font-size: 18px; width: 18px; height: 18px;"></span> Pengaturan Global &amp; Integrasi
+                    </li>
+                    <li class="okj-tab-item <?php echo $active_tab === 'products' ? 'active' : ''; ?>" data-tab="products" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'products' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'products' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'products' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                        <span class="dashicons dashicons-products" style="font-size: 18px; width: 18px; height: 18px;"></span> Produk &amp; Layanan
                     </li>
                     <li class="okj-tab-item <?php echo $active_tab === 'gateways' ? 'active' : ''; ?>" data-tab="gateways" style="padding-bottom: 12px; margin-bottom: -2px; font-weight: <?php echo $active_tab === 'gateways' ? '700' : '600'; ?>; font-size: 15px; color: <?php echo $active_tab === 'gateways' ? '#4f46e5' : '#64748b'; ?>; border-bottom: 3px solid <?php echo $active_tab === 'gateways' ? '#4f46e5' : 'transparent'; ?>; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
                         <span class="dashicons dashicons-money-alt" style="font-size: 18px; width: 18px; height: 18px;"></span> Payment Gateway
@@ -76,19 +80,19 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) 
                     </div>
                 </div>
 
-                <!-- Manual Account Fulfillment Settings -->
-                <div class="okj-card okj-mt-2">
-                    <div class="okj-card-header">
-                        <h2>Pengiriman Akun Manual (Fulfillment Produk)</h2>
-                    </div>
-                    <div class="okj-card-body">
-                        <div class="okj-form-group">
-                            <label class="okj-label">Tags Produk Perlu Pengiriman Akun Manual (Pisahkan dengan koma)</label>
-                            <input type="text" name="manual_fulfillment_tags" class="okj-input" value="<?php echo esc_attr(!empty($settings['manual_fulfillment_tags']) ? $settings['manual_fulfillment_tags'] : 'netflix'); ?>" placeholder="netflix, spotify, canva, youtube" />
-                            <small class="okj-text-muted">
-                                Jika produk yang dibeli customer memiliki salah satu tag ini (misal <strong>netflix</strong>, spotify, dll), saat pembayaran berhasil maka status di <em>Produk Aktif</em> akan otomatis menjadi <strong>Dalam Proses (process)</strong>. Administrator dapat menyerahkan akun secara manual kepada customer via kontak yang tersedia, lalu mengubah statusnya menjadi Aktif.
-                            </small>
+                <!-- Note: Manual Fulfillment Moved to Dedicated Products Tab -->
+                <div class="okj-card okj-mt-2" style="background: #f8fafc; border: 1px dashed #c7d2fe;">
+                    <div class="okj-card-body" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span class="dashicons dashicons-products" style="font-size: 28px; width: 28px; height: 28px; color: #4f46e5;"></span>
+                            <div>
+                                <h3 style="margin: 0 0 2px 0; font-size: 14px; font-weight: 700; color: #1e293b;">Pengaturan Produk &amp; Penyerahan Akun Manual</h3>
+                                <p style="margin: 0; font-size: 12px; color: #64748b;">Pengaturan tags produk (seperti Netflix, Mikrotik), masa aktif default, dan auto-sync telah dipindahkan ke tab khusus <strong>Produk &amp; Layanan</strong>.</p>
+                            </div>
                         </div>
+                        <button type="button" class="okj-btn okj-btn-secondary" onclick="jQuery('.okj-tab-item[data-tab=\'products\']').click();" style="font-weight: 600;">
+                            Buka Tab Produk &amp; Layanan &rarr;
+                        </button>
                     </div>
                 </div>
 
@@ -532,6 +536,112 @@ if (!in_array($active_tab, ['global', 'gateways', 'pos', 'support', 'backup'])) 
                 </div>
             </div> <!-- End #okj-tab-global-content -->
 
+            <!-- ======================================================================= -->
+            <!-- TAB 2: PRODUK & LAYANAN (Manual Fulfillment, Tags, & Masa Aktif)       -->
+            <!-- ======================================================================= -->
+            <div class="okj-tab-content" id="okj-tab-products-content" style="<?php echo $active_tab === 'products' ? '' : 'display: none;'; ?>">
+                <!-- Manual Account Fulfillment Settings -->
+                <div class="okj-card">
+                    <div class="okj-card-header" style="background: linear-gradient(135deg, #312e81 0%, #4338ca 100%); padding: 18px 20px; color: #ffffff;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                            <span class="dashicons dashicons-tag" style="font-size: 20px; width: 20px; height: 20px;"></span>
+                            Tags Produk Perlu Pengiriman Akun Manual (Fulfillment)
+                        </h2>
+                    </div>
+                    <div class="okj-card-body">
+                        <div class="okj-form-group">
+                            <label class="okj-label" style="font-weight: 700; font-size: 13.5px; color: #1e293b;">
+                                Daftar Tags / Kata Kunci Produk (Pisahkan dengan tanda koma <code>,</code>)
+                            </label>
+                            <input type="text" name="manual_fulfillment_tags" class="okj-input" 
+                                   value="<?php echo esc_attr(!empty($settings['manual_fulfillment_tags']) ? $settings['manual_fulfillment_tags'] : 'netflix, spotify, canva, mikrotik'); ?>" 
+                                   placeholder="netflix, spotify, canva, mikrotik, vpn, vps" 
+                                   style="padding: 10px 14px; font-size: 14px; font-weight: 600; border-color: #c7d2fe;" />
+                            <p class="okj-text-muted" style="margin-top: 8px; font-size: 12.5px; line-height: 1.6;">
+                                💡 <strong>Cara Kerja:</strong> Jika produk yang dibeli pelanggan memiliki salah satu tag/kata kunci di atas (misal <code>netflix</code>, <code>mikrotik</code>, <code>spotify</code>), saat pembayaran berhasil maka status di menu <strong>Pembelian &amp; Produk Aktif</strong> akan otomatis diset sebagai <strong>⏳ Dalam Proses</strong> (bukan langsung <em>Aktif</em>). Administrator dapat menyerahkan akun/kredensial kepada pelanggan secara manual via WhatsApp, lalu mengubah statusnya menjadi <strong>🟢 Aktif</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How-To Guide: Cara Memasang Tags Pada Produk -->
+                <div class="okj-card okj-mt-2" style="border: 1.5px solid #e0e7ff; background: #ffffff;">
+                    <div class="okj-card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 14px 20px;">
+                        <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                            <span class="dashicons dashicons-book" style="color: #4f46e5;"></span>
+                            Panduan: Di Mana &amp; Bagaimana Cara Memasang Tags Pada Produk Tertentu?
+                        </h3>
+                    </div>
+                    <div class="okj-card-body" style="padding: 20px;">
+                        <p style="margin: 0 0 16px 0; font-size: 13px; color: #475569;">
+                            Sistem OKJualan secara fleksibel mengenali tags produk dari <strong>3 metode berbeda</strong>. Anda dapat memilih metode yang paling praktis:
+                        </p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                            <!-- Card 1: Nama / Judul Produk -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <span style="background: #4f46e5; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">1</span>
+                                    <strong style="color: #1e293b; font-size: 13px;">Otomatis Lewat Nama / Judul Produk</strong>
+                                </div>
+                                <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                                    Sistem otomatis mencocokkan kata kunci dari <strong>Nama / Judul Produk</strong>. Contoh: jika Anda menjual produk bernama <em>"Jasa Setup Mikrotik"</em> dan di daftar tags di atas terdapat kata <code>mikrotik</code>, sistem otomatis langsung mengenali pesanan tersebut memerlukan proses manual!
+                                </p>
+                            </div>
+                            <!-- Card 2: Tag WooCommerce -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <span style="background: #4f46e5; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">2</span>
+                                    <strong style="color: #1e293b; font-size: 13px;">Menu Produk WooCommerce</strong>
+                                </div>
+                                <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                                    Buka menu <strong>WooCommerce &gt; Products (Semua Produk)</strong> &rarr; Klik <strong>Edit</strong> produk &rarr; Pada sidebar sebelah kanan, cari box <strong>Tag Produk (Product tags)</strong> &rarr; Ketik tag seperti <code>mikrotik</code> atau <code>netflix</code> &rarr; Klik <strong>Tambah</strong> lalu <strong>Update</strong> produk.
+                                </p>
+                            </div>
+                            <!-- Card 3: OKJualan Daftar Harga -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <span style="background: #4f46e5; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">3</span>
+                                    <strong style="color: #1e293b; font-size: 13px;">Menu Daftar Harga OKJualan</strong>
+                                </div>
+                                <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                                    Buka menu <strong>OKJualan &gt; Daftar Harga Produk</strong> &rarr; Klik <strong>Edit</strong> produk &rarr; Masukkan tag pada kolom <strong>Tags</strong> &rarr; Klik <strong>Simpan</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Duration & Auto Sync -->
+                <div class="okj-card okj-mt-2">
+                    <div class="okj-card-header">
+                        <h2>Durasi Masa Aktif &amp; Sinkronisasi Otomatis</h2>
+                    </div>
+                    <div class="okj-card-body">
+                        <div class="okj-grid okj-grid-2">
+                            <div class="okj-form-group">
+                                <label class="okj-label">Masa Aktif Default Layanan (Hari)</label>
+                                <input type="number" name="default_service_duration_days" class="okj-input" min="1" max="3650" value="<?php echo esc_attr(!empty($settings['default_service_duration_days']) ? $settings['default_service_duration_days'] : 30); ?>" />
+                                <small class="okj-text-muted">Durasi hari aktif produk jika tidak ditentukan secara spesifik pada produk (misal: 30 hari).</small>
+                            </div>
+                            <div class="okj-form-group">
+                                <label class="okj-label">Otomatis Catat ke Pembelian &amp; Produk Aktif</label>
+                                <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 600; cursor: pointer;">
+                                    <input type="checkbox" name="auto_sync_active_products" value="1" <?php checked(!isset($settings['auto_sync_active_products']) || !empty($settings['auto_sync_active_products'])); ?> />
+                                    Sinkronkan transaksi yang berhasil dibayar ke menu Pembelian &amp; Produk Aktif
+                                </label>
+                                <small class="okj-text-muted">Jika dicentang, seluruh transaksi sukses (POS kasir maupun WooCommerce) akan otomatis dicatat ke menu Pembelian &amp; Produk Aktif.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="okj-form-actions okj-mt-2">
+                    <button type="submit" class="okj-btn okj-btn-primary" style="padding: 10px 20px; font-weight: 700;">
+                        <span class="dashicons dashicons-saved" style="margin-right: 5px;"></span> Simpan Pengaturan Produk
+                    </button>
+                </div>
+            </div> <!-- End #okj-tab-products-content -->
+
                 <!-- ======================================================================= -->
                 <div class="okj-tab-content" id="okj-tab-gateways-content" style="<?php echo $active_tab === 'gateways' ? '' : 'display: none;'; ?>">
                     <!-- SumoPod Payment Gateway -->
@@ -948,6 +1058,8 @@ jQuery(document).ready(function($) {
             searchParams.set('tab', tabName);
             window.history.replaceState(null, null, window.location.pathname + '?' + searchParams.toString());
         }
+
+        $('#okj-current-tab-input').val(tabName);
     }
 
     $(document).off('click', '.okj-tab-item').on('click', '.okj-tab-item', function(e) {

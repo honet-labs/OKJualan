@@ -443,14 +443,38 @@ class OKJ_Reseller_Manager {
                 }
             }
 
-            // 3. Check WooCommerce product_tag taxonomy if WC is active and product_id is numeric
-            if (is_numeric($product_id) && function_exists('wp_get_post_terms')) {
-                $wc_tags = wp_get_post_terms((int)$product_id, 'product_tag', ['fields' => 'names']);
+            // 3. Check WooCommerce product_tag and product_cat taxonomy if WC is active
+            $wc_check_id = 0;
+            if (is_numeric($product_id)) {
+                $wc_check_id = (int)$product_id;
+            } elseif (!empty($product_id) && isset($t_prices)) {
+                $linked_wc = $wpdb->get_var($wpdb->prepare("SELECT wc_product_id FROM {$t_prices} WHERE id = %s", $product_id));
+                if (!empty($linked_wc)) {
+                    $wc_check_id = (int)$linked_wc;
+                }
+            }
+
+            if ($wc_check_id > 0 && function_exists('wp_get_post_terms')) {
+                // Product Tags
+                $wc_tags = wp_get_post_terms($wc_check_id, 'product_tag', ['fields' => 'names']);
                 if (!is_wp_error($wc_tags) && !empty($wc_tags)) {
                     foreach ($wc_tags as $tag_name) {
                         $tag_name_lower = strtolower(trim($tag_name));
                         foreach ($config_tags as $ct) {
                             if ($ct === $tag_name_lower || strpos($tag_name_lower, $ct) !== false) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                // Product Categories
+                $wc_cats = wp_get_post_terms($wc_check_id, 'product_cat', ['fields' => 'names']);
+                if (!is_wp_error($wc_cats) && !empty($wc_cats)) {
+                    foreach ($wc_cats as $cat_name) {
+                        $cat_name_lower = strtolower(trim($cat_name));
+                        foreach ($config_tags as $ct) {
+                            if ($ct === $cat_name_lower || strpos($cat_name_lower, $ct) !== false) {
                                 return true;
                             }
                         }
