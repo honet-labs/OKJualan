@@ -178,7 +178,7 @@ class OKJ_Admin {
 
         // Low stock products alert (stok <= 3 dan >= 0)
         $low_stock_products = $wpdb->get_results(
-            "SELECT id, name, stock, price, category FROM " . OKJ_DB::get_table('product_prices') . " WHERE stock >= 0 AND stock <= 3 ORDER BY stock ASC LIMIT 10",
+            "SELECT id, name, stock, sale_price AS price, category FROM " . OKJ_DB::get_table('product_prices') . " WHERE stock >= 0 AND stock <= 3 ORDER BY stock ASC LIMIT 10",
             ARRAY_A
         );
 

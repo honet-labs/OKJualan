@@ -33,7 +33,7 @@
                     <tr>
                         <td><strong><?php echo esc_html($lp['name']); ?></strong></td>
                         <td><?php echo esc_html($lp['category'] ?: '-'); ?></td>
-                        <td>Rp <?php echo number_format_i18n($lp['price'], 0); ?></td>
+                        <td>Rp <?php echo number_format_i18n((float)($lp['price'] ?? $lp['sale_price'] ?? 0), 0); ?></td>
                         <td>
                             <?php if ((int)$lp['stock'] === 0): ?>
                                 <span class="okj-badge okj-badge-danger" style="font-weight: 700;">HABIS (0)</span>
