@@ -146,8 +146,8 @@ class OKJ_Payment_Gateway {
 
         $settings = self::get_settings();
 
-        // 1. Check SumoPod Webhook
-        $is_sumopod = isset($_SERVER['HTTP_SVIX_ID']) || isset($_SERVER['HTTP_X_WEBHOOK_TOKEN']);
+        // 1. Check SumoPod Webhook (via Svix headers or Webhook Token)
+        $is_sumopod = !empty(self::get_request_header('svix-id')) || !empty(self::get_request_header('x-webhook-token'));
         if ($is_sumopod) {
             self::process_sumopod_webhook($raw_body, $settings);
             exit;
@@ -166,28 +166,59 @@ class OKJ_Payment_Gateway {
     }
 
     /**
+     * Case-insensitive HTTP Header resolver (compatible with Apache, Nginx, LiteSpeed, Caddy)
+     */
+    public static function get_request_header($name) {
+        $clean_name = strtolower(trim($name));
+        $server_key = 'HTTP_' . strtoupper(str_replace('-', '_', $clean_name));
+        if (!empty($_SERVER[$server_key])) {
+            return trim($_SERVER[$server_key]);
+        }
+        $direct_key = strtoupper(str_replace('-', '_', $clean_name));
+        if (!empty($_SERVER[$direct_key])) {
+            return trim($_SERVER[$direct_key]);
+        }
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if (is_array($headers)) {
+                foreach ($headers as $k => $v) {
+                    if (strtolower($k) === $clean_name) {
+                        return trim($v);
+                    }
+                }
+            }
+        }
+        return '';
+    }
+
+    /**
      * Process SumoPod Webhook with signature & token verification
      */
     private static function process_sumopod_webhook($raw_body, $settings) {
         $secret = trim((string)($settings['sumopod_webhook_secret'] ?? ''));
         $token  = trim((string)($settings['sumopod_webhook_token'] ?? ''));
 
+        $svix_id        = self::get_request_header('svix-id');
+        $svix_timestamp = self::get_request_header('svix-timestamp');
+        $svix_signature = self::get_request_header('svix-signature');
+        $token_header   = self::get_request_header('x-webhook-token');
+
         $is_valid = false;
 
-        // Verify via Token (Method 2)
-        if ($token && isset($_SERVER['HTTP_X_WEBHOOK_TOKEN'])) {
-            if (hash_equals($token, $_SERVER['HTTP_X_WEBHOOK_TOKEN'])) {
+        // Method 1: Verify via Token (X-Webhook-Token header)
+        if ($token && $token_header) {
+            if (hash_equals($token, $token_header)) {
                 $is_valid = true;
             }
         }
 
-        // Verify via Svix Signature (Method 1)
-        if (!$is_valid && $secret && isset($_SERVER['HTTP_SVIX_ID'], $_SERVER['HTTP_SVIX_TIMESTAMP'], $_SERVER['HTTP_SVIX_SIGNATURE'])) {
+        // Method 2: Verify via Svix Signature (whsec_...)
+        if (!$is_valid && $secret && $svix_id && $svix_timestamp && $svix_signature) {
             $is_valid = self::verify_svix_signature(
                 $secret,
-                $_SERVER['HTTP_SVIX_ID'],
-                $_SERVER['HTTP_SVIX_TIMESTAMP'],
-                $_SERVER['HTTP_SVIX_SIGNATURE'],
+                $svix_id,
+                $svix_timestamp,
+                $svix_signature,
                 $raw_body
             );
         }
@@ -195,7 +226,7 @@ class OKJ_Payment_Gateway {
         // If no secret or token configured in settings, reject for security
         if (!$secret && !$token) {
             status_header(401);
-            echo 'Webhook secret or token not configured in OKJualan settings';
+            echo 'Webhook secret (whsec_) or token not configured in OKJualan settings';
             exit;
         }
 
@@ -230,6 +261,10 @@ class OKJ_Payment_Gateway {
             self::mark_order_failed($order_id, 'sumopod', $data);
         } elseif ($event_type === 'payment.expired' && !empty($order_id)) {
             self::mark_order_expired($order_id, 'sumopod', $data);
+        } elseif ($event_type === 'payment.test') {
+            status_header(200);
+            echo 'Verified webhook test: ' . esc_html($event_type);
+            exit;
         }
 
         status_header(200);
