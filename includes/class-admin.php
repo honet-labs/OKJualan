@@ -26,6 +26,7 @@ class OKJ_Admin {
         add_action('admin_post_okj_invoice_pdf', [$this, 'download_invoice_pdf']);
         add_action('admin_post_okj_monthly_report_pdf', [$this, 'download_monthly_report_pdf']);
         add_action('admin_post_okj_export_sales_csv', [$this, 'export_sales_csv']);
+        add_action('admin_post_okj_export_transactions_csv', [$this, 'export_transactions_csv']);
         add_action('admin_post_okj_save_shortlink', [$this, 'save_shortlink']);
         add_action('admin_post_okj_delete_shortlink', [$this, 'delete_shortlink']);
         add_action('admin_post_okj_delete_pos_transaction', [$this, 'delete_pos_transaction']);
@@ -49,6 +50,7 @@ class OKJ_Admin {
         add_action('wp_ajax_okj_pos_checkout', [$this, 'ajax_pos_checkout']);
         add_action('wp_ajax_okj_pos_send_wa_struk', [$this, 'ajax_pos_send_wa_struk']);
         add_action('wp_ajax_okj_pos_update_status', [$this, 'ajax_pos_update_status']);
+        add_action('wp_ajax_okj_get_transaction_detail', [$this, 'ajax_get_transaction_detail']);
         add_action('wp_ajax_okj_trigger_1click_update', [$this, 'ajax_trigger_1click_update']);
         
         // Public self-service order AJAX hooks (guests)
@@ -75,6 +77,7 @@ class OKJ_Admin {
         );
 
         add_submenu_page('okj-dashboard', 'Dashboard', 'Dashboard', $cap, 'okj-dashboard', [$this, 'view_dashboard']);
+        add_submenu_page('okj-dashboard', 'List Transaksi', 'List Transaksi', $cap, 'okj-transactions', [$this, 'view_transactions']);
         add_submenu_page('okj-dashboard', 'Daftar Harga Produk', 'Daftar Harga Produk', $cap, 'okj-product-prices', [$this, 'view_product_prices']);
         add_submenu_page('okj-dashboard', 'Pembelian & Produk Aktif', 'Pembelian & Produk Aktif', $cap, 'okj-active-products', [$this, 'view_active_products']);
         add_submenu_page('okj-dashboard', 'Pembelian Reseller', 'Pembelian Reseller', $cap, 'okj-reseller-products', [$this, 'view_reseller_products']);
@@ -1196,7 +1199,12 @@ class OKJ_Admin {
         $wpdb->delete(OKJ_DB::get_table('pos_transaction_items'), ['transaction_id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'pos_transaction', $id, "Deleted POS transaction: " . $tx_no);
 
-        $this->redirect(admin_url('admin.php?page=okj-pos&deleted=1#tab-history'));
+        $referer = wp_get_referer();
+        if ($referer && strpos($referer, 'okj-transactions') !== false) {
+            $this->redirect(admin_url('admin.php?page=okj-transactions&deleted=1'));
+        } else {
+            $this->redirect(admin_url('admin.php?page=okj-pos&deleted=1#tab-history'));
+        }
     }
 
     public function delete_reminder() {
@@ -1942,6 +1950,307 @@ class OKJ_Admin {
         } else {
             wp_send_json_error(['message' => 'Gagal mengirim email uji coba. Silakan periksa kembali konfigurasi detail SMTP Anda atau log server.']);
         }
+    }
+
+    public function view_transactions() {
+        if (!current_user_can('okj_manage')) {
+            wp_die(esc_html__('Forbidden', 'okjualan'));
+        }
+
+        global $wpdb;
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $t_items = OKJ_DB::get_table('pos_transaction_items');
+        $t_cust  = OKJ_DB::get_table('customers');
+
+        // Self-healing database check
+        if ($wpdb->get_var("SHOW TABLES LIKE '{$t_trans}'") !== $t_trans) {
+            OKJ_DB::install();
+        }
+
+        // Filters
+        $search         = isset($_GET['s']) ? sanitize_text_field(trim($_GET['s'])) : '';
+        $status         = isset($_GET['status']) ? sanitize_text_field(trim($_GET['status'])) : '';
+        $payment_method = isset($_GET['payment_method']) ? sanitize_text_field(trim($_GET['payment_method'])) : '';
+        $start_date     = isset($_GET['start_date']) ? sanitize_text_field(trim($_GET['start_date'])) : '';
+        $end_date       = isset($_GET['end_date']) ? sanitize_text_field(trim($_GET['end_date'])) : '';
+
+        $where = ["1=1"];
+        $params = [];
+
+        if (!empty($search)) {
+            $like = '%' . $wpdb->esc_like($search) . '%';
+            $where[] = "(t.transaction_no LIKE %s OR t.customer_name LIKE %s OR t.notes LIKE %s)";
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        if (!empty($status)) {
+            $where[] = "t.payment_status = %s";
+            $params[] = $status;
+        }
+
+        if (!empty($payment_method)) {
+            $where[] = "t.payment_method = %s";
+            $params[] = $payment_method;
+        }
+
+        if (!empty($start_date)) {
+            $where[] = "DATE(t.created_at) >= %s";
+            $params[] = $start_date;
+        }
+
+        if (!empty($end_date)) {
+            $where[] = "DATE(t.created_at) <= %s";
+            $params[] = $end_date;
+        }
+
+        $where_sql = implode(' AND ', $where);
+
+        // Pagination
+        $per_page = 20;
+        $current_page = isset($_GET['paged']) ? max(1, (int)$_GET['paged']) : 1;
+        $offset = ($current_page - 1) * $per_page;
+
+        // Total count for current filter
+        $count_query = "SELECT COUNT(*) FROM {$t_trans} t WHERE {$where_sql}";
+        $total_items = (int) (!empty($params) ? $wpdb->get_var($wpdb->prepare($count_query, $params)) : $wpdb->get_var($count_query));
+        $total_pages = ceil($total_items / $per_page);
+
+        // Fetch paginated transactions joined with customer table
+        $data_query = "
+            SELECT t.*, 
+                   c.phone AS cust_phone, 
+                   c.whatsapp AS cust_whatsapp, 
+                   c.email AS cust_email
+            FROM {$t_trans} t
+            LEFT JOIN {$t_cust} c ON t.customer_id = c.id
+            WHERE {$where_sql}
+            ORDER BY t.created_at DESC
+            LIMIT %d OFFSET %d
+        ";
+        $data_params = array_merge($params, [$per_page, $offset]);
+        $transactions = $wpdb->get_results($wpdb->prepare($data_query, $data_params), ARRAY_A);
+
+        // Batch load transaction items for displayed transactions
+        if (!empty($transactions)) {
+            $tx_ids = array_column($transactions, 'id');
+            $placeholders = implode(',', array_fill(0, count($tx_ids), '%s'));
+            $items_results = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$t_items} WHERE transaction_id IN ($placeholders) ORDER BY id ASC",
+                $tx_ids
+            ), ARRAY_A);
+
+            $grouped_items = [];
+            if ($items_results) {
+                foreach ($items_results as $it) {
+                    $grouped_items[$it['transaction_id']][] = $it;
+                }
+            }
+
+            foreach ($transactions as &$tx) {
+                $tx['items'] = $grouped_items[$tx['id']] ?? [];
+            }
+            unset($tx);
+        }
+
+        // Global KPI Metrics (Omset lunas, count paid, count pending, total sold items)
+        $kpi_paid_amount = (float) $wpdb->get_var("SELECT SUM(total) FROM {$t_trans} WHERE payment_status IN ('paid', 'completed')");
+        $kpi_paid_count  = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$t_trans} WHERE payment_status IN ('paid', 'completed')");
+        $kpi_pending_count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$t_trans} WHERE payment_status = 'pending'");
+        $kpi_total_items_sold = (int) $wpdb->get_var("
+            SELECT SUM(i.qty) 
+            FROM {$t_items} i 
+            INNER JOIN {$t_trans} t ON i.transaction_id = t.id 
+            WHERE t.payment_status IN ('paid', 'completed')
+        ");
+
+        $this->render_template('transactions', [
+            'transactions'         => $transactions,
+            'kpi_paid_amount'      => $kpi_paid_amount,
+            'kpi_paid_count'       => $kpi_paid_count,
+            'kpi_pending_count'    => $kpi_pending_count,
+            'kpi_total_items_sold' => $kpi_total_items_sold,
+            'search'               => $search,
+            'status'               => $status,
+            'payment_method'       => $payment_method,
+            'start_date'           => $start_date,
+            'end_date'             => $end_date,
+            'total_items'          => $total_items,
+            'total_pages'          => $total_pages,
+            'current_page'         => $current_page,
+            'per_page'             => $per_page,
+        ]);
+    }
+
+    public function ajax_get_transaction_detail() {
+        if (!current_user_can('okj_manage')) {
+            wp_send_json_error(['message' => 'Forbidden']);
+        }
+
+        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
+        if (empty($id)) {
+            wp_send_json_error(['message' => 'ID Transaksi tidak ditemukan.']);
+        }
+
+        global $wpdb;
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $t_items = OKJ_DB::get_table('pos_transaction_items');
+        $t_cust  = OKJ_DB::get_table('customers');
+
+        $tx = $wpdb->get_row($wpdb->prepare("
+            SELECT t.*, c.phone AS cust_phone, c.whatsapp AS cust_whatsapp, c.email AS cust_email
+            FROM {$t_trans} t
+            LEFT JOIN {$t_cust} c ON t.customer_id = c.id
+            WHERE t.id = %s
+        ", $id), ARRAY_A);
+
+        if (!$tx) {
+            wp_send_json_error(['message' => 'Transaksi tidak ditemukan di database.']);
+        }
+
+        $items = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$t_items} WHERE transaction_id = %s ORDER BY id ASC",
+            $id
+        ), ARRAY_A);
+
+        $tx['items'] = $items ?: [];
+        $tx['formatted_date'] = wp_date('d M Y, H:i', strtotime($tx['created_at']));
+        $tx['formatted_subtotal'] = 'Rp ' . number_format_i18n((float)$tx['subtotal'], 0);
+        $tx['formatted_discount'] = 'Rp ' . number_format_i18n((float)$tx['discount'], 0);
+        $tx['formatted_total'] = 'Rp ' . number_format_i18n((float)$tx['total'], 0);
+
+        wp_send_json_success($tx);
+    }
+
+    public function export_transactions_csv() {
+        if (!current_user_can('okj_manage')) {
+            wp_die(esc_html__('Forbidden', 'okjualan'));
+        }
+
+        global $wpdb;
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $t_items = OKJ_DB::get_table('pos_transaction_items');
+        $t_cust  = OKJ_DB::get_table('customers');
+
+        // Check query filters
+        $search         = isset($_GET['s']) ? sanitize_text_field(trim($_GET['s'])) : '';
+        $status         = isset($_GET['status']) ? sanitize_text_field(trim($_GET['status'])) : '';
+        $payment_method = isset($_GET['payment_method']) ? sanitize_text_field(trim($_GET['payment_method'])) : '';
+        $start_date     = isset($_GET['start_date']) ? sanitize_text_field(trim($_GET['start_date'])) : '';
+        $end_date       = isset($_GET['end_date']) ? sanitize_text_field(trim($_GET['end_date'])) : '';
+
+        $where = ["1=1"];
+        $params = [];
+
+        if (!empty($search)) {
+            $like = '%' . $wpdb->esc_like($search) . '%';
+            $where[] = "(t.transaction_no LIKE %s OR t.customer_name LIKE %s OR t.notes LIKE %s)";
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        if (!empty($status)) {
+            $where[] = "t.payment_status = %s";
+            $params[] = $status;
+        }
+
+        if (!empty($payment_method)) {
+            $where[] = "t.payment_method = %s";
+            $params[] = $payment_method;
+        }
+
+        if (!empty($start_date)) {
+            $where[] = "DATE(t.created_at) >= %s";
+            $params[] = $start_date;
+        }
+
+        if (!empty($end_date)) {
+            $where[] = "DATE(t.created_at) <= %s";
+            $params[] = $end_date;
+        }
+
+        $where_sql = implode(' AND ', $where);
+
+        $query = "
+            SELECT t.*, c.phone AS cust_phone, c.whatsapp AS cust_whatsapp, c.email AS cust_email
+            FROM {$t_trans} t
+            LEFT JOIN {$t_cust} c ON t.customer_id = c.id
+            WHERE {$where_sql}
+            ORDER BY t.created_at DESC
+        ";
+
+        $rows = !empty($params) ? $wpdb->get_results($wpdb->prepare($query, $params), ARRAY_A) : $wpdb->get_results($query, ARRAY_A);
+
+        // Batch load transaction items
+        $grouped_items = [];
+        if (!empty($rows)) {
+            $tx_ids = array_column($rows, 'id');
+            $placeholders = implode(',', array_fill(0, count($tx_ids), '%s'));
+            $items_results = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$t_items} WHERE transaction_id IN ($placeholders) ORDER BY id ASC",
+                $tx_ids
+            ), ARRAY_A);
+
+            if ($items_results) {
+                foreach ($items_results as $it) {
+                    $grouped_items[$it['transaction_id']][] = $it['product_name'] . ' (x' . $it['qty'] . ')';
+                }
+            }
+        }
+
+        $filename = 'transaksi-okjualan-' . wp_date('Ymd-His') . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        // UTF-8 BOM for Microsoft Excel compatibility
+        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+
+        fputcsv($output, [
+            'No',
+            'No Transaksi',
+            'Tanggal & Waktu',
+            'Nama Customer',
+            'WhatsApp / No Telp',
+            'Email',
+            'Item Produk',
+            'Metode Pembayaran',
+            'Subtotal',
+            'Diskon',
+            'Total',
+            'Status Pembayaran',
+            'Catatan'
+        ]);
+
+        $i = 1;
+        if (!empty($rows)) {
+            foreach ($rows as $r) {
+                $items_str = !empty($grouped_items[$r['id']]) ? implode('; ', $grouped_items[$r['id']]) : '-';
+                $contact = !empty($r['cust_whatsapp']) ? $r['cust_whatsapp'] : ($r['cust_phone'] ?? '');
+
+                fputcsv($output, [
+                    $i++,
+                    $r['transaction_no'] ?? '',
+                    $r['created_at'] ?? '',
+                    $r['customer_name'] ?: 'Pelanggan Umum',
+                    $contact,
+                    $r['cust_email'] ?? '',
+                    $items_str,
+                    strtoupper($r['payment_method'] ?? ''),
+                    $r['subtotal'] ?? 0,
+                    $r['discount'] ?? 0,
+                    $r['total'] ?? 0,
+                    strtoupper($r['payment_status'] ?? ''),
+                    $r['notes'] ?? '',
+                ]);
+            }
+        }
+
+        fclose($output);
+        exit;
     }
 
     public function view_pos() {
