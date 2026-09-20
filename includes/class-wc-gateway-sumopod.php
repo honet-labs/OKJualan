@@ -17,15 +17,15 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
         $this->id                 = 'okj_sumopod_qris';
         $this->icon               = '';
         $this->has_fields         = false;
-        $this->method_title       = __('SumoPod QRIS (OKJualan)', 'okjualan');
-        $this->method_description = __('Menerima pembayaran scan QRIS instan secara otomatis (BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay) melalui SumoPod Payment Gateway.', 'okjualan');
+        $this->method_title       = __('QRIS', 'okjualan');
+        $this->method_description = __('Menerima pembayaran scan QRIS instan secara otomatis (BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay) melalui QRIS Payment Gateway.', 'okjualan');
         $this->supports           = ['products'];
 
         // Load settings
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->title       = $this->get_option('title', 'QRIS (Semua E-Wallet & Mobile Banking)');
+        $this->title       = $this->get_option('title', 'QRIS');
         $this->description = $this->get_option('description', 'Bayar cepat dan otomatis terverifikasi menggunakan QRIS dari seluruh aplikasi e-wallet (GoPay, OVO, DANA, ShopeePay) atau Mobile Banking apa saja.');
         $this->enabled     = $this->get_option('enabled', 'yes');
         $this->order_button_text = __('Bayar via QRIS', 'okjualan');
@@ -176,7 +176,10 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
             $order->update_meta_data('_okj_sumopod_order_id', $sumopod_order_id);
             $order->update_meta_data('_okj_sumopod_payment_id', $res['payment_id'] ?? '');
             $order->update_meta_data('_okj_sumopod_payment_url', $res['payment_link_url']);
-            $order->update_status('pending', __('Menunggu pembayaran QRIS via SumoPod.', 'okjualan'));
+            if (!empty($res['qr_code_url'])) {
+                $order->update_meta_data('_okj_sumopod_qr_url', $res['qr_code_url']);
+            }
+            $order->update_status('pending', __('Menunggu pembayaran QRIS.', 'okjualan'));
             $order->save();
 
             // Clear customer cart

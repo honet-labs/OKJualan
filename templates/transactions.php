@@ -506,6 +506,70 @@ function okjOpenTxDetail(txId) {
         if (tx.payment_status === 'processing') statusBadge = `<span class="okj-badge" style="background:#e0e7ff; color:#4338ca;">Diproses</span>`;
         if (tx.payment_status === 'failed') statusBadge = `<span class="okj-badge okj-badge-danger">Gagal</span>`;
 
+        var pendingQrHtml = '';
+        if (tx.payment_status === 'pending' && tx.qr_image_url) {
+            var rawCustPhone = (tx.cust_whatsapp || tx.cust_phone || '').replace(/[^0-9]/g, '');
+            if (rawCustPhone.startsWith('0')) rawCustPhone = '62' + rawCustPhone.slice(1);
+
+            var waPendingText = encodeURIComponent(
+                'Halo Kak ' + (tx.customer_name || '') + ', pesanan Anda ' + tx.transaction_no + 
+                ' sebesar ' + tx.formatted_total + ' masih menunggu pembayaran.\n\n' +
+                (tx.payment_url ? 'Silakan selesaikan pembayaran melalui tautan berikut:\n' + tx.payment_url + '\n\n' : '') +
+                'Atau scan QRIS yang kami lampirkan untuk proses otomatis. Terima kasih!'
+            );
+
+            pendingQrHtml = `
+                <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1.5px solid #fcd34d; border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.08);">
+                    <div style="display: flex; gap: 18px; align-items: center; flex-wrap: wrap;">
+                        <div style="background: #ffffff; padding: 8px; border-radius: 10px; border: 1px solid #fde68a; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; flex-shrink: 0; margin: 0 auto;">
+                            <img src="${tx.qr_image_url}" 
+                                 onerror="this.src='https://quickchart.io/qr?size=220&text=' + encodeURIComponent('${encodeURIComponent(tx.payment_url || tx.reference_no || tx.transaction_no)}')"
+                                 style="width: 155px; height: 155px; display: block; border-radius: 6px;" 
+                                 alt="QRIS Pembayaran" />
+                            <div style="margin-top: 6px; font-size: 11px; font-weight: 800; color: #92400e; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <span class="dashicons dashicons-camera" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                SCAN UNTUK BAYAR
+                            </div>
+                        </div>
+                        <div style="flex: 1; min-width: 240px;">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: #fef3c7; color: #b45309; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid #fde68a; margin-bottom: 6px;">
+                                <span class="dashicons dashicons-clock" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                Menunggu Pembayaran Pelanggan
+                            </div>
+                            <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 800; color: #78350f;">
+                                Selesaikan Pembayaran via QRIS
+                            </h4>
+                            <p style="margin: 0 0 10px 0; font-size: 11.5px; color: #92400e; line-height: 1.4;">
+                                Jika halaman pembayaran pembeli sebelumnya tertutup, berikan QR Code ini untuk di-scan atau bagikan link pembayaran di bawah ke pembeli.
+                            </p>
+                            <div style="background: #ffffff; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 11.5px; color: #64748b;">Total Tagihan:</span>
+                                <strong style="font-size: 15px; color: #b45309;">${tx.formatted_total}</strong>
+                            </div>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                ${tx.payment_url ? `
+                                    <button type="button" class="okj-btn" onclick="navigator.clipboard.writeText('${tx.payment_url}'); alert('Link pembayaran berhasil disalin!');" style="background: #ffffff; color: #92400e; border: 1px solid #fcd34d; font-size: 11.5px; font-weight: 700; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                        <span class="dashicons dashicons-admin-links" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                        Salin Link
+                                    </button>
+                                    <a href="${tx.payment_url}" target="_blank" class="okj-btn" style="background: #f59e0b; color: #ffffff; border: none; font-size: 11.5px; font-weight: 700; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
+                                        <span class="dashicons dashicons-external" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                        Buka Pembayaran ↗
+                                    </a>
+                                ` : ''}
+                                ${rawCustPhone ? `
+                                    <a href="https://wa.me/${rawCustPhone}?text=${waPendingText}" target="_blank" class="okj-btn" style="background: #25d366; color: #ffffff; border: none; font-size: 11.5px; font-weight: 700; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
+                                        <span class="dashicons dashicons-whatsapp" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                        Kirim ke WA
+                                    </a>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         var html = `
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #f8fafc; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; font-size: 12.5px;">
                 <div>
@@ -517,14 +581,14 @@ function okjOpenTxDetail(txId) {
                 </div>
                 <div>
                     <span style="color: #64748b; display: block; margin-bottom: 2px;">Metode Pembayaran:</span>
-                    <strong style="color: #0f172a; font-size: 13px;">${tx.formatted_payment_method || okjFormatPaymentMethod(tx.payment_method)}</strong>
+                    <strong style="color: #0f172a; font-size: 13px;">${okjFormatPaymentMethod(tx.formatted_payment_method || tx.payment_method)}</strong>
                     <div style="margin-top: 6px;">
                         <span style="color: #64748b; font-size: 11px;">Status: </span>
                         ${statusBadge}
                     </div>
                     ${tx.reference_no ? `
                     <div style="margin-top: 8px; font-size: 11.5px;">
-                        <span style="color: #64748b; display: block; margin-bottom: 2px;">Ref Order ID (SumoPod):</span>
+                        <span style="color: #64748b; display: block; margin-bottom: 2px;">Ref Order ID:</span>
                         <div style="display: flex; align-items: center; gap: 4px;">
                             <code style="background: #eff6ff; color: #1e40af; padding: 2px 7px; border-radius: 4px; font-weight: 600; border: 1px solid #bfdbfe; font-size: 11.5px;">${tx.reference_no}</code>
                             <a href="https://sumopod.com/dashboard/managed-payment/payments" target="_blank" title="Buka Dashboard SumoPod" style="color: #4f46e5; text-decoration: none; font-weight: 700; font-size: 12px; margin-left: 2px;">↗</a>
@@ -532,6 +596,8 @@ function okjOpenTxDetail(txId) {
                     </div>` : ''}
                 </div>
             </div>
+
+            ${pendingQrHtml}
 
             <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 700; color: #334155;">Rincian Item Belanja</h4>
             <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px;">
@@ -659,13 +725,25 @@ function okjPrintReceipt(txId) {
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size: 11px; margin-top: 4px;">
                         <span>Metode:</span>
-                        <span>${tx.formatted_payment_method || okjFormatPaymentMethod(tx.payment_method)}</span>
+                        <span>${okjFormatPaymentMethod(tx.formatted_payment_method || tx.payment_method)}</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size: 11px;">
                         <span>Status:</span>
-                        <span>LUNAS</span>
+                        <span style="font-weight: bold;">
+                            ${tx.payment_status === 'paid' ? 'LUNAS' : (tx.payment_status === 'pending' ? 'PENDING (MENUNGGU PEMBAYARAN)' : tx.payment_status.toUpperCase())}
+                        </span>
                     </div>
                 </div>
+
+                ${tx.payment_status === 'pending' && tx.qr_image_url ? `
+                    <div style="text-align: center; margin-top: 10px; border-top: 1px dashed #000; padding-top: 8px;">
+                        <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: bold;">SCAN QRIS UNTUK MEMBAYAR</p>
+                        <img src="${tx.qr_image_url}" style="width: 140px; height: 140px; margin: 0 auto 4px auto; display: block;" alt="QRIS Pembayaran" />
+                        ${tx.payment_url ? `<p style="margin: 2px 0 0 0; font-size: 9px; word-break: break-all; color: #333;">${tx.payment_url}</p>` : ''}
+                        <p style="margin: 4px 0 0 0; font-size: 10px; color: #444;">Scan dengan GoPay, OVO, DANA, BCA, atau Mobile Banking.</p>
+                    </div>
+                ` : ''}
+
                 <div style="text-align: center; margin-top: 15px; font-size: 11px; border-top: 1px dashed #000; padding-top: 8px;">
                     <p style="margin: 0;">Terima kasih atas pembelian Anda!</p>
                 </div>

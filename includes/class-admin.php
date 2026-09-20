@@ -2205,19 +2205,83 @@ class OKJ_Admin {
         }
         $tx['wc_order_id'] = $wc_order_id;
         $tx['wc_edit_url'] = '';
-        if ($wc_order_id > 0) {
-            $tx['wc_edit_url'] = admin_url('post.php?post=' . $wc_order_id . '&action=edit');
-            if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()) {
-                $tx['wc_edit_url'] = admin_url('admin.php?page=wc-orders&action=edit&id=' . $wc_order_id);
+        $payment_url = '';
+        $qr_image_url = '';
+        $payment_id = '';
+
+        if ($wc_order_id > 0 && function_exists('wc_get_order')) {
+            $wc_order = wc_get_order($wc_order_id);
+            if ($wc_order) {
+                $tx['wc_edit_url'] = admin_url('post.php?post=' . $wc_order_id . '&action=edit');
+                if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()) {
+                    $tx['wc_edit_url'] = admin_url('admin.php?page=wc-orders&action=edit&id=' . $wc_order_id);
+                }
+
+                $payment_url = (string)$wc_order->get_meta('_okj_sumopod_payment_url');
+                $payment_id  = (string)$wc_order->get_meta('_okj_sumopod_payment_id');
+                $qr_meta     = (string)$wc_order->get_meta('_okj_sumopod_qr_url');
+
+                if (!empty($qr_meta)) {
+                    $qr_image_url = $qr_meta;
+                }
+
+                // If no specific payment url stored, fallback to WooCommerce checkout pay URL for pending orders
+                if (empty($payment_url) && $wc_order->needs_payment()) {
+                    $payment_url = $wc_order->get_checkout_payment_url();
+                }
             }
         }
+
+        // 2. If SumoPod payment_id is available and we still don't have payment_url, try SumoPod API
+        if (empty($payment_url) && !empty($payment_id) && class_exists('OKJ_Payment_Gateway')) {
+            $sumo_data = OKJ_Payment_Gateway::get_sumopod_payment($payment_id);
+            if (!empty($sumo_data['payment_link_url'])) {
+                $payment_url = $sumo_data['payment_link_url'];
+                if (!empty($sumo_data['qr_code_url'])) {
+                    $qr_image_url = $sumo_data['qr_code_url'];
+                }
+                if ($wc_order_id > 0 && isset($wc_order)) {
+                    $wc_order->update_meta_data('_okj_sumopod_payment_url', $payment_url);
+                    if (!empty($qr_image_url)) {
+                        $wc_order->update_meta_data('_okj_sumopod_qr_url', $qr_image_url);
+                    }
+                    $wc_order->save();
+                }
+            }
+        }
+
+        // 3. Check public POS order payment link if applicable
+        if (empty($payment_url) && !empty($tx['reference_no']) && filter_var($tx['reference_no'], FILTER_VALIDATE_URL)) {
+            $payment_url = $tx['reference_no'];
+        }
+
+        // 4. Generate QR code image URL if not already provided
+        $settings = class_exists('OKJ_App') ? OKJ_App::get_settings() : [];
+        if (empty($qr_image_url)) {
+            if (!empty($payment_url)) {
+                $qr_image_url = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' . rawurlencode($payment_url);
+            } elseif (!empty($settings['static_qris_image_url'])) {
+                $qr_image_url = $settings['static_qris_image_url'];
+            } else {
+                $qr_ref = !empty($tx['reference_no']) ? $tx['reference_no'] : ($tx['transaction_no'] . '-TOTAL-' . (int)$tx['total']);
+                $qr_image_url = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' . rawurlencode($qr_ref);
+            }
+        }
+
+        $tx['payment_url'] = $payment_url;
+        $tx['qr_image_url'] = $qr_image_url;
+        $tx['has_qr'] = !empty($qr_image_url);
 
         $tx['items'] = $items ?: [];
         $tx['formatted_date'] = class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'd M Y, H:i') . ' WIB' : date('d M Y, H:i', strtotime($tx['created_at'])) . ' WIB';
         $tx['formatted_subtotal'] = 'Rp ' . number_format_i18n((float)$tx['subtotal'], 0);
         $tx['formatted_discount'] = 'Rp ' . number_format_i18n((float)$tx['discount'], 0);
         $tx['formatted_total'] = 'Rp ' . number_format_i18n((float)$tx['total'], 0);
-        $tx['formatted_payment_method'] = class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method']);
+        $raw_method_formatted = class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method']);
+        if (strpos(strtolower($raw_method_formatted), 'sumopod') !== false || strpos(strtolower($raw_method_formatted), 'qris') !== false) {
+            $raw_method_formatted = 'QRIS';
+        }
+        $tx['formatted_payment_method'] = $raw_method_formatted;
         $tx['payment_method_label'] = $tx['formatted_payment_method'];
 
         wp_send_json_success($tx);

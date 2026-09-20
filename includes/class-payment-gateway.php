@@ -133,9 +133,11 @@ class OKJ_Payment_Gateway {
                 'gateway'          => 'sumopod',
                 'payment_id'       => $data['payment_id'] ?? '',
                 'payment_link_url' => $data['payment_link_url'],
+                'qr_code_url'      => $data['qr_code_url'] ?? ($data['qr_code'] ?? ($data['qr_string'] ?? '')),
                 'fee'              => $data['fee'] ?? 0,
                 'status'           => $data['status'] ?? 'pending',
                 'expires_at'       => $data['expires_at'] ?? '',
+                'raw_response'     => $data,
             ];
         }
 
@@ -187,6 +189,43 @@ class OKJ_Payment_Gateway {
         error_log("[OKJualan SumoPod Error] HTTP {$code}: " . $body);
 
         return ['ok' => false, 'error' => $err_msg . ' (HTTP ' . $code . ')'];
+    }
+
+    /**
+     * Fetch payment status and details from SumoPod API
+     *
+     * @param string $payment_id
+     * @return array|null
+     */
+    public static function get_sumopod_payment($payment_id) {
+        if (empty($payment_id)) {
+            return null;
+        }
+        $settings = self::get_settings();
+        if (empty($settings['sumopod_enabled']) || empty($settings['sumopod_api_key'])) {
+            return null;
+        }
+
+        $is_sandbox = ($settings['sumopod_mode'] ?? 'sandbox') === 'sandbox';
+        $endpoint = ($is_sandbox 
+            ? 'https://api-pay-sandbox.sumopod.com/api/v1/payments/'
+            : 'https://api-pay.sumopod.com/api/v1/payments/') . urlencode($payment_id);
+
+        $resp = wp_remote_get($endpoint, [
+            'timeout' => 8,
+            'headers' => [
+                'Accept'    => 'application/json',
+                'X-Api-Key' => trim((string)$settings['sumopod_api_key']),
+            ],
+        ]);
+
+        if (is_wp_error($resp) || wp_remote_retrieve_response_code($resp) !== 200) {
+            return null;
+        }
+
+        $body = wp_remote_retrieve_body($resp);
+        $data = json_decode($body, true);
+        return is_array($data) ? $data : null;
     }
 
     /**
