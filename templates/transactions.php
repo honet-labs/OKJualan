@@ -77,6 +77,7 @@
                         <option value="pending" <?php selected($status, 'pending'); ?>>🟡 Pending (Menunggu)</option>
                         <option value="processing" <?php selected($status, 'processing'); ?>>🔵 Sedang Diproses</option>
                         <option value="failed" <?php selected($status, 'failed'); ?>>🔴 Gagal</option>
+                        <option value="expired" <?php selected($status, 'expired'); ?>>⏰ Kadaluwarsa (Expired)</option>
                         <option value="cancelled" <?php selected($status, 'cancelled'); ?>>⚪ Dibatalkan</option>
                     </select>
                 </div>
@@ -262,6 +263,8 @@
                                             <span class="okj-badge" style="background: #e0e7ff; color: #4338ca; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Diproses 🔵</span>
                                         <?php elseif ($status === 'failed'): ?>
                                             <span class="okj-badge okj-badge-danger" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Gagal 🔴</span>
+                                        <?php elseif ($status === 'expired'): ?>
+                                            <span class="okj-badge" style="background: #fee2e2; color: #991b1b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Expired ⏰</span>
                                         <?php else: ?>
                                             <span class="okj-badge" style="background: #f1f5f9; color: #64748b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Batal ⚪</span>
                                         <?php endif; ?>

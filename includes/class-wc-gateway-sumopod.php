@@ -184,6 +184,11 @@ class OKJ_WC_Gateway_SumoPod extends WC_Payment_Gateway {
                 WC()->cart->empty_cart();
             }
 
+            // Immediately sync order to OKJualan List Transaksi (pos_transactions) table as pending
+            if (class_exists('OKJ_WC_Sync')) {
+                OKJ_WC_Sync::sync_wc_order_to_pos_transaction($order_id, $sumopod_order_id);
+            }
+
             return [
                 'result'   => 'success',
                 'redirect' => $res['payment_link_url'],

@@ -1967,6 +1967,11 @@ class OKJ_Admin {
             OKJ_DB::install();
         }
 
+        // Auto-sync recent WooCommerce orders to ensure no orders are missing in List Transaksi
+        if (class_exists('OKJ_WC_Sync')) {
+            OKJ_WC_Sync::sync_recent_wc_orders();
+        }
+
         // Filters
         $search         = isset($_GET['s']) ? sanitize_text_field(trim($_GET['s'])) : '';
         $status         = isset($_GET['status']) ? sanitize_text_field(trim($_GET['status'])) : '';
@@ -2254,6 +2259,10 @@ class OKJ_Admin {
     }
 
     public function view_pos() {
+        if (class_exists('OKJ_WC_Sync')) {
+            OKJ_WC_Sync::sync_recent_wc_orders();
+        }
+
         global $wpdb;
         $customers = $wpdb->get_results("SELECT id, name, phone, whatsapp FROM " . OKJ_DB::get_table('customers') . " ORDER BY name ASC", ARRAY_A);
         $sellers = $wpdb->get_results("SELECT id, name FROM " . OKJ_DB::get_table('sellers') . " ORDER BY name ASC", ARRAY_A);
@@ -2612,6 +2621,29 @@ class OKJ_Admin {
                 $msg .= "Terima kasih atas kesabaran Anda! Pesanan Anda sedang kami proses dengan sepenuh hati. 🙏";
 
                 $notifier->send_waha($wa_no, $msg);
+            }
+        }
+
+        // Two-way sync: Update WooCommerce order if this transaction originated from WC
+        if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
+            $wc_order_id = 0;
+            if (preg_match('/^(?:WC|INV)-(\d+)/i', $tx['transaction_no'], $m)) {
+                $wc_order_id = (int)$m[1];
+            } elseif (!empty($tx['notes']) && preg_match('/WooCommerce Order #(\d+)/i', $tx['notes'], $m)) {
+                $wc_order_id = (int)$m[1];
+            }
+            if ($wc_order_id > 0) {
+                $wc_order = wc_get_order($wc_order_id);
+                if ($wc_order) {
+                    if (($new_status === 'paid' || $new_status === 'completed') && !$wc_order->is_paid()) {
+                        $wc_order->payment_complete();
+                        $wc_order->add_order_note(__('Status pembayaran ditandai Lunas via OKJualin List Transaksi.', 'okjualan'));
+                    } elseif ($new_status === 'cancelled' && !$wc_order->has_status(['cancelled', 'refunded'])) {
+                        $wc_order->update_status('cancelled', __('Pesanan dibatalkan via OKJualin List Transaksi.', 'okjualan'));
+                    } elseif ($new_status === 'failed' && !$wc_order->has_status(['failed', 'cancelled'])) {
+                        $wc_order->update_status('failed', __('Status pesanan diubah ke Gagal via OKJualin List Transaksi.', 'okjualan'));
+                    }
+                }
             }
         }
 

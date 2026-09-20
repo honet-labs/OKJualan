@@ -417,6 +417,30 @@ class OKJ_Payment_Gateway {
             $transaction_no, $transaction_no
         ), ARRAY_A);
 
+        // Fallback: If not in pos_transactions yet, attempt auto-sync from WooCommerce
+        if (!$tx && class_exists('OKJ_WC_Sync')) {
+            $wc_order_id = 0;
+            if (preg_match('/^(?:WC|INV)-(\d+)/i', $transaction_no, $m)) {
+                $wc_order_id = (int)$m[1];
+            } elseif (function_exists('wc_get_orders')) {
+                $found_orders = wc_get_orders([
+                    'meta_key'   => '_okj_sumopod_order_id',
+                    'meta_value' => $transaction_no,
+                    'limit'      => 1,
+                ]);
+                if (!empty($found_orders)) {
+                    $wc_order_id = $found_orders[0]->get_id();
+                }
+            }
+            if ($wc_order_id > 0) {
+                OKJ_WC_Sync::sync_wc_order_to_pos_transaction($wc_order_id, $transaction_no);
+                $tx = $wpdb->get_row($wpdb->prepare(
+                    "SELECT * FROM {$t_tx} WHERE transaction_no = %s OR id = %s LIMIT 1",
+                    $transaction_no, $transaction_no
+                ), ARRAY_A);
+            }
+        }
+
         if ($tx) {
             $wpdb->update($t_tx, [
                 'payment_status' => 'paid',
@@ -504,10 +528,6 @@ class OKJ_Payment_Gateway {
     public static function mark_order_failed($transaction_no, $gateway = 'manual', $meta = []) {
         global $wpdb;
         $t_tx = OKJ_DB::get_table('pos_transactions');
-        $wpdb->query($wpdb->prepare(
-            "UPDATE {$t_tx} SET payment_status = 'failed', updated_at = %s WHERE transaction_no = %s OR id = %s",
-            current_time('mysql'), $transaction_no, $transaction_no
-        ));
 
         if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
             $wc_order_id = 0;
@@ -525,12 +545,20 @@ class OKJ_Payment_Gateway {
             }
 
             if ($wc_order_id > 0) {
+                if (class_exists('OKJ_WC_Sync')) {
+                    OKJ_WC_Sync::sync_wc_order_to_pos_transaction($wc_order_id, $transaction_no);
+                }
                 $wc_order = wc_get_order($wc_order_id);
                 if ($wc_order && $wc_order->has_status(['pending', 'on-hold'])) {
                     $wc_order->update_status('failed', 'Pembayaran QRIS via SumoPod dibatalkan atau gagal.');
                 }
             }
         }
+
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$t_tx} SET payment_status = 'failed', updated_at = %s WHERE transaction_no = %s OR id = %s",
+            current_time('mysql'), $transaction_no, $transaction_no
+        ));
     }
 
     /**
@@ -539,10 +567,6 @@ class OKJ_Payment_Gateway {
     public static function mark_order_expired($transaction_no, $gateway = 'manual', $meta = []) {
         global $wpdb;
         $t_tx = OKJ_DB::get_table('pos_transactions');
-        $wpdb->query($wpdb->prepare(
-            "UPDATE {$t_tx} SET payment_status = 'expired', updated_at = %s WHERE transaction_no = %s OR id = %s",
-            current_time('mysql'), $transaction_no, $transaction_no
-        ));
 
         if (class_exists('WooCommerce') && function_exists('wc_get_order')) {
             $wc_order_id = 0;
@@ -560,12 +584,20 @@ class OKJ_Payment_Gateway {
             }
 
             if ($wc_order_id > 0) {
+                if (class_exists('OKJ_WC_Sync')) {
+                    OKJ_WC_Sync::sync_wc_order_to_pos_transaction($wc_order_id, $transaction_no);
+                }
                 $wc_order = wc_get_order($wc_order_id);
                 if ($wc_order && $wc_order->has_status(['pending', 'on-hold'])) {
                     $wc_order->update_status('cancelled', 'Batas waktu pembayaran QRIS SumoPod telah kadaluwarsa.');
                 }
             }
         }
+
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$t_tx} SET payment_status = 'expired', updated_at = %s WHERE transaction_no = %s OR id = %s",
+            current_time('mysql'), $transaction_no, $transaction_no
+        ));
     }
 
     /**
