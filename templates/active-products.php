@@ -161,7 +161,7 @@
                         <a href="<?php echo admin_url('admin.php?page=okj-active-products&status_filter=process'); ?>" 
                            class="okj-tab-item <?php echo $current_status_filter === 'process' ? 'okj-tab-active' : ''; ?>"
                            style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'process' ? '#ffffff' : '#b45309'; ?>; background: <?php echo $current_status_filter === 'process' ? '#d97706' : 'transparent'; ?>; display: inline-flex; align-items: center; gap: 5px;">
-                            <span>⏳</span>
+                            <span class="dashicons dashicons-clock" style="font-size: 15px; width: 15px; height: 15px; margin-top: 1px;"></span>
                             Dalam Proses
                             <?php if (!empty($process_count)): ?>
                                 <span style="background: <?php echo $current_status_filter === 'process' ? '#ffffff' : '#f59e0b'; ?>; color: <?php echo $current_status_filter === 'process' ? '#b45309' : '#ffffff'; ?>; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">

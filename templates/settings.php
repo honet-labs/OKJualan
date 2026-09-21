@@ -554,8 +554,8 @@ if (!in_array($active_tab, ['global', 'products', 'gateways', 'pos', 'support', 
                                 Daftar Tags / Kata Kunci Produk (Pisahkan dengan tanda koma <code>,</code>)
                             </label>
                             <input type="text" name="manual_fulfillment_tags" class="okj-input" 
-                                   value="<?php echo esc_attr(!empty($settings['manual_fulfillment_tags']) ? $settings['manual_fulfillment_tags'] : 'netflix, spotify, canva, mikrotik'); ?>" 
-                                   placeholder="netflix, spotify, canva, mikrotik, vpn, vps" 
+                                   value="<?php echo esc_attr(!empty($settings['manual_fulfillment_tags']) ? $settings['manual_fulfillment_tags'] : 'netflix, spotify, canva, mikrotik, jasa'); ?>" 
+                                   placeholder="netflix, spotify, canva, mikrotik, jasa, vpn, vps" 
                                    style="padding: 10px 14px; font-size: 14px; font-weight: 600; border-color: #c7d2fe;" />
                             <p class="okj-text-muted" style="margin-top: 8px; font-size: 12.5px; line-height: 1.6;">
                                 <span class="dashicons dashicons-info" style="font-size: 15px; width: 15px; height: 15px; color: #4f46e5; vertical-align: text-bottom;"></span> <strong>Cara Kerja:</strong> Jika produk yang dibeli pelanggan memiliki salah satu tag/kata kunci di atas (misal <code>netflix</code>, <code>mikrotik</code>, <code>spotify</code>), saat pembayaran berhasil maka status di menu <strong>Pembelian &amp; Produk Aktif</strong> akan otomatis diset sebagai <strong>Dalam Proses</strong> (bukan langsung <em>Aktif</em>). Administrator dapat menyerahkan akun/kredensial kepada pelanggan secara manual via WhatsApp, lalu mengubah statusnya menjadi <strong>Aktif</strong>.

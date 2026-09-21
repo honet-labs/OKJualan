@@ -424,10 +424,25 @@ class OKJ_Admin {
                 OKJ_Reseller_Manager::sync_all_paid_transactions_to_active_products();
             }
 
-            // First: Self-healing check: Auto-update statuses where expires_at < today
+            $table_ap = OKJ_DB::get_table('active_products');
+            $table_cust = OKJ_DB::get_table('customers');
+
+            // Self-healing check: If a product requires manual fulfillment (tags) and was only auto-created (updated_by == 0) with status 'active', fix its status to 'process'
+            if (class_exists('OKJ_Reseller_Manager')) {
+                $check_rows = $wpdb->get_results("SELECT id, product_id, product_label FROM {$table_ap} WHERE status = 'active' AND (updated_by IS NULL OR updated_by = 0)", ARRAY_A);
+                if (!empty($check_rows)) {
+                    foreach ($check_rows as $cr) {
+                        if (OKJ_Reseller_Manager::requires_manual_fulfillment($cr['product_id'], $cr['product_label'])) {
+                            $wpdb->update($table_ap, ['status' => 'process', 'updated_at' => current_time('mysql')], ['id' => $cr['id']]);
+                        }
+                    }
+                }
+            }
+
+            // Self-healing check: Auto-update statuses where expires_at < today
             $today = wp_date('Y-m-d');
             $wpdb->query($wpdb->prepare(
-                "UPDATE " . OKJ_DB::get_table('active_products') . " 
+                "UPDATE {$table_ap} 
                  SET status = 'expired' 
                  WHERE expires_at < %s AND status = 'active'", 
                 $today
@@ -437,9 +452,6 @@ class OKJ_Admin {
             $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
-
-            $table_ap = OKJ_DB::get_table('active_products');
-            $table_cust = OKJ_DB::get_table('customers');
 
             // Build conditional WHERE clause
             $where = "1=1";
@@ -1591,7 +1603,7 @@ class OKJ_Admin {
             'support_wa_greeting' => !empty($_POST['support_wa_greeting']) ? sanitize_text_field($_POST['support_wa_greeting']) : '',
             'support_email' => !empty($_POST['support_email']) ? sanitize_email($_POST['support_email']) : '',
             'support_faq_json' => !empty($_POST['support_faq_json']) ? sanitize_textarea_field($_POST['support_faq_json']) : '',
-            'manual_fulfillment_tags' => !empty($_POST['manual_fulfillment_tags']) ? sanitize_text_field($_POST['manual_fulfillment_tags']) : '',
+            'manual_fulfillment_tags' => isset($_POST['manual_fulfillment_tags']) ? sanitize_text_field($_POST['manual_fulfillment_tags']) : (!empty($existing['manual_fulfillment_tags']) ? $existing['manual_fulfillment_tags'] : 'netflix, spotify, canva, mikrotik, jasa'),
             'default_service_duration_days' => !empty($_POST['default_service_duration_days']) ? (int)$_POST['default_service_duration_days'] : 30,
             'auto_sync_active_products' => isset($_POST['auto_sync_active_products']) ? (!empty($_POST['auto_sync_active_products']) ? 1 : 0) : 1,
         ];

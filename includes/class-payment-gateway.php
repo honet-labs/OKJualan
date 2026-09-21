@@ -487,19 +487,10 @@ class OKJ_Payment_Gateway {
                 'updated_at'     => current_time('mysql'),
             ], ['id' => $tx['id']]);
 
-            // Ensure active products are created and activated for this transaction
+            // Ensure active products are created and synced with appropriate status ('process' or 'active') for this transaction
             if (class_exists('OKJ_Reseller_Manager')) {
                 OKJ_Reseller_Manager::sync_transaction_to_active_products($tx['id']);
             }
-
-            // Also activate any pre-existing active products linked to this transaction
-            $wpdb->query($wpdb->prepare(
-                "UPDATE {$t_ap} SET status = 'active', payment_status = 'paid', updated_at = %s 
-                 WHERE notes LIKE %s OR id = %s",
-                current_time('mysql'),
-                '%' . $wpdb->esc_like($tx['transaction_no']) . '%',
-                $tx['id']
-            ));
 
             // Sync reminders for newly active products
             $active_rows = $wpdb->get_results($wpdb->prepare(

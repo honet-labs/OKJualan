@@ -299,9 +299,12 @@ class OKJ_Reseller_Manager {
             ), ARRAY_A);
 
             if ($existing_ap) {
-                // If it was already active or completed by admin, preserve that status
+                // If it was already active or completed MANUALLY by admin, preserve that status.
+                // Otherwise, if it requires manual fulfillment and was only auto-created, ensure status is 'process'.
                 if ($is_paid && in_array($existing_ap['status'], ['active', 'completed'], true)) {
-                    $target_status = $existing_ap['status'];
+                    if (!empty($existing_ap['updated_by']) || !$is_manual) {
+                        $target_status = $existing_ap['status'];
+                    }
                 }
 
                 $wpdb->update($t_active, [
@@ -392,7 +395,7 @@ class OKJ_Reseller_Manager {
         if (!is_array($settings)) {
             $settings = [];
         }
-        $raw_tags = $settings['manual_fulfillment_tags'] ?? 'netflix';
+        $raw_tags = !empty($settings['manual_fulfillment_tags']) ? $settings['manual_fulfillment_tags'] : 'netflix, spotify, canva, mikrotik, jasa';
         if (empty(trim($raw_tags))) {
             return false;
         }

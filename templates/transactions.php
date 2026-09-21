@@ -1,16 +1,17 @@
 <?php if (!defined('ABSPATH')) { exit; } ?>
-<div class="okj-wrap">
-    <div class="okj-header">
+<div class="okj-wrap" style="max-width: 100%; box-sizing: border-box;">
+    <!-- Page Header -->
+    <div class="okj-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
         <div>
-            <h1>Daftar Transaksi Penjualan</h1>
-            <p class="okj-subtitle">Kelola dan pantau seluruh transaksi kasir POS, pesanan mandiri online, status pembayaran, dan riwayat belanja.</p>
+            <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0; letter-spacing: -0.02em;">Daftar Transaksi Penjualan</h1>
+            <p class="okj-subtitle" style="font-size: 13px; color: #64748b; margin: 0;">Kelola dan pantau seluruh transaksi kasir POS, pesanan mandiri online, status pembayaran, dan riwayat belanja.</p>
         </div>
         <div class="okj-header-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <a href="<?php echo admin_url('admin-post.php?action=okj_export_transactions_csv' . (!empty($_SERVER['QUERY_STRING']) ? '&' . sanitize_text_field($_SERVER['QUERY_STRING']) : '')); ?>" class="okj-btn okj-btn-secondary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
-                <span class="dashicons dashicons-download" style="font-size: 17px; width: 17px; height: 17px;"></span> Export CSV
+            <a href="<?php echo admin_url('admin-post.php?action=okj_export_transactions_csv' . (!empty($_SERVER['QUERY_STRING']) ? '&' . sanitize_text_field($_SERVER['QUERY_STRING']) : '')); ?>" class="okj-btn" style="height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.15s;">
+                <span class="dashicons dashicons-download" style="font-size: 16px; width: 16px; height: 16px; color: #64748b;"></span> Export CSV
             </a>
-            <a href="<?php echo admin_url('admin.php?page=okj-pos'); ?>" class="okj-btn okj-btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.25);">
-                <span class="dashicons dashicons-calculator" style="font-size: 17px; width: 17px; height: 17px;"></span> Buka Kasir POS
+            <a href="<?php echo admin_url('admin.php?page=okj-pos'); ?>" class="okj-btn" style="height: 38px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 700; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; border: none; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.25); transition: all 0.15s;">
+                <span class="dashicons dashicons-calculator" style="font-size: 16px; width: 16px; height: 16px;"></span> Buka Kasir POS
             </a>
         </div>
     </div>
@@ -21,374 +22,409 @@
         </div>
     <?php endif; ?>
 
-    <!-- KPI Summary Grid -->
-    <div class="okj-grid okj-grid-4 okj-mb-2">
-        <div class="okj-card okj-kpi-card" style="border-left: 4px solid #10b981;">
-            <div class="okj-kpi-icon" style="background: #ecfdf5; color: #059669;"><span class="dashicons dashicons-chart-area"></span></div>
-            <div>
-                <span class="okj-kpi-label">Total Omset Lunas</span>
-                <strong class="okj-kpi-value" style="color: #047857;">Rp <?php echo number_format_i18n($kpi_paid_amount, 0); ?></strong>
+    <!-- KPI Summary Grid (Modern SaaS Metric Cards) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <!-- Card 1: Omset Lunas -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.15s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Total Omset Lunas</span>
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="dashicons dashicons-chart-area" style="font-size: 18px; width: 18px; height: 18px;"></span>
+                </div>
+            </div>
+            <div style="margin-top: 10px;">
+                <div style="font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; line-height: 1.2;">
+                    Rp <?php echo number_format_i18n($kpi_paid_amount, 0); ?>
+                </div>
+                <div style="font-size: 11.5px; color: #10b981; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                    <span class="dashicons dashicons-yes" style="font-size: 13px; width: 13px; height: 13px;"></span> Dari transaksi berhasil
+                </div>
             </div>
         </div>
-        <div class="okj-card okj-kpi-card" style="border-left: 4px solid #4f46e5;">
-            <div class="okj-kpi-icon" style="background: #eef2ff; color: #4f46e5;"><span class="dashicons dashicons-yes-alt"></span></div>
-            <div>
-                <span class="okj-kpi-label">Transaksi Berhasil</span>
-                <strong class="okj-kpi-value" style="color: #3730a3;"><?php echo number_format_i18n($kpi_paid_count); ?> <small style="font-size: 13px; font-weight: 500; color: #64748b;">Pesanan</small></strong>
+
+        <!-- Card 2: Transaksi Berhasil -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.15s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Transaksi Berhasil</span>
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="dashicons dashicons-yes-alt" style="font-size: 18px; width: 18px; height: 18px;"></span>
+                </div>
+            </div>
+            <div style="margin-top: 10px;">
+                <div style="font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; line-height: 1.2;">
+                    <?php echo number_format_i18n($kpi_paid_count); ?> <span style="font-size: 13px; font-weight: 500; color: #64748b;">Pesanan</span>
+                </div>
+                <div style="font-size: 11.5px; color: #6366f1; font-weight: 600; margin-top: 4px;">
+                    Status lunas &amp; selesai
+                </div>
             </div>
         </div>
-        <div class="okj-card okj-kpi-card" style="border-left: 4px solid #f59e0b;">
-            <div class="okj-kpi-icon" style="background: #fffbeb; color: #d97706;"><span class="dashicons dashicons-clock"></span></div>
-            <div>
-                <span class="okj-kpi-label">Menunggu Bayar (Pending)</span>
-                <strong class="okj-kpi-value" style="color: #b45309;"><?php echo number_format_i18n($kpi_pending_count); ?> <small style="font-size: 13px; font-weight: 500; color: #64748b;">Pesanan</small></strong>
+
+        <!-- Card 3: Menunggu Bayar -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.15s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Menunggu Bayar</span>
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #fffbeb; color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="dashicons dashicons-clock" style="font-size: 18px; width: 18px; height: 18px;"></span>
+                </div>
+            </div>
+            <div style="margin-top: 10px;">
+                <div style="font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; line-height: 1.2;">
+                    <?php echo number_format_i18n($kpi_pending_count); ?> <span style="font-size: 13px; font-weight: 500; color: #64748b;">Pesanan</span>
+                </div>
+                <div style="font-size: 11.5px; color: #d97706; font-weight: 600; margin-top: 4px;">
+                    Perlu tindak lanjut / QRIS
+                </div>
             </div>
         </div>
-        <div class="okj-card okj-kpi-card" style="border-left: 4px solid #8b5cf6;">
-            <div class="okj-kpi-icon" style="background: #f5f3ff; color: #7c3aed;"><span class="dashicons dashicons-products"></span></div>
-            <div>
-                <span class="okj-kpi-label">Total Produk Terjual</span>
-                <strong class="okj-kpi-value" style="color: #6d28d9;"><?php echo number_format_i18n($kpi_total_items_sold); ?> <small style="font-size: 13px; font-weight: 500; color: #64748b;">Unit</small></strong>
+
+        <!-- Card 4: Total Produk Terjual -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: all 0.15s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 11.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Total Produk Terjual</span>
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #f5f3ff; color: #7c3aed; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="dashicons dashicons-products" style="font-size: 18px; width: 18px; height: 18px;"></span>
+                </div>
+            </div>
+            <div style="margin-top: 10px;">
+                <div style="font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; line-height: 1.2;">
+                    <?php echo number_format_i18n($kpi_total_items_sold); ?> <span style="font-size: 13px; font-weight: 500; color: #64748b;">Unit</span>
+                </div>
+                <div style="font-size: 11.5px; color: #7c3aed; font-weight: 600; margin-top: 4px;">
+                    Kuantitas item terkirim
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Filter Toolbar -->
-    <div class="okj-card okj-mb-2">
-        <div class="okj-card-body" style="padding: 16px 20px;">
-            <form method="get" action="<?php echo admin_url('admin.php'); ?>" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
-                <input type="hidden" name="page" value="okj-transactions" />
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 20px;">
+        <form method="get" action="<?php echo admin_url('admin.php'); ?>" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+            <input type="hidden" name="page" value="okj-transactions" />
 
-                <!-- Search Input -->
-                <div style="flex: 1; min-width: 220px;">
-                    <label class="okj-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Pencarian</label>
-                    <div style="position: relative;">
-                        <input type="text" name="s" class="okj-input" placeholder="No. Transaksi, Customer, Catatan..." value="<?php echo esc_attr($search); ?>" style="padding-left: 32px;" />
-                        <span class="dashicons dashicons-search" style="position: absolute; left: 8px; top: 8px; color: #94a3b8; font-size: 18px;"></span>
-                    </div>
+            <!-- Search Input -->
+            <div style="flex: 1.6; min-width: 230px;">
+                <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">Pencarian</label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <span class="dashicons dashicons-search" style="position: absolute; left: 10px; color: #94a3b8; font-size: 17px; width: 17px; height: 17px; pointer-events: none;"></span>
+                    <input type="text" name="s" placeholder="Cari No. Transaksi, Customer, Ref ID..." value="<?php echo esc_attr($search); ?>" style="width: 100%; height: 38px; padding-left: 36px; padding-right: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; background: #f8fafc; box-sizing: border-box; transition: all 0.15s ease;" />
                 </div>
+            </div>
 
-                <!-- Status Filter -->
-                <div style="min-width: 160px;">
-                    <label class="okj-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Status Pembayaran</label>
-                    <select name="status" class="okj-select" style="width: 100%;">
-                        <option value="">Semua Status</option>
-                        <option value="paid" <?php selected($status, 'paid'); ?>>Lunas / Selesai</option>
-                        <option value="pending" <?php selected($status, 'pending'); ?>>Pending (Menunggu)</option>
-                        <option value="processing" <?php selected($status, 'processing'); ?>>Sedang Diproses</option>
-                        <option value="failed" <?php selected($status, 'failed'); ?>>Gagal</option>
-                        <option value="expired" <?php selected($status, 'expired'); ?>>Kadaluwarsa (Expired)</option>
-                        <option value="cancelled" <?php selected($status, 'cancelled'); ?>>Dibatalkan</option>
-                    </select>
-                </div>
+            <!-- Status Filter -->
+            <div style="flex: 1; min-width: 160px;">
+                <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">Status Bayar</label>
+                <select name="status" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; background: #f8fafc; color: #1e293b; box-sizing: border-box;">
+                    <option value="">Semua Status</option>
+                    <option value="paid" <?php selected($status, 'paid'); ?>>Lunas / Selesai</option>
+                    <option value="pending" <?php selected($status, 'pending'); ?>>Pending (Menunggu)</option>
+                    <option value="processing" <?php selected($status, 'processing'); ?>>Sedang Diproses</option>
+                    <option value="failed" <?php selected($status, 'failed'); ?>>Gagal</option>
+                    <option value="expired" <?php selected($status, 'expired'); ?>>Expired</option>
+                    <option value="cancelled" <?php selected($status, 'cancelled'); ?>>Dibatalkan</option>
+                </select>
+            </div>
 
-                <!-- Payment Method Filter -->
-                <div style="min-width: 160px;">
-                    <label class="okj-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Metode Pembayaran</label>
-                    <select name="payment_method" class="okj-select" style="width: 100%;">
-                        <option value="">Semua Metode</option>
-                        <option value="cash" <?php selected($payment_method, 'cash'); ?>>Cash / Tunai</option>
-                        <option value="qris" <?php selected($payment_method, 'qris'); ?>>QRIS</option>
-                        <option value="sumopod" <?php selected($payment_method, 'sumopod'); ?>>QRIS (Otomatis)</option>
-                        <option value="transfer" <?php selected($payment_method, 'transfer'); ?>>Transfer Bank</option>
-                        <option value="midtrans" <?php selected($payment_method, 'midtrans'); ?>>Midtrans</option>
-                        <option value="tripay" <?php selected($payment_method, 'tripay'); ?>>Tripay</option>
-                    </select>
-                </div>
+            <!-- Payment Method Filter -->
+            <div style="flex: 1; min-width: 160px;">
+                <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">Metode Bayar</label>
+                <select name="payment_method" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; background: #f8fafc; color: #1e293b; box-sizing: border-box;">
+                    <option value="">Semua Metode</option>
+                    <option value="cash" <?php selected($payment_method, 'cash'); ?>>Cash / Tunai</option>
+                    <option value="qris" <?php selected($payment_method, 'qris'); ?>>QRIS</option>
+                    <option value="sumopod" <?php selected($payment_method, 'sumopod'); ?>>QRIS (Otomatis)</option>
+                    <option value="transfer" <?php selected($payment_method, 'transfer'); ?>>Transfer Bank</option>
+                    <option value="midtrans" <?php selected($payment_method, 'midtrans'); ?>>Midtrans</option>
+                    <option value="tripay" <?php selected($payment_method, 'tripay'); ?>>Tripay</option>
+                </select>
+            </div>
 
-                <!-- Date Range Filters -->
-                <div style="min-width: 130px;">
-                    <label class="okj-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Dari Tgl</label>
-                    <input type="date" name="start_date" class="okj-input" value="<?php echo esc_attr($start_date); ?>" />
-                </div>
-                <div style="min-width: 130px;">
-                    <label class="okj-label" style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Sampai Tgl</label>
-                    <input type="date" name="end_date" class="okj-input" value="<?php echo esc_attr($end_date); ?>" />
-                </div>
+            <!-- Date Range Filters -->
+            <div style="min-width: 130px;">
+                <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">Dari Tgl</label>
+                <input type="date" name="start_date" value="<?php echo esc_attr($start_date); ?>" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; background: #f8fafc; color: #1e293b; box-sizing: border-box;" />
+            </div>
+            <div style="min-width: 130px;">
+                <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;">Sampai Tgl</label>
+                <input type="date" name="end_date" value="<?php echo esc_attr($end_date); ?>" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-family: inherit; background: #f8fafc; color: #1e293b; box-sizing: border-box;" />
+            </div>
 
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: 8px;">
-                    <button type="submit" class="okj-btn okj-btn-primary" style="height: 38px; display: inline-flex; align-items: center; gap: 4px;">
-                        <span class="dashicons dashicons-filter" style="font-size: 16px; width: 16px; height: 16px;"></span> Filter
-                    </button>
-                    <?php if (!empty($search) || !empty($status) || !empty($payment_method) || !empty($start_date) || !empty($end_date)): ?>
-                        <a href="<?php echo admin_url('admin.php?page=okj-transactions'); ?>" class="okj-btn okj-btn-secondary" style="height: 38px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;">
-                            <span class="dashicons dashicons-dismiss" style="font-size: 16px; width: 16px; height: 16px;"></span> Reset
-                        </a>
-                    <?php endif; ?>
-                </div>
-            </form>
-        </div>
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 8px; align-items: flex-end;">
+                <button type="submit" class="okj-btn" style="height: 38px; padding: 0 16px; border-radius: 8px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; border: none; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); transition: all 0.15s;">
+                    <span class="dashicons dashicons-filter" style="font-size: 15px; width: 15px; height: 15px;"></span> Filter
+                </button>
+                <?php if (!empty($search) || !empty($status) || !empty($payment_method) || !empty($start_date) || !empty($end_date)): ?>
+                    <a href="<?php echo admin_url('admin.php?page=okj-transactions'); ?>" class="okj-btn" style="height: 38px; padding: 0 14px; border-radius: 8px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; transition: all 0.15s;">
+                        <span class="dashicons dashicons-dismiss" style="font-size: 15px; width: 15px; height: 15px;"></span> Reset
+                    </a>
+                <?php endif; ?>
+            </div>
+        </form>
     </div>
 
     <!-- Data Table Card -->
-    <div class="okj-card">
-        <div class="okj-card-body" style="padding: 0;">
-            <div style="overflow-x: auto;">
-                <table class="okj-table" style="width: 100%; border-collapse: collapse; margin: 0;">
-                    <thead>
-                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">No. Transaksi</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Referensi Order ID</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Waktu</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Item Produk</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Qty</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Metode Bayar</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
-                            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; text-align: right;">Aksi</th>
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin: 0; font-family: inherit;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; white-space: nowrap;">No. Transaksi</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; white-space: nowrap;">Ref. Order ID</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; white-space: nowrap;">Waktu</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; white-space: nowrap;">Customer</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: left;">Item Produk</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Qty</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Metode Bayar</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: right; white-space: nowrap;">Total</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; white-space: nowrap;">Status</th>
+                        <th style="padding: 13px 16px; font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; text-align: right; white-space: nowrap;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($transactions)): ?>
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 50px 20px; color: #64748b;">
+                                <span class="dashicons dashicons-media-document" style="font-size: 40px; width: 40px; height: 40px; color: #cbd5e1; margin-bottom: 8px; display: inline-block;"></span>
+                                <h3 style="margin: 0 0 6px 0; color: #1e293b; font-size: 16px; font-weight: 700;">Belum Ada Transaksi Ditemukan</h3>
+                                <p style="margin: 0; font-size: 13px; color: #94a3b8;">Transaksi yang masuk melalui Kasir POS atau Checkout Online akan otomatis tercatat di sini.</p>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($transactions)): ?>
-                            <tr>
-                                <td colspan="10" style="text-align: center; padding: 50px 20px; color: #64748b;">
-                                    <span class="dashicons dashicons-media-document" style="font-size: 40px; width: 40px; height: 40px; color: #cbd5e1; margin-bottom: 8px; display: inline-block;"></span>
-                                    <h3 style="margin: 0 0 6px 0; color: #1e293b; font-size: 16px; font-weight: 700;">Belum Ada Transaksi Ditemukan</h3>
-                                    <p style="margin: 0; font-size: 13px; color: #94a3b8;">Transaksi yang masuk melalui Kasir POS atau Checkout Online akan otomatis tercatat di sini.</p>
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($transactions as $tx): 
-                                $status = strtolower($tx['payment_status']);
-                                $contact = !empty($tx['cust_whatsapp']) ? $tx['cust_whatsapp'] : (!empty($tx['cust_phone']) ? $tx['cust_phone'] : '');
-                                $clean_wa = preg_replace('/[^0-9]/', '', $contact);
-                                if (substr($clean_wa, 0, 1) === '0') $clean_wa = '62' . substr($clean_wa, 1);
+                    <?php else: ?>
+                        <?php foreach ($transactions as $tx): 
+                            $tx_status = strtolower($tx['payment_status']);
+                            $contact = !empty($tx['cust_whatsapp']) ? $tx['cust_whatsapp'] : (!empty($tx['cust_phone']) ? $tx['cust_phone'] : '');
+                            $clean_wa = preg_replace('/[^0-9]/', '', $contact);
+                            if (substr($clean_wa, 0, 1) === '0') $clean_wa = '62' . substr($clean_wa, 1);
 
-                                $raw_method = strtolower($tx['payment_method']);
-                                $method_label = class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method']);
-                                $method_badge_bg = '#f1f5f9';
-                                $method_badge_color = '#475569';
+                            $raw_method = strtolower($tx['payment_method']);
+                            $method_label = class_exists('OKJ_App') ? OKJ_App::format_payment_method($tx['payment_method']) : strtoupper($tx['payment_method']);
+                            $method_badge_bg = '#f1f5f9';
+                            $method_badge_color = '#475569';
+                            $method_border = '#e2e8f0';
+                            $method_icon = 'dashicons-money';
+
+                            if (in_array($raw_method, ['cash', 'cod', 'tunai'])) {
+                                $method_badge_bg = '#ecfdf5';
+                                $method_badge_color = '#047857';
+                                $method_border = '#a7f3d0';
                                 $method_icon = 'dashicons-money';
+                            } elseif (strpos($raw_method, 'sumopod') !== false || strpos($raw_method, 'qris') !== false) {
+                                $method_badge_bg = '#eff6ff';
+                                $method_badge_color = '#1d4ed8';
+                                $method_border = '#bfdbfe';
+                                $method_icon = 'dashicons-smartphone';
+                            } elseif (in_array($raw_method, ['transfer', 'bacs', 'bank_transfer']) || strpos($raw_method, 'transfer') !== false || strpos($raw_method, 'bank') !== false) {
+                                $method_badge_bg = '#faf5ff';
+                                $method_badge_color = '#7e22ce';
+                                $method_border = '#e9d5ff';
+                                $method_icon = 'dashicons-bank';
+                            }
 
-                                if (in_array($raw_method, ['cash', 'cod', 'tunai'])) {
-                                    $method_badge_bg = '#ecfdf5';
-                                    $method_badge_color = '#047857';
-                                    $method_icon = 'dashicons-money';
-                                } elseif (strpos($raw_method, 'sumopod') !== false || strpos($raw_method, 'qris') !== false) {
-                                    $method_badge_bg = '#eff6ff';
-                                    $method_badge_color = '#1d4ed8';
-                                    $method_icon = 'dashicons-smartphone';
-                                } elseif (in_array($raw_method, ['transfer', 'bacs', 'bank_transfer']) || strpos($raw_method, 'transfer') !== false || strpos($raw_method, 'bank') !== false) {
-                                    $method_badge_bg = '#faf5ff';
-                                    $method_badge_color = '#7e22ce';
-                                    $method_icon = 'dashicons-bank';
-                                }
-                            ?>
-                            <tr id="tx-row-<?php echo esc_attr($tx['id']); ?>" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                <!-- No Transaksi -->
-                                <td style="padding: 14px 16px;">
-                                    <?php
-                                    $wc_order_id = 0;
-                                    if (preg_match('/^WC-(\d+)/i', $tx['transaction_no'], $m)) {
-                                        $wc_order_id = (int)$m[1];
-                                    } elseif (!empty($tx['notes']) && preg_match('/WooCommerce Order #(\d+)/i', $tx['notes'], $m)) {
-                                        $wc_order_id = (int)$m[1];
-                                    }
-                                    $wc_edit_url = '';
-                                    if ($wc_order_id > 0) {
-                                        $wc_edit_url = admin_url('post.php?post=' . $wc_order_id . '&action=edit');
-                                        if (class_exists('Automattic\WooCommerce\Utilities\OrderUtil') && Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled()) {
-                                            $wc_edit_url = admin_url('admin.php?page=wc-orders&action=edit&id=' . $wc_order_id);
-                                        }
-                                    }
-                                    ?>
-                                    <div style="display: flex; align-items: center; gap: 6px;">
-                                        <?php if ($wc_order_id > 0): ?>
-                                            <a href="#" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>'); return false;" title="Buka Detail Transaksi" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
-                                                <span class="dashicons dashicons-cart" style="font-size: 14px; width: 14px; height: 14px;"></span>
-                                                WC #<?php echo $wc_order_id; ?>
-                                            </a>
-                                        <?php else: ?>
-                                            <a href="#" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>'); return false;" title="Buka Detail Transaksi" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #1e293b; text-decoration: none; cursor: pointer;">
-                                                <?php echo esc_html($tx['transaction_no']); ?>
+                            $wc_order_id = 0;
+                            if (preg_match('/^WC-(\d+)/i', $tx['transaction_no'], $m)) {
+                                $wc_order_id = (int)$m[1];
+                            } elseif (!empty($tx['notes']) && preg_match('/WooCommerce Order #(\d+)/i', $tx['notes'], $m)) {
+                                $wc_order_id = (int)$m[1];
+                            }
+                        ?>
+                        <tr id="tx-row-<?php echo esc_attr($tx['id']); ?>" style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                            <!-- No Transaksi (Left) -->
+                            <td style="padding: 14px 16px; text-align: left;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <?php if ($wc_order_id > 0): ?>
+                                        <a href="#" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>'); return false;" title="Buka Detail Transaksi" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #4f46e5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                            <span class="dashicons dashicons-cart" style="font-size: 14px; width: 14px; height: 14px; color: #6366f1;"></span>
+                                            WC #<?php echo $wc_order_id; ?>
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="#" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>'); return false;" title="Buka Detail Transaksi" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #0f172a; text-decoration: none; cursor: pointer;">
+                                            <?php echo esc_html($tx['transaction_no']); ?>
+                                        </a>
+                                    <?php endif; ?>
+                                    <button type="button" class="okj-copy-btn" data-clipboard="<?php echo esc_attr($tx['transaction_no']); ?>" title="Salin No Transaksi" style="background: none; border: none; padding: 2px; cursor: pointer; color: #94a3b8; display: inline-flex; align-items: center;">
+                                        <span class="dashicons dashicons-admin-page" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                    </button>
+                                </div>
+                                <?php if (!empty($tx['notes'])): ?>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 3px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo esc_attr($tx['notes']); ?>"><?php echo esc_html($tx['notes']); ?></div>
+                                <?php endif; ?>
+                            </td>
+
+                            <!-- Referensi Order ID (Left) -->
+                            <td style="padding: 14px 16px; text-align: left; white-space: nowrap;">
+                                <?php 
+                                $ref_id = !empty($tx['reference_no']) ? $tx['reference_no'] : (strpos($tx['transaction_no'], 'INV-') === 0 ? $tx['transaction_no'] : '');
+                                if ($ref_id): 
+                                ?>
+                                    <div style="display: flex; align-items: center; gap: 5px;">
+                                        <span style="font-family: monospace; font-size: 11.5px; background: #eff6ff; color: #1e40af; padding: 3px 8px; border-radius: 6px; border: 1px solid #bfdbfe; font-weight: 600; max-width: 180px; overflow: hidden; text-overflow: ellipsis;" title="<?php echo esc_attr($ref_id); ?>">
+                                            <?php echo esc_html($ref_id); ?>
+                                        </span>
+                                        <button type="button" class="okj-copy-btn" data-clipboard="<?php echo esc_attr($ref_id); ?>" title="Salin Order ID" style="background: none; border: none; padding: 2px; cursor: pointer; color: #3b82f6; display: inline-flex; align-items: center;">
+                                            <span class="dashicons dashicons-admin-page" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                        </button>
+                                        <?php if (strpos(strtolower($tx['payment_method']), 'sumopod') !== false || strpos($ref_id, 'INV-') === 0): ?>
+                                            <a href="https://sumopod.com/dashboard/managed-payment/payments" target="_blank" title="Buka Dashboard SumoPod" style="color: #6366f1; display: inline-flex; align-items: center; text-decoration: none;">
+                                                <span class="dashicons dashicons-external" style="font-size: 13px; width: 13px; height: 13px;"></span>
                                             </a>
                                         <?php endif; ?>
-                                        <button type="button" class="okj-copy-btn" data-clipboard="<?php echo esc_attr($tx['transaction_no']); ?>" title="Salin No Transaksi" style="background: none; border: none; padding: 2px; cursor: pointer; color: #94a3b8;">
-                                            <span class="dashicons dashicons-clipboard" style="font-size: 14px; width: 14px; height: 14px;"></span>
-                                        </button>
                                     </div>
-                                    <?php if (!empty($tx['notes'])): ?>
-                                        <small style="display: block; font-size: 11px; color: #64748b; margin-top: 2px; font-style: italic;"><?php echo esc_html(wp_trim_words($tx['notes'], 6)); ?></small>
-                                    <?php endif; ?>
-                                </td>
+                                <?php else: ?>
+                                    <span style="color: #cbd5e1; font-size: 13px;">-</span>
+                                <?php endif; ?>
+                            </td>
 
-                                <!-- Referensi Order ID (SumoPod / Gateway) -->
-                                <td style="padding: 14px 16px; white-space: nowrap;">
-                                    <?php 
-                                    $ref_id = !empty($tx['reference_no']) ? $tx['reference_no'] : (strpos($tx['transaction_no'], 'INV-') === 0 ? $tx['transaction_no'] : '');
-                                    if ($ref_id): 
-                                    ?>
-                                        <div style="display: flex; align-items: center; gap: 5px;">
-                                            <span style="font-family: monospace; font-size: 11.5px; background: #eff6ff; color: #1e40af; padding: 3px 8px; border-radius: 5px; border: 1px solid #bfdbfe; font-weight: 600;" title="<?php echo esc_attr($ref_id); ?>">
-                                                <?php echo esc_html($ref_id); ?>
-                                            </span>
-                                            <button type="button" class="okj-copy-btn" data-clipboard="<?php echo esc_attr($ref_id); ?>" title="Salin Order ID SumoPod" style="background: none; border: none; padding: 2px; cursor: pointer; color: #3b82f6;">
-                                                <span class="dashicons dashicons-clipboard" style="font-size: 14px; width: 14px; height: 14px;"></span>
-                                            </button>
-                                            <a href="https://sumopod.com/dashboard/managed-payment/payments" target="_blank" title="Buka di Dashboard Pembayaran SumoPod" style="color: #6366f1; display: inline-flex; align-items: center; text-decoration: none;">
-                                                <span class="dashicons dashicons-external" style="font-size: 14px; width: 14px; height: 14px;"></span>
-                                            </a>
-                                        </div>
-                                    <?php else: ?>
-                                        <span style="color: #94a3b8; font-size: 12px;">-</span>
-                                    <?php endif; ?>
-                                </td>
+                            <!-- Tanggal & Waktu (Left) -->
+                            <td style="padding: 14px 16px; text-align: left; white-space: nowrap;">
+                                <div style="font-weight: 600; font-size: 13px; color: #1e293b;"><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'd M Y') : date('d M Y', strtotime($tx['created_at']))); ?></div>
+                                <div style="color: #64748b; font-size: 11.5px; margin-top: 1px;"><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'H:i') : date('H:i', strtotime($tx['created_at']))); ?> WIB</div>
+                            </td>
 
-                                <!-- Tanggal & Waktu -->
-                                <td style="padding: 14px 16px; white-space: nowrap;">
-                                    <div style="font-weight: 600; font-size: 13px; color: #1e293b;"><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'd M Y') : date('d M Y', strtotime($tx['created_at']))); ?></div>
-                                    <small style="color: #64748b; font-size: 11px;"><?php echo esc_html(class_exists('OKJ_App') ? OKJ_App::format_datetime($tx['created_at'], 'H:i') : date('H:i', strtotime($tx['created_at']))); ?> WIB</small>
-                                </td>
+                            <!-- Customer (Left) -->
+                            <td style="padding: 14px 16px; text-align: left;">
+                                <div style="font-weight: 700; color: #0f172a; font-size: 13px; line-height: 1.3;"><?php echo esc_html($tx['customer_name'] ?: 'Pelanggan Umum'); ?></div>
+                                <?php if ($clean_wa): ?>
+                                    <a href="https://wa.me/<?php echo esc_attr($clean_wa); ?>" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; color: #059669; font-size: 11.5px; text-decoration: none; margin-top: 3px; font-weight: 600;">
+                                        <span class="dashicons dashicons-whatsapp" style="font-size: 13px; width: 13px; height: 13px;"></span> <?php echo esc_html($contact); ?>
+                                    </a>
+                                <?php elseif (!empty($tx['cust_email'])): ?>
+                                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;"><?php echo esc_html($tx['cust_email']); ?></div>
+                                <?php endif; ?>
+                            </td>
 
-                                <!-- Customer -->
-                                <td style="padding: 14px 16px;">
-                                    <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;"><?php echo esc_html($tx['customer_name'] ?: 'Pelanggan Umum'); ?></div>
-                                    <?php if ($clean_wa): ?>
-                                        <a href="https://wa.me/<?php echo esc_attr($clean_wa); ?>" target="_blank" style="display: inline-flex; align-items: center; gap: 3px; color: #16a34a; font-size: 11.5px; text-decoration: none; margin-top: 2px; font-weight: 600;">
-                                            <span class="dashicons dashicons-whatsapp" style="font-size: 13px; width: 13px; height: 13px;"></span> <?php echo esc_html($contact); ?>
-                                        </a>
-                                    <?php elseif (!empty($tx['cust_email'])): ?>
-                                        <small style="color: #64748b; font-size: 11px;"><?php echo esc_html($tx['cust_email']); ?></small>
-                                    <?php endif; ?>
-                                </td>
-
-                                <!-- Item Produk -->
-                                <td style="padding: 14px 16px; max-width: 240px;">
-                                    <?php if (!empty($tx['items'])): ?>
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <?php foreach (array_slice($tx['items'], 0, 2) as $it): ?>
-                                                <div style="font-size: 12.5px; color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?php echo esc_attr($it['product_name']); ?>">
-                                                    • <?php echo esc_html($it['product_name']); ?>
-                                                </div>
-                                            <?php endforeach; ?>
-                                            <?php if (count($tx['items']) > 2): ?>
-                                                <small style="color: #4f46e5; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>')">
-                                                    +<?php echo count($tx['items']) - 2; ?> item lainnya...
-                                                </small>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php else: ?>
-                                        <span style="color: #94a3b8; font-size: 12px;">-</span>
-                                    <?php endif; ?>
-                                </td>
-
-                                <!-- Qty -->
-                                <td style="padding: 14px 16px; text-align: center; white-space: nowrap;">
-                                    <?php if (!empty($tx['items'])): ?>
-                                        <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
-                                            <?php foreach (array_slice($tx['items'], 0, 2) as $it): ?>
-                                                <span style="font-size: 12px; font-weight: 700; color: #334155; background: #f1f5f9; padding: 2px 8px; border-radius: 10px; display: inline-block;">
-                                                    <?php echo (int)$it['qty']; ?>
-                                                </span>
-                                            <?php endforeach; ?>
-                                            <?php if (count($tx['items']) > 2): ?>
-                                                <span style="font-size: 11px; color: #94a3b8; line-height: 1;">&hellip;</span>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php else: ?>
-                                        <span style="color: #94a3b8; font-size: 12px;">-</span>
-                                    <?php endif; ?>
-                                </td>
-
-                                <!-- Metode Bayar -->
-                                <td style="padding: 14px 16px; white-space: nowrap;">
-                                    <span style="display: inline-flex; align-items: center; gap: 5px; background: <?php echo $method_badge_bg; ?>; color: <?php echo $method_badge_color; ?>; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700;">
-                                        <span class="dashicons <?php echo $method_icon; ?>" style="font-size: 14px; width: 14px; height: 14px;"></span>
-                                        <?php echo esc_html($method_label); ?>
-                                    </span>
-                                </td>
-
-                                <!-- Total Pembayaran -->
-                                <td style="padding: 14px 16px; white-space: nowrap;">
-                                    <strong style="color: #0f172a; font-size: 14px;">Rp <?php echo number_format_i18n((float)$tx['total'], 0); ?></strong>
-                                    <?php if ($tx['discount'] > 0): ?>
-                                        <small style="display: block; font-size: 10.5px; color: #ef4444; font-weight: 600;">Diskon -Rp <?php echo number_format_i18n((float)$tx['discount'], 0); ?></small>
-                                    <?php endif; ?>
-                                </td>
-
-                                <!-- Status -->
-                                <td style="padding: 14px 16px; white-space: nowrap;">
-                                    <div class="status-cell-<?php echo esc_attr($tx['id']); ?>">
-                                        <?php if ($status === 'paid' || $status === 'completed'): ?>
-                                            <span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Lunas</span>
-                                        <?php elseif ($status === 'pending'): ?>
-                                            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
-                                                <span class="okj-badge okj-badge-warning" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Pending</span>
-                                                <button type="button" class="okj-btn-link" onclick="okjQuickMarkPaid('<?php echo esc_js($tx['id']); ?>')" style="font-size: 11px; color: #16a34a; font-weight: 700; text-decoration: none; border: 1px solid #bbf7d0; background: #f0fdf4; padding: 2px 6px; border-radius: 4px;" title="Tandai pesanan lunas jika sudah menerima transfer">
-                                                    Tandai Lunas
-                                                </button>
+                            <!-- Item Produk (Left - Clean without bullet) -->
+                            <td style="padding: 14px 16px; text-align: left; max-width: 220px;">
+                                <?php if (!empty($tx['items'])): ?>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <?php foreach (array_slice($tx['items'], 0, 2) as $it): ?>
+                                            <div style="font-size: 13px; color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;" title="<?php echo esc_attr($it['product_name']); ?>">
+                                                <?php echo esc_html($it['product_name']); ?>
                                             </div>
-                                        <?php elseif ($status === 'processing'): ?>
-                                            <span class="okj-badge" style="background: #e0e7ff; color: #4338ca; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Diproses</span>
-                                        <?php elseif ($status === 'failed'): ?>
-                                            <span class="okj-badge okj-badge-danger" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Gagal</span>
-                                        <?php elseif ($status === 'expired'): ?>
-                                            <span class="okj-badge" style="background: #fee2e2; color: #991b1b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Expired</span>
-                                        <?php else: ?>
-                                            <span class="okj-badge" style="background: #f1f5f9; color: #64748b; padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Batal</span>
+                                        <?php endforeach; ?>
+                                        <?php if (count($tx['items']) > 2): ?>
+                                            <span style="color: #4f46e5; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-block; margin-top: 2px;" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>')">
+                                                +<?php echo count($tx['items']) - 2; ?> produk lainnya...
+                                            </span>
                                         <?php endif; ?>
                                     </div>
-                                </td>
+                                <?php else: ?>
+                                    <span style="color: #cbd5e1; font-size: 13px;">-</span>
+                                <?php endif; ?>
+                            </td>
 
-                                <!-- Aksi -->
-                                <td style="padding: 14px 16px; text-align: right; white-space: nowrap;">
-                                    <div style="display: inline-flex; gap: 6px; align-items: center;">
-                                        <!-- Detail Button -->
-                                        <button type="button" class="okj-btn okj-btn-secondary okj-btn-small" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>')" title="Lihat Detail Transaksi" style="padding: 5px 8px; font-size: 12px; font-weight: 600;">
-                                            <span class="dashicons dashicons-visibility" style="font-size: 15px; width: 15px; height: 15px; vertical-align: middle;"></span> Detail
-                                        </button>
-
-                                        <!-- Cetak Struk Button -->
-                                        <button type="button" class="okj-btn okj-btn-secondary okj-btn-small" onclick="okjPrintReceipt('<?php echo esc_js($tx['id']); ?>')" title="Cetak Struk Pembelian" style="padding: 5px 8px; font-size: 12px; font-weight: 600; color: #0284c7; border-color: #bae6fd; background: #f0f9ff;">
-                                            <span class="dashicons dashicons-printer" style="font-size: 15px; width: 15px; height: 15px; vertical-align: middle;"></span> Struk
-                                        </button>
-
-                                        <!-- Kirim WhatsApp Button -->
-                                        <?php if ($clean_wa): ?>
-                                            <button type="button" class="okj-btn okj-btn-small" onclick="okjSendWaReceipt('<?php echo esc_js($tx['id']); ?>', '<?php echo esc_js($contact); ?>')" title="Kirim Nota via WA Customer" style="padding: 5px 8px; font-size: 12px; font-weight: 600; color: #16a34a; border: 1px solid #bbf7d0; background: #f0fdf4;">
-                                                <span class="dashicons dashicons-whatsapp" style="font-size: 15px; width: 15px; height: 15px; vertical-align: middle;"></span>
-                                            </button>
+                            <!-- Qty (Center - Pill Badge) -->
+                            <td style="padding: 14px 16px; text-align: center; white-space: nowrap;">
+                                <?php if (!empty($tx['items'])): ?>
+                                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+                                        <?php foreach (array_slice($tx['items'], 0, 2) as $it): ?>
+                                            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 22px; padding: 0 8px; border-radius: 9999px; background: #f1f5f9; font-size: 12px; font-weight: 700; color: #334155; border: 1px solid #e2e8f0;">
+                                                <?php echo (int)$it['qty']; ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                        <?php if (count($tx['items']) > 2): ?>
+                                            <span style="font-size: 11px; color: #94a3b8; line-height: 1;">&hellip;</span>
                                         <?php endif; ?>
-
-                                        <!-- Hapus Button -->
-                                        <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id']), 'okj_delete_pos_transaction_' . $tx['id']); ?>" class="okj-btn-link okj-text-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini beserta rincian itemnya? Tindakan ini tidak dapat dibatalkan.');" title="Hapus Transaksi" style="padding: 5px; color: #ef4444;">
-                                            <span class="dashicons dashicons-trash" style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle;"></span>
-                                        </a>
                                     </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                                <?php else: ?>
+                                    <span style="color: #cbd5e1; font-size: 13px;">-</span>
+                                <?php endif; ?>
+                            </td>
 
-            <!-- Pagination Bar -->
-            <?php if ($total_pages > 1): ?>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid #e2e8f0; flex-wrap: wrap; gap: 10px;">
-                    <div style="font-size: 13px; color: #64748b;">
-                        Menampilkan <strong><?php echo number_format_i18n(min($total_items, ($current_page - 1) * $per_page + 1)); ?></strong> - <strong><?php echo number_format_i18n(min($total_items, $current_page * $per_page)); ?></strong> dari <strong><?php echo number_format_i18n($total_items); ?></strong> transaksi
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        <?php if ($current_page > 1): ?>
-                            <a href="<?php echo add_query_arg('paged', $current_page - 1); ?>" class="okj-btn okj-btn-secondary okj-btn-small" style="font-weight: 600;">&laquo; Sebelumnya</a>
-                        <?php endif; ?>
+                            <!-- Metode Bayar (Center - Subtle Badge) -->
+                            <td style="padding: 14px 16px; text-align: center; white-space: nowrap;">
+                                <span style="display: inline-flex; align-items: center; gap: 5px; background: <?php echo $method_badge_bg; ?>; color: <?php echo $method_badge_color; ?>; padding: 4px 10px; border-radius: 9999px; font-size: 11.5px; font-weight: 700; border: 1px solid <?php echo $method_border; ?>;">
+                                    <span class="dashicons <?php echo $method_icon; ?>" style="font-size: 13px; width: 13px; height: 13px;"></span>
+                                    <?php echo esc_html($method_label); ?>
+                                </span>
+                            </td>
 
-                        <?php for ($i = max(1, $current_page - 2); $i <= min($total_pages, $current_page + 2); $i++): ?>
-                            <a href="<?php echo add_query_arg('paged', $i); ?>" class="okj-btn okj-btn-small <?php echo $i === $current_page ? 'okj-btn-primary' : 'okj-btn-secondary'; ?>" style="font-weight: 700; min-width: 32px; text-align: center;">
-                                <?php echo $i; ?>
-                            </a>
-                        <?php endfor; ?>
+                            <!-- Total Pembayaran (Right - Bold Amount) -->
+                            <td style="padding: 14px 16px; text-align: right; white-space: nowrap;">
+                                <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Rp <?php echo number_format_i18n((float)$tx['total'], 0); ?></div>
+                                <?php if ($tx['discount'] > 0): ?>
+                                    <div style="font-size: 10.5px; color: #ef4444; font-weight: 600; margin-top: 2px;">Diskon -Rp <?php echo number_format_i18n((float)$tx['discount'], 0); ?></div>
+                                <?php endif; ?>
+                            </td>
 
-                        <?php if ($current_page < $total_pages): ?>
-                            <a href="<?php echo add_query_arg('paged', $current_page + 1); ?>" class="okj-btn okj-btn-secondary okj-btn-small" style="font-weight: 600;">Selanjutnya &raquo;</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
+                            <!-- Status (Center - Pastel Status Badges) -->
+                            <td style="padding: 14px 16px; text-align: center; white-space: nowrap;">
+                                <div class="status-cell-<?php echo esc_attr($tx['id']); ?>" style="display: inline-flex; flex-direction: column; align-items: center; gap: 4px;">
+                                    <?php if ($tx_status === 'paid' || $tx_status === 'completed'): ?>
+                                        <span class="okj-badge okj-badge-success" style="display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 9999px;">Lunas</span>
+                                    <?php elseif ($tx_status === 'pending'): ?>
+                                        <span class="okj-badge okj-badge-warning" style="display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 9999px;">Pending</span>
+                                        <button type="button" onclick="okjQuickMarkPaid('<?php echo esc_js($tx['id']); ?>')" style="font-size: 10.5px; color: #047857; font-weight: 700; text-decoration: none; border: 1px solid #a7f3d0; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s;" title="Tandai pesanan lunas jika sudah menerima pembayaran">
+                                            Tandai Lunas
+                                        </button>
+                                    <?php elseif ($tx_status === 'processing'): ?>
+                                        <span class="okj-badge" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 9999px;">Diproses</span>
+                                    <?php elseif ($tx_status === 'failed'): ?>
+                                        <span class="okj-badge okj-badge-danger" style="display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 9999px;">Gagal</span>
+                                    <?php elseif ($tx_status === 'expired'): ?>
+                                        <span class="okj-badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 9999px;">Expired</span>
+                                    <?php else: ?>
+                                        <span class="okj-badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 9999px;">Batal</span>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+
+                            <!-- Aksi (Right - Cohesive 30px Button Group) -->
+                            <td style="padding: 14px 16px; text-align: right; white-space: nowrap;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end;">
+                                    <!-- Detail Button -->
+                                    <button type="button" class="okj-btn okj-btn-secondary" onclick="okjOpenTxDetail('<?php echo esc_js($tx['id']); ?>')" title="Lihat Detail Transaksi" style="height: 30px; padding: 0 10px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.15s;">
+                                        <span class="dashicons dashicons-visibility" style="font-size: 14px; width: 14px; height: 14px; color: #64748b;"></span> Detail
+                                    </button>
+
+                                    <!-- Cetak Struk Button -->
+                                    <button type="button" class="okj-btn okj-btn-secondary" onclick="okjPrintReceipt('<?php echo esc_js($tx['id']); ?>')" title="Cetak Struk Pembelian" style="height: 30px; padding: 0 10px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.15s;">
+                                        <span class="dashicons dashicons-printer" style="font-size: 14px; width: 14px; height: 14px; color: #64748b;"></span> Struk
+                                    </button>
+
+                                    <!-- Kirim WhatsApp Button -->
+                                    <?php if ($clean_wa): ?>
+                                        <button type="button" class="okj-btn" onclick="okjSendWaReceipt('<?php echo esc_js($tx['id']); ?>', '<?php echo esc_js($contact); ?>')" title="Kirim Nota via WhatsApp Customer" style="height: 30px; width: 30px; padding: 0; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #bbf7d0; background: #ecfdf5; color: #047857; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s;">
+                                            <span class="dashicons dashicons-whatsapp" style="font-size: 15px; width: 15px; height: 15px;"></span>
+                                        </button>
+                                    <?php endif; ?>
+
+                                    <!-- Hapus Button -->
+                                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id']), 'okj_delete_pos_transaction_' . $tx['id']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini beserta rincian itemnya? Tindakan ini tidak dapat dibatalkan.');" title="Hapus Transaksi" style="height: 30px; width: 30px; border-radius: 6px; border: 1px solid #fecaca; background: #fef2f2; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: all 0.15s;">
+                                        <span class="dashicons dashicons-trash" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
+
+        <!-- Pagination Bar -->
+        <?php if ($total_pages > 1): ?>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc; flex-wrap: wrap; gap: 12px;">
+                <div style="font-size: 13px; color: #64748b;">
+                    Menampilkan <strong><?php echo number_format_i18n(min($total_items, ($current_page - 1) * $per_page + 1)); ?></strong> - <strong><?php echo number_format_i18n(min($total_items, $current_page * $per_page)); ?></strong> dari <strong><?php echo number_format_i18n($total_items); ?></strong> transaksi
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <?php if ($current_page > 1): ?>
+                        <a href="<?php echo add_query_arg('paged', $current_page - 1); ?>" class="okj-btn okj-btn-secondary" style="height: 32px; padding: 0 10px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; text-decoration: none; display: inline-flex; align-items: center;">&laquo; Sebelumnya</a>
+                    <?php endif; ?>
+
+                    <?php for ($i = max(1, $current_page - 2); $i <= min($total_pages, $current_page + 2); $i++): ?>
+                        <a href="<?php echo add_query_arg('paged', $i); ?>" style="height: 32px; min-width: 32px; padding: 0 8px; font-size: 12px; font-weight: 700; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; <?php echo $i === $current_page ? 'background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; border: none; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25);' : 'background: #ffffff; color: #334155; border: 1px solid #cbd5e1;'; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                    <?php endfor; ?>
+
+                    <?php if ($current_page < $total_pages): ?>
+                        <a href="<?php echo add_query_arg('paged', $current_page + 1); ?>" class="okj-btn okj-btn-secondary" style="height: 32px; padding: 0 10px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; text-decoration: none; display: inline-flex; align-items: center;">Selanjutnya &raquo;</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
