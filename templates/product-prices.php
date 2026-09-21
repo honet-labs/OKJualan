@@ -266,24 +266,24 @@
                     </div>
                 <?php else: ?>
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
-                        <input type="text" class="okj-input okj-table-search" placeholder="Cari nama, kategori, provider..." style="max-width: 320px; width: 100%;" />
+                        <input type="text" class="okj-input okj-table-search" placeholder="Cari nama, kategori, tags, provider..." style="max-width: 320px; width: 100%;" />
                     </div>
                     <div style="overflow-x: auto;">
                         <table class="okj-table">
                             <thead>
                                 <tr>
-                                    <th>ID Product</th>
-                                    <th>Gambar</th>
-                                    <th>Nama Product</th>
-                                    <th>Harga Product</th>
-                                    <th>Stok</th>
-                                    <th>Durasi</th>
-                                    <th>Kategori</th>
-                                    <th>Deskripsi</th>
-                                    <th>Seller/Supplier/Provider</th>
-                                    <th>Keterangan</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th style="text-align: left; width: 85px;">ID Product</th>
+                                    <th style="text-align: center; width: 60px;">Gambar</th>
+                                    <th style="text-align: left; min-width: 170px;">Nama Product</th>
+                                    <th style="text-align: right; min-width: 120px;">Harga Product</th>
+                                    <th style="text-align: center; min-width: 100px;">Stok</th>
+                                    <th style="text-align: center; width: 90px;">Durasi</th>
+                                    <th style="text-align: center; min-width: 110px;">Kategori</th>
+                                    <th style="text-align: center; min-width: 130px;">Tags</th>
+                                    <th style="text-align: center; width: 75px;">Deskripsi</th>
+                                    <th style="text-align: left; min-width: 140px;">Seller/Supplier/Provider</th>
+                                    <th style="text-align: center; width: 90px;">Status</th>
+                                    <th style="text-align: right; width: 80px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -293,47 +293,66 @@
                                     $p_status = !empty($r['status']) ? $r['status'] : 'active';
                                     ?>
                                     <tr>
-                                        <td><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
-                                        <td>
+                                        <td style="text-align: left;"><code><?php echo esc_html(substr($r['id'], 0, 8)); ?></code></td>
+                                        <td style="text-align: center;">
                                             <?php if (!empty($r['image_url'])): ?>
-                                                <img src="<?php echo esc_url($r['image_url']); ?>" alt="<?php echo esc_attr($r['name']); ?>" style="width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;" />
+                                                <img src="<?php echo esc_url($r['image_url']); ?>" alt="<?php echo esc_attr($r['name']); ?>" style="width: 42px; height: 42px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0; display: inline-block;" />
                                             <?php else: ?>
-                                                <div style="width: 44px; height: 44px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                                                <div style="width: 42px; height: 42px; border-radius: 8px; background: #f1f5f9; display: inline-flex; align-items: center; justify-content: center; color: #94a3b8; border: 1px solid #e2e8f0;">
                                                     <span class="dashicons dashicons-format-image" style="font-size: 20px; width: 20px; height: 20px;"></span>
                                                 </div>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <strong><?php echo esc_html($r['name']); ?></strong>
+                                        <td style="text-align: left;">
+                                            <strong style="color: #0f172a; font-weight: 600;"><?php echo esc_html($r['name']); ?></strong>
                                             <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
                                                 <?php if (isset($r['show_in_pos']) && $r['show_in_pos'] == 1): ?>
-                                                    <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; font-size: 10px; padding: 1px 5px;">POS</span>
+                                                    <span class="okj-badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 10px; padding: 1px 5px; font-weight: 600;">POS</span>
                                                 <?php endif; ?>
                                                 <?php if (!empty($r['affiliate_url'])): ?>
-                                                    <span class="okj-badge" style="background: #fce7f3; color: #be185d; font-size: 10px; padding: 1px 5px;">Affiliate</span>
+                                                    <span class="okj-badge" style="background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; font-size: 10px; padding: 1px 5px; font-weight: 600;">Affiliate</span>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td>
-                                            <div style="font-weight: 700; color: #0f172a;">Rp <?php echo number_format_i18n($r['sale_price'], 0); ?></div>
+                                        <td style="text-align: right;">
+                                            <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">Rp <?php echo number_format_i18n($r['sale_price'], 0); ?></div>
                                             <?php if ((float)$r['reseller_price'] > 0): ?>
-                                                <div style="font-size: 11px; color: #64748b;">Modal: Rp <?php echo number_format_i18n($r['reseller_price'], 0); ?></div>
+                                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Modal: Rp <?php echo number_format_i18n($r['reseller_price'], 0); ?></div>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
+                                        <td style="text-align: center;">
                                             <?php if ($p_stock < 0): ?>
-                                                <span class="okj-badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 600;">&infin; Unlimited</span>
+                                                <span class="okj-badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 600; font-size: 11.5px; padding: 3px 9px;">Unlimited</span>
                                             <?php elseif ($p_stock === 0): ?>
-                                                <span class="okj-badge" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; font-weight: 700;">Habis (0)</span>
+                                                <span class="okj-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; font-size: 11.5px; padding: 3px 9px;">Habis (0)</span>
                                             <?php elseif ($p_stock <= 3): ?>
-                                                <span class="okj-badge okj-badge-warning" style="font-weight: 700;" title="Stok Menipis!"><?php echo $p_stock; ?> pcs</span>
+                                                <span class="okj-badge" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 11.5px; padding: 3px 9px;" title="Stok Menipis!"><?php echo $p_stock; ?> pcs</span>
                                             <?php else: ?>
-                                                <span class="okj-badge" style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600;"><?php echo $p_stock; ?> pcs</span>
+                                                <span class="okj-badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 600; font-size: 11.5px; padding: 3px 9px;"><?php echo $p_stock; ?> pcs</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><span class="okj-badge okj-badge-secondary"><?php echo esc_html($r['duration_days']); ?> Hari</span></td>
-                                        <td><span class="okj-badge" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #334155;"><?php echo esc_html($r['category'] ?: 'Umum'); ?></span></td>
-                                        <td>
+                                        <td style="text-align: center;">
+                                            <span class="okj-badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 11.5px; padding: 3px 8px; font-weight: 600;"><?php echo esc_html($r['duration_days']); ?> Hari</span>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <span class="okj-badge" style="background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; font-size: 11.5px; padding: 3px 8px; font-weight: 600;"><?php echo esc_html($r['category'] ?: 'Umum'); ?></span>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <?php 
+                                            $p_tags = !empty($r['tags']) ? array_filter(array_map('trim', explode(',', $r['tags']))) : [];
+                                            if (!empty($p_tags)): ?>
+                                                <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; max-width: 150px; margin: 0 auto;">
+                                                    <?php foreach ($p_tags as $t_item): ?>
+                                                        <span class="okj-badge" style="background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px;">
+                                                            <?php echo esc_html($t_item); ?>
+                                                        </span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="okj-text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align: center;">
                                             <?php if (!empty($r['description'])): ?>
                                                 <a href="#" class="okj-view-detail" 
                                                    data-name="<?php echo esc_attr($r['name']); ?>" 
@@ -347,15 +366,15 @@
                                                 <span class="okj-text-muted">-</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
+                                        <td style="text-align: left;">
                                             <?php if (!empty($r['seller_name'])): ?>
                                                 <a href="#" class="okj-view-seller-detail" 
-                                                   data-name="<?php echo esc_attr($r['seller_name']); ?>"
-                                                   data-email="<?php echo esc_attr($r['seller_email'] ?: '-'); ?>"
-                                                   data-phone="<?php echo esc_attr($r['seller_phone'] ?: '-'); ?>"
-                                                   data-telegram="<?php echo esc_attr($r['seller_telegram'] ?: '-'); ?>"
-                                                   data-whatsapp="<?php echo esc_attr($r['seller_whatsapp'] ?: '-'); ?>"
-                                                   style="text-decoration: none; color: #4f46e5; font-weight: 600;"
+                                                   data-name="<?php echo esc_attr($r['seller_name']); ?>" 
+                                                   data-email="<?php echo esc_attr($r['seller_email'] ?: '-'); ?>" 
+                                                   data-phone="<?php echo esc_attr($r['seller_phone'] ?: '-'); ?>" 
+                                                   data-telegram="<?php echo esc_attr($r['seller_telegram'] ?: '-'); ?>" 
+                                                   data-whatsapp="<?php echo esc_attr($r['seller_whatsapp'] ?: '-'); ?>" 
+                                                   style="text-decoration: none; color: #4f46e5; font-weight: 600; font-size: 13px;"
                                                    title="Lihat Detail Provider">
                                                     <?php echo esc_html($r['seller_name']); ?>
                                                 </a>
@@ -363,24 +382,15 @@
                                                 <span class="okj-text-muted">-</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <?php if (!empty($r['notes'])): ?>
-                                                <span title="<?php echo esc_attr($r['notes']); ?>" style="display: inline-block; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #64748b;">
-                                                    <?php echo esc_html($r['notes']); ?>
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="okj-text-muted">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
+                                        <td style="text-align: center;">
                                             <?php if ($p_status === 'active'): ?>
-                                                <span class="okj-badge okj-badge-success" style="padding: 3px 8px; font-size: 11px;">Aktif</span>
+                                                <span class="okj-badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 3px 8px; font-size: 11px; font-weight: 700;">Aktif</span>
                                             <?php else: ?>
-                                                <span class="okj-badge okj-badge-danger" style="padding: 3px 8px; font-size: 11px;">Nonaktif</span>
+                                                <span class="okj-badge" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 3px 8px; font-size: 11px; font-weight: 700;">Nonaktif</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
-                                            <div style="display: flex; gap: 6px; align-items: center;">
+                                        <td style="text-align: right;">
+                                            <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
                                                 <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-product-prices&action=edit&id=' . $r['id']); ?>" title="Edit Produk">
                                                     <span class="dashicons dashicons-edit"></span>
                                                 </a>

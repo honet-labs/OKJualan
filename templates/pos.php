@@ -644,7 +644,7 @@ jQuery(document).ready(function($) {
                                 let isOutOfStock = (stockNum === 0);
 
                                 if (stockNum < 0) {
-                                    stockBadge = '<span style="font-size:10px; padding:1px 5px; background:#ecfdf5; color:#065f46; border-radius:4px; font-weight:600;">&infin; Unlimited</span>';
+                                    stockBadge = '<span style="font-size:10px; padding:1px 5px; background:#ecfdf5; color:#065f46; border-radius:4px; font-weight:600;">Unlimited</span>';
                                 } else if (stockNum === 0) {
                                     stockBadge = '<span style="font-size:10px; padding:1px 5px; background:#fef2f2; color:#991b1b; border-radius:4px; font-weight:700;">Habis</span>';
                                 } else if (stockNum <= 3) {
