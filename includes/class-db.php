@@ -264,7 +264,8 @@ class OKJ_DB {
             UNIQUE KEY transaction_no (transaction_no),
             KEY reference_no (reference_no),
             KEY customer_id (customer_id),
-            KEY seller_id (seller_id)
+            KEY seller_id (seller_id),
+            KEY payment_status (payment_status)
         ) {$charset};";
 
         $sql_pos_items = "CREATE TABLE {$t_pos_items} (
@@ -406,6 +407,21 @@ class OKJ_DB {
                 $wpdb->query("UPDATE {$t_pos_transactions} SET payment_method = 'sumopod' WHERE payment_method IN ('okj_sumopod_qris', 'okj_sumopod')");
                 $wpdb->query("UPDATE {$t_pos_transactions} SET payment_method = 'cash' WHERE payment_method IN ('cod')");
                 $wpdb->query("UPDATE {$t_pos_transactions} SET payment_method = 'transfer' WHERE payment_method IN ('bacs', 'bank_transfer')");
+
+                // Ensure payment_status index exists
+                $indexes = $wpdb->get_results("SHOW INDEX FROM {$t_pos_transactions}", ARRAY_A);
+                $has_status_idx = false;
+                if (is_array($indexes)) {
+                    foreach ($indexes as $idx) {
+                        if (!empty($idx['Key_name']) && $idx['Key_name'] === 'payment_status') {
+                            $has_status_idx = true;
+                            break;
+                        }
+                    }
+                }
+                if (!$has_status_idx) {
+                    $wpdb->query("ALTER TABLE {$t_pos_transactions} ADD INDEX payment_status (payment_status)");
+                }
             }
         } catch (\Throwable $e) {
             if (defined('WP_DEBUG') && WP_DEBUG) {

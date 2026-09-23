@@ -6,6 +6,7 @@ if (!class_exists('OKJ_Admin')) {
 class OKJ_Admin {
     public function __construct() {
         add_action('admin_menu', [$this, 'register_menus']);
+        add_action('admin_head', [$this, 'render_menu_badge_styles']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
 
         // Form post hooks
@@ -67,10 +68,55 @@ class OKJ_Admin {
     public function register_menus() {
         $cap = 'okj_manage';
 
+        global $wpdb;
+        $pending_tx_count  = 0;
+        $active_prod_count = 0;
+
+        if (class_exists('OKJ_DB')) {
+            $t_trans  = OKJ_DB::get_table('pos_transactions');
+            $t_active = OKJ_DB::get_table('active_products');
+
+            $suppress = $wpdb->suppress_errors(true);
+            try {
+                $pending_tx_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$t_trans} WHERE payment_status = 'pending'");
+                $today = wp_date('Y-m-d');
+                $active_prod_count = (int)$wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$t_active} WHERE status = 'process' OR (status = 'active' AND expires_at >= %s)",
+                    $today
+                ));
+            } catch (\Throwable $e) {
+                // Silently ignore if tables are not yet initialized
+            }
+            $wpdb->suppress_errors($suppress);
+        }
+
+        // Generate badges with standard WordPress notification markup and modern SaaS badge classes
+        $tx_badge = '';
+        if ($pending_tx_count > 0) {
+            $tx_badge = sprintf(
+                ' <span class="awaiting-mod okj-menu-badge-pending count-%1$d"><span class="pending-count">%2$s</span></span>',
+                $pending_tx_count,
+                number_format_i18n($pending_tx_count)
+            );
+        }
+
+        $active_badge = '';
+        if ($active_prod_count > 0) {
+            $active_badge = sprintf(
+                ' <span class="update-plugins okj-menu-badge-active count-%1$d"><span class="plugin-count">%2$s</span></span>',
+                $active_prod_count,
+                number_format_i18n($active_prod_count)
+            );
+        }
+
+        // Top-level menu alert: show pending transaction count bubble if any
+        $parent_badge = $tx_badge;
+        $main_title   = 'OKJualan' . $parent_badge;
+
         // Main OKJualan Manager Menu
         add_menu_page(
             'OKJualan',
-            'OKJualan',
+            $main_title,
             $cap,
             'okj-dashboard',
             [$this, 'view_dashboard'],
@@ -79,9 +125,9 @@ class OKJ_Admin {
         );
 
         add_submenu_page('okj-dashboard', 'Dashboard', 'Dashboard', $cap, 'okj-dashboard', [$this, 'view_dashboard']);
-        add_submenu_page('okj-dashboard', 'List Transaksi', 'List Transaksi', $cap, 'okj-transactions', [$this, 'view_transactions']);
+        add_submenu_page('okj-dashboard', 'List Transaksi', 'List Transaksi' . $tx_badge, $cap, 'okj-transactions', [$this, 'view_transactions']);
         add_submenu_page('okj-dashboard', 'Daftar Harga Produk', 'Daftar Harga Produk', $cap, 'okj-product-prices', [$this, 'view_product_prices']);
-        add_submenu_page('okj-dashboard', 'Pembelian & Produk Aktif', 'Pembelian & Produk Aktif', $cap, 'okj-active-products', [$this, 'view_active_products']);
+        add_submenu_page('okj-dashboard', 'Pembelian & Produk Aktif', 'Pembelian & Produk Aktif' . $active_badge, $cap, 'okj-active-products', [$this, 'view_active_products']);
         add_submenu_page('okj-dashboard', 'Pembelian Reseller', 'Pembelian Reseller', $cap, 'okj-reseller-products', [$this, 'view_reseller_products']);
         add_submenu_page('okj-dashboard', 'Customer', 'Customer', $cap, 'okj-customers', [$this, 'view_customers']);
         add_submenu_page('okj-dashboard', 'Seller', 'Seller', $cap, 'okj-sellers', [$this, 'view_sellers']);
@@ -102,6 +148,44 @@ class OKJ_Admin {
             'dashicons-calculator',
             59
         );
+    }
+
+    /**
+     * Render sleek SaaS styling for sidebar admin menu notification count badges
+     */
+    public function render_menu_badge_styles() {
+        ?>
+        <style id="okj-menu-badge-styles">
+            #adminmenu .okj-menu-badge-pending {
+                background-color: #f59e0b !important;
+                color: #ffffff !important;
+                font-weight: 700 !important;
+            }
+            #adminmenu .okj-menu-badge-active {
+                background-color: #10b981 !important;
+                color: #ffffff !important;
+                font-weight: 700 !important;
+            }
+            #adminmenu .wp-submenu a .okj-menu-badge-pending,
+            #adminmenu .wp-submenu a .okj-menu-badge-active {
+                display: inline-block;
+                vertical-align: middle;
+                margin-left: 6px;
+                font-size: 10.5px;
+                line-height: 16px;
+                height: 16px;
+                min-width: 16px;
+                padding: 0 5px;
+                border-radius: 9999px;
+                text-align: center;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+            }
+            #adminmenu .wp-submenu li.current a .okj-menu-badge-pending,
+            #adminmenu .wp-submenu li.current a .okj-menu-badge-active {
+                color: #ffffff !important;
+            }
+        </style>
+        <?php
     }
 
     public function enqueue_assets($hook) {

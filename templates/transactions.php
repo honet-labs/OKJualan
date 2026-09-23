@@ -711,6 +711,9 @@ function okjQuickMarkPaid(txId) {
     }, function(res) {
         if (res.success) {
             $('.status-cell-' + txId).html('<span class="okj-badge okj-badge-success" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700;">Lunas</span>');
+            setTimeout(function() {
+                window.location.reload();
+            }, 600);
         } else {
             alert(res.data.message || 'Gagal memperbarui status.');
         }
