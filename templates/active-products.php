@@ -154,7 +154,7 @@
         <div class="okj-card okj-mt-2">
             <div class="okj-card-body">
                 <?php
-                $current_status_filter = !empty($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : 'active';
+                $current_status_filter = !empty($status_filter) ? $status_filter : (!empty($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : 'active');
                 ?>
                 <div class="okj-tabs-wrapper" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
                     <div class="okj-status-tabs" style="display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px;">
@@ -171,21 +171,36 @@
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=okj-active-products&status_filter=active'); ?>" 
                            class="okj-tab-item <?php echo $current_status_filter === 'active' ? 'okj-tab-active' : ''; ?>"
-                           style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'active' ? '#ffffff' : '#64748b'; ?>; background: <?php echo $current_status_filter === 'active' ? '#4f46e5' : 'transparent'; ?>;">
-                            <span class="dashicons dashicons-yes-alt" style="font-size: 16px; width: 16px; height: 16px; margin-top: 1px; margin-right: 4px;"></span>
+                           style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'active' ? '#ffffff' : '#475569'; ?>; background: <?php echo $current_status_filter === 'active' ? '#4f46e5' : 'transparent'; ?>; display: inline-flex; align-items: center; gap: 5px;">
+                            <span class="dashicons dashicons-yes-alt" style="font-size: 16px; width: 16px; height: 16px; margin-top: 1px;"></span>
                             Aktif
+                            <?php if (!empty($active_count)): ?>
+                                <span style="background: <?php echo $current_status_filter === 'active' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'; ?>; color: <?php echo $current_status_filter === 'active' ? '#ffffff' : '#475569'; ?>; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">
+                                    <?php echo (int)$active_count; ?>
+                                </span>
+                            <?php endif; ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=okj-active-products&status_filter=expired'); ?>" 
                            class="okj-tab-item <?php echo $current_status_filter === 'expired' ? 'okj-tab-active' : ''; ?>"
-                           style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'expired' ? '#ffffff' : '#64748b'; ?>; background: <?php echo $current_status_filter === 'expired' ? '#4f46e5' : 'transparent'; ?>;">
-                            <span class="dashicons dashicons-no-alt" style="font-size: 16px; width: 16px; height: 16px; margin-top: 1px; margin-right: 4px;"></span>
+                           style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'expired' ? '#ffffff' : '#475569'; ?>; background: <?php echo $current_status_filter === 'expired' ? '#4f46e5' : 'transparent'; ?>; display: inline-flex; align-items: center; gap: 5px;">
+                            <span class="dashicons dashicons-no-alt" style="font-size: 16px; width: 16px; height: 16px; margin-top: 1px;"></span>
                             Expired
+                            <?php if (!empty($expired_count)): ?>
+                                <span style="background: <?php echo $current_status_filter === 'expired' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'; ?>; color: <?php echo $current_status_filter === 'expired' ? '#ffffff' : '#475569'; ?>; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">
+                                    <?php echo (int)$expired_count; ?>
+                                </span>
+                            <?php endif; ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=okj-active-products&status_filter=all'); ?>" 
                            class="okj-tab-item <?php echo $current_status_filter === 'all' ? 'okj-tab-active' : ''; ?>"
-                           style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'all' ? '#ffffff' : '#64748b'; ?>; background: <?php echo $current_status_filter === 'all' ? '#4f46e5' : 'transparent'; ?>;">
-                            <span class="dashicons dashicons-category" style="font-size: 16px; width: 16px; height: 16px; margin-top: 1px; margin-right: 4px;"></span>
+                           style="text-decoration: none; padding: 6px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s; color: <?php echo $current_status_filter === 'all' ? '#ffffff' : '#475569'; ?>; background: <?php echo $current_status_filter === 'all' ? '#4f46e5' : 'transparent'; ?>; display: inline-flex; align-items: center; gap: 5px;">
+                            <span class="dashicons dashicons-category" style="font-size: 16px; width: 16px; height: 16px; margin-top: 1px;"></span>
                             Semua Status
+                            <?php if (!empty($all_count)): ?>
+                                <span style="background: <?php echo $current_status_filter === 'all' ? 'rgba(255,255,255,0.25)' : '#e2e8f0'; ?>; color: <?php echo $current_status_filter === 'all' ? '#ffffff' : '#475569'; ?>; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: 2px;">
+                                    <?php echo (int)$all_count; ?>
+                                </span>
+                            <?php endif; ?>
                         </a>
                     </div>
                     <?php if (!empty($rows)): ?>

@@ -3,7 +3,7 @@
 
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)](https://wordpress.org)
 [![PHP Version](https://img.shields.io/badge/PHP-7.4%20%7C%208.0%20%7C%208.1%20%7C%208.2-indigo.svg)](https://php.net)
-[![Version](https://img.shields.io/badge/Version-0.1.3-green.svg)](https://github.com/honet-labs/OKJualan)
+[![Version](https://img.shields.io/badge/Version-0.2.17-green.svg)](https://github.com/honet-labs/OKJualan)
 [![License](https://img.shields.io/badge/License-GPLv2-orange.svg)](LICENSE)
 [![Gateway](https://img.shields.io/badge/Payment-SumoPod%20QRIS-purple.svg)](https://sumopod.com)
 

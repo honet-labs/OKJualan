@@ -69,8 +69,8 @@ class OKJ_Admin {
         $cap = 'okj_manage';
 
         global $wpdb;
-        $pending_tx_count  = 0;
-        $active_prod_count = 0;
+        $pending_tx_count   = 0;
+        $process_prod_count = 0;
 
         if (class_exists('OKJ_DB')) {
             $t_trans  = OKJ_DB::get_table('pos_transactions');
@@ -78,12 +78,8 @@ class OKJ_Admin {
 
             $suppress = $wpdb->suppress_errors(true);
             try {
-                $pending_tx_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$t_trans} WHERE payment_status = 'pending'");
-                $today = wp_date('Y-m-d');
-                $active_prod_count = (int)$wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$t_active} WHERE status = 'process' OR (status = 'active' AND expires_at >= %s)",
-                    $today
-                ));
+                $pending_tx_count   = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$t_trans} WHERE payment_status = 'pending'");
+                $process_prod_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$t_active} WHERE status = 'process'");
             } catch (\Throwable $e) {
                 // Silently ignore if tables are not yet initialized
             }
@@ -101,16 +97,24 @@ class OKJ_Admin {
         }
 
         $active_badge = '';
-        if ($active_prod_count > 0) {
+        if ($process_prod_count > 0) {
             $active_badge = sprintf(
-                ' <span class="update-plugins okj-menu-badge-active count-%1$d"><span class="plugin-count">%2$s</span></span>',
-                $active_prod_count,
-                number_format_i18n($active_prod_count)
+                ' <span class="awaiting-mod okj-menu-badge-process count-%1$d"><span class="pending-count">%2$s</span></span>',
+                $process_prod_count,
+                number_format_i18n($process_prod_count)
             );
         }
 
-        // Top-level menu alert: show pending transaction count bubble if any
-        $parent_badge = $tx_badge;
+        // Top-level menu alert: show total pending actions bubble (pending transactions + orders awaiting fulfillment)
+        $total_alerts = $pending_tx_count + $process_prod_count;
+        $parent_badge = '';
+        if ($total_alerts > 0) {
+            $parent_badge = sprintf(
+                ' <span class="awaiting-mod okj-menu-badge-pending count-%1$d"><span class="pending-count">%2$s</span></span>',
+                $total_alerts,
+                number_format_i18n($total_alerts)
+            );
+        }
         $main_title   = 'OKJualan' . $parent_badge;
 
         // Main OKJualan Manager Menu
@@ -156,7 +160,8 @@ class OKJ_Admin {
     public function render_menu_badge_styles() {
         ?>
         <style id="okj-menu-badge-styles">
-            #adminmenu .okj-menu-badge-pending {
+            #adminmenu .okj-menu-badge-pending,
+            #adminmenu .okj-menu-badge-process {
                 background-color: #f59e0b !important;
                 color: #ffffff !important;
                 font-weight: 700 !important;
@@ -167,6 +172,7 @@ class OKJ_Admin {
                 font-weight: 700 !important;
             }
             #adminmenu .wp-submenu a .okj-menu-badge-pending,
+            #adminmenu .wp-submenu a .okj-menu-badge-process,
             #adminmenu .wp-submenu a .okj-menu-badge-active {
                 display: inline-block;
                 vertical-align: middle;
@@ -181,6 +187,7 @@ class OKJ_Admin {
                 box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
             }
             #adminmenu .wp-submenu li.current a .okj-menu-badge-pending,
+            #adminmenu .wp-submenu li.current a .okj-menu-badge-process,
             #adminmenu .wp-submenu li.current a .okj-menu-badge-active {
                 color: #ffffff !important;
             }
@@ -532,7 +539,15 @@ class OKJ_Admin {
                 $today
             ));
 
-            $status_filter = !empty($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : 'active';
+            // Counts for tabs
+            $active_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'active'));
+            $process_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'process'));
+            $expired_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'expired'));
+            $all_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table_ap}");
+
+            // Default to 'process' only if there are items needing manual fulfillment; otherwise default to 'active'
+            $default_status = ($process_count > 0) ? 'process' : 'active';
+            $status_filter = !empty($_GET['status_filter']) ? sanitize_text_field($_GET['status_filter']) : $default_status;
             $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
@@ -549,12 +564,6 @@ class OKJ_Admin {
 
             $total_rows = $wpdb->get_var("SELECT COUNT(*) FROM {$table_ap} a WHERE {$where}");
             $total_pages = ceil($total_rows / $per_page);
-
-            // Counts for tabs
-            $active_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'active'));
-            $process_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'process'));
-            $expired_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'expired'));
-            $all_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$table_ap}");
 
             $rows = $wpdb->get_results($wpdb->prepare(
                 "SELECT a.*, COALESCE(NULLIF(c.name, ''), a.customer_name) as customer_name, c.email as customer_email, c.phone as customer_phone, c.telegram as customer_telegram, c.whatsapp as customer_whatsapp 
