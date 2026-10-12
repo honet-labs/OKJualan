@@ -228,14 +228,16 @@
                                     <th>ID Pembelian</th>
                                     <th>No. Transaksi</th>
                                     <th>Customer</th>
-                                    <th>Produk &amp; Masa Aktif</th>
-                                    <th>Tgl Pembelian</th>
-                                    <th>Qty</th>
-                                    <th>Total Harga</th>
-                                    <th>Status Layanan</th>
-                                    <th>Status Pembayaran</th>
-                                    <th>Keterangan</th>
-                                    <th>Perpanjang Masa Aktif &amp; Aksi</th>
+                                    <th>Nama Produk</th>
+                                    <th style="text-align: center; white-space: nowrap;">Masa Aktif</th>
+                                    <th style="text-align: center; white-space: nowrap;">Waktu Expired</th>
+                                    <th style="white-space: nowrap;">Tgl Pembelian</th>
+                                    <th style="text-align: center; white-space: nowrap;">Qty</th>
+                                    <th style="text-align: right; white-space: nowrap;">Total Harga</th>
+                                    <th style="text-align: center; white-space: nowrap;">Status Layanan</th>
+                                    <th style="text-align: center; white-space: nowrap;">Status Pembayaran</th>
+                                    <th style="text-align: center; white-space: nowrap;">Keterangan</th>
+                                    <th style="white-space: nowrap;">Perpanjang Masa Aktif &amp; Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -322,21 +324,29 @@
                                             <div style="margin-top: 2px; font-size: 11px; color: #64748b;"><?php echo esc_html($r['customer_contact']); ?></div>
                                         </td>
                                         <td>
-                                            <strong><?php echo esc_html($r['product_label']); ?></strong>
-                                            <div style="margin-top: 2px; display: flex; gap: 4px; align-items: center;">
-                                                <?php if (!empty($r['duration_days'])): ?>
-                                                    <span class="okj-badge" style="background: #f1f5f9; color: #475569; font-size: 10px; padding: 1px 5px;">
-                                                        <?php echo esc_html($r['duration_days']); ?> Hari
-                                                    </span>
-                                                <?php endif; ?>
-                                                <span style="font-size: 11px; color: #64748b;">Exp: <?php echo esc_html($r['expires_at']); ?></span>
-                                            </div>
+                                            <strong style="color: #0f172a; font-size: 13.5px;"><?php echo esc_html($r['product_label']); ?></strong>
                                         </td>
-                                        <td><?php echo esc_html($r['start_date']); ?></td>
-                                        <td><strong><?php echo $qty_val; ?></strong></td>
-                                        <td><strong style="color: #0f172a;">Rp <?php echo number_format_i18n((float)$r['price'], 0); ?></strong></td>
+                                        <td style="text-align: center; white-space: nowrap;">
+                                            <?php if (!empty($r['duration_days'])): ?>
+                                                <span class="okj-badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+                                                    <?php echo esc_html($r['duration_days']); ?> Hari
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="okj-text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align: center; white-space: nowrap;">
+                                            <?php if (!empty($r['expires_at'])): ?>
+                                                <span style="font-weight: 600; color: #334155; font-size: 12.5px;"><?php echo esc_html($r['expires_at']); ?></span>
+                                            <?php else: ?>
+                                                <span class="okj-text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="white-space: nowrap;"><?php echo esc_html($r['start_date']); ?></td>
+                                        <td style="text-align: center;"><strong><?php echo $qty_val; ?></strong></td>
+                                        <td style="text-align: right; white-space: nowrap;"><strong style="color: #0f172a;">Rp <?php echo number_format_i18n((float)$r['price'], 0); ?></strong></td>
                                         <!-- Status Layanan -->
-                                        <td>
+                                        <td style="text-align: center; white-space: nowrap;">
                                             <?php if ($p_status === 'process'): ?>
                                                 <span class="okj-badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
                                                     Dalam Proses
@@ -352,7 +362,7 @@
                                             <?php endif; ?>
                                         </td>
                                         <!-- Status Pembayaran -->
-                                        <td>
+                                        <td style="text-align: center; white-space: nowrap;">
                                             <?php if ($pay_status === 'paid'): ?>
                                                 <span class="okj-badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;">
                                                     Lunas
@@ -367,7 +377,7 @@
                                                 </span>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
+                                        <td style="text-align: center;">
                                             <?php if (!empty($r['notes'])): ?>
                                                 <a href="#" class="okj-view-active-notes" 
                                                    data-name="<?php echo esc_attr($r['product_label']); ?>" 
