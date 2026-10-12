@@ -350,6 +350,10 @@ class OKJ_WC_Sync {
         if (!$order) return null;
 
         $order_id = $order->get_id();
+        if ($order->get_meta('_okj_deleted_in_okj') === 'yes' || get_post_meta($order_id, '_okj_deleted_in_okj', true) === 'yes') {
+            return null;
+        }
+
         global $wpdb;
         $t_transactions = OKJ_DB::get_table('pos_transactions');
         $t_pos_items    = OKJ_DB::get_table('pos_transaction_items');
@@ -563,8 +567,13 @@ class OKJ_WC_Sync {
 
         if (!empty($orders)) {
             foreach ($orders as $order) {
+                if ($order->get_meta('_okj_deleted_in_okj') === 'yes' || get_post_meta($order->get_id(), '_okj_deleted_in_okj', true) === 'yes') {
+                    continue;
+                }
+                $existing_tx_id = $order->get_meta('_okj_pos_transaction_id');
                 $tx_id = self::sync_wc_order_to_pos_transaction($order->get_id());
-                if ($tx_id && class_exists('OKJ_Reseller_Manager') && in_array($order->get_status(), ['processing', 'completed', 'paid'], true)) {
+                // Only sync to active products if this was a brand-new imported transaction
+                if ($tx_id && empty($existing_tx_id) && class_exists('OKJ_Reseller_Manager') && in_array($order->get_status(), ['processing', 'completed', 'paid'], true)) {
                     OKJ_Reseller_Manager::sync_transaction_to_active_products($tx_id);
                 }
             }
@@ -707,6 +716,9 @@ class OKJ_WC_Sync {
         }
 
         $user_id = $user->ID;
+        if (get_user_meta($user_id, '_okj_deleted_as_customer', true) === 'yes') {
+            return null;
+        }
         $email = sanitize_email($user->user_email);
 
         // Determine customer name: first check billing names, then first/last, then display_name

@@ -80,10 +80,15 @@
                         </div>
                     </div>
 
-                    <div class="okj-form-actions okj-mt-2" style="border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                    <div class="okj-form-actions okj-mt-2" style="border-top: 1px solid #f1f5f9; padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
                         <button type="submit" class="okj-btn okj-btn-primary">
                             <span class="dashicons dashicons-saved" style="margin-top: 3px;"></span> Simpan Profil Customer
                         </button>
+                        <?php if ($row): ?>
+                            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_customer&id=' . $row['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-customers'))), 'okj_delete_customer_' . $row['id']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus data customer ini?');" class="okj-btn okj-btn-danger" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                <span class="dashicons dashicons-trash" style="font-size: 15px; width: 15px; height: 15px;"></span> Hapus Customer
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -191,7 +196,7 @@
                                                 <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-customers&action=edit&id=' . $r['id']); ?>" title="Edit Customer">
                                                     <span class="dashicons dashicons-edit"></span>
                                                 </a>
-                                                <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_customer&id=' . $r['id']), 'okj_delete_customer_' . $r['id']); ?>" onclick="return confirm('Hapus customer ini?');" title="Hapus Customer">
+                                                <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_customer&id=' . $r['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-customers'))), 'okj_delete_customer_' . $r['id']); ?>" onclick="return confirm('Hapus customer ini?');" title="Hapus Customer">
                                                     <span class="dashicons dashicons-trash"></span>
                                                 </a>
                                             </div>

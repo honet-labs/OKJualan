@@ -128,7 +128,7 @@
                                         <a class="okj-btn okj-btn-secondary okj-btn-small" href="<?php echo admin_url('admin.php?page=okj-shortlinks&action=edit&id=' . $r['id']); ?>">
                                             <span class="dashicons dashicons-edit"></span> Edit
                                         </a>
-                                        <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_shortlink&id=' . $r['id']), 'okj_delete_shortlink_' . $r['id']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus shortlink ini?');">
+                                        <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_shortlink&id=' . $r['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-shortlinks'))), 'okj_delete_shortlink_' . $r['id']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus shortlink ini?');">
                                             <span class="dashicons dashicons-trash"></span> Hapus
                                         </a>
                                     </td>

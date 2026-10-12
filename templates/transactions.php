@@ -390,7 +390,7 @@
                                     <?php endif; ?>
 
                                     <!-- Hapus Button -->
-                                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id']), 'okj_delete_pos_transaction_' . $tx['id']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini beserta rincian itemnya? Tindakan ini tidak dapat dibatalkan.');" title="Hapus Transaksi" style="height: 30px; width: 30px; border-radius: 6px; border: 1px solid #fecaca; background: #fef2f2; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: all 0.15s;">
+                                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-transactions'))), 'okj_delete_pos_transaction_' . $tx['id']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini beserta rincian itemnya? Tindakan ini tidak dapat dibatalkan.');" title="Hapus Transaksi" style="height: 30px; width: 30px; border-radius: 6px; border: 1px solid #fecaca; background: #fef2f2; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: all 0.15s;">
                                         <span class="dashicons dashicons-trash" style="font-size: 14px; width: 14px; height: 14px;"></span>
                                     </a>
                                 </div>
@@ -452,6 +452,9 @@
         <div style="background: #f8fafc; padding: 14px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div id="okj-modal-tx-status-actions"></div>
             <div style="display: flex; gap: 8px;">
+                <a id="okj-modal-tx-delete" href="#" onclick="return confirm('Apakah Anda yakin ingin menghapus transaksi ini beserta rincian itemnya? Tindakan ini tidak dapat dibatalkan.');" class="okj-btn" style="display: none; align-items: center; gap: 4px; font-weight: 600; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; text-decoration: none;">
+                    <span class="dashicons dashicons-trash"></span> Hapus
+                </a>
                 <button type="button" class="okj-btn okj-btn-secondary" id="okj-modal-tx-print" style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
                     <span class="dashicons dashicons-printer"></span> Cetak Struk
                 </button>
@@ -690,6 +693,12 @@ function okjOpenTxDetail(txId) {
                     Konfirmasi Lunas Sekarang
                 </button>
             `);
+        }
+
+        if (tx.delete_url) {
+            $('#okj-modal-tx-delete').attr('href', tx.delete_url).css('display', 'inline-flex');
+        } else {
+            $('#okj-modal-tx-delete').hide();
         }
 
         $('#okj-modal-tx-print').off('click').on('click', function() {

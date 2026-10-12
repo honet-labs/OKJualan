@@ -116,8 +116,13 @@
                         <textarea name="notes" class="okj-input" rows="2"><?php echo $row ? esc_textarea($row['notes']) : ''; ?></textarea>
                     </div>
 
-                    <div class="okj-form-actions okj-mt-2">
+                    <div class="okj-form-actions okj-mt-2" style="display: flex; justify-content: space-between; align-items: center;">
                         <button type="submit" class="okj-btn okj-btn-primary">Simpan Pembelian Produk</button>
+                        <?php if ($row): ?>
+                            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_reseller_product&id=' . $row['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-reseller-products'))), 'okj_delete_reseller_product_' . $row['id']); ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus data pembelian ini?');" class="okj-btn okj-btn-danger" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                <span class="dashicons dashicons-trash" style="font-size: 15px; width: 15px; height: 15px;"></span> Hapus Pembelian
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -290,7 +295,7 @@
                                             <a class="okj-btn-link" href="<?php echo admin_url('admin.php?page=okj-reseller-products&action=edit&id=' . $r['id']); ?>">
                                                 <span class="dashicons dashicons-edit"></span> Edit
                                             </a>
-                                            <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_reseller_product&id=' . $r['id']), 'okj_delete_reseller_product_' . $r['id']); ?>" onclick="return confirm('Hapus data pembelian ini?');">
+                                            <a class="okj-btn-link okj-btn-link-danger" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_reseller_product&id=' . $r['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-reseller-products'))), 'okj_delete_reseller_product_' . $r['id']); ?>" onclick="return confirm('Hapus data pembelian ini?');">
                                                 <span class="dashicons dashicons-trash"></span> Hapus
                                             </a>
                                         </div>

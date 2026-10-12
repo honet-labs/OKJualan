@@ -426,11 +426,6 @@ class OKJ_Admin {
             $row = $id ? $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $id), ARRAY_A) : null;
             $this->render_template('customers', ['action' => $action, 'row' => $row]);
         } else {
-            // Auto-sync WordPress users with role 'customer' on the first page of List Customer
-            if (class_exists('OKJ_WC_Sync') && (!isset($_GET['paged']) || (int)$_GET['paged'] <= 1)) {
-                OKJ_WC_Sync::sync_all_wp_customers();
-            }
-
             $per_page = 10;
             $paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
             $offset = ($paged - 1) * $per_page;
@@ -510,11 +505,6 @@ class OKJ_Admin {
             $resellers = $wpdb->get_results("SELECT r.id, r.product_name, r.duration_days, r.price, r.purchase_date, s.name as seller_name, (SELECT COUNT(*) FROM " . OKJ_DB::get_table('active_products') . " WHERE reseller_product_id = r.id) as is_used FROM " . OKJ_DB::get_table('reseller_products') . " r LEFT JOIN " . OKJ_DB::get_table('sellers') . " s ON r.seller_id = s.id ORDER BY r.product_name ASC", ARRAY_A);
             $this->render_template('active-products', ['action' => $action, 'row' => $row, 'customers' => $customers, 'resellers' => $resellers]);
         } else {
-            // Auto-sync any paid transactions to active products
-            if (class_exists('OKJ_Reseller_Manager')) {
-                OKJ_Reseller_Manager::sync_all_paid_transactions_to_active_products();
-            }
-
             $table_ap = OKJ_DB::get_table('active_products');
             $table_cust = OKJ_DB::get_table('customers');
 
@@ -863,12 +853,12 @@ class OKJ_Admin {
     }
 
     public function delete_product_price() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_price_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_price')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
@@ -877,12 +867,17 @@ class OKJ_Admin {
         $name = $row ? $row['name'] : $id;
 
         // Trash synced WooCommerce product if exists
-        if (OKJ_WC_Sync::is_active()) {
+        if (class_exists('OKJ_WC_Sync') && OKJ_WC_Sync::is_active()) {
             OKJ_WC_Sync::delete_synced_product($id);
         }
 
         $wpdb->delete(OKJ_DB::get_table('product_prices'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'product_price', $id, "Deleted product price: " . $name);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $this->redirect(admin_url('admin.php?page=okj-product-prices&deleted=1'));
     }
@@ -968,12 +963,12 @@ class OKJ_Admin {
     }
 
     public function delete_seller() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_seller_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_seller')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
@@ -983,6 +978,11 @@ class OKJ_Admin {
 
         $wpdb->delete(OKJ_DB::get_table('sellers'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'seller', $id, "Deleted seller: " . $name);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $this->redirect(admin_url('admin.php?page=okj-sellers&deleted=1'));
     }
@@ -1023,21 +1023,36 @@ class OKJ_Admin {
     }
 
     public function delete_customer() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_customer_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_customer')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
-        $row = $wpdb->get_row($wpdb->prepare("SELECT name FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $id), ARRAY_A);
+        $row = $wpdb->get_row($wpdb->prepare("SELECT name, email, notes FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $id), ARRAY_A);
         $name = $row ? $row['name'] : $id;
+
+        // If customer was created from a WordPress user, flag the user so auto-sync will not recreate it
+        if ($row && !empty($row['notes']) && preg_match('/Akun WordPress User #(\d+)/i', $row['notes'], $m)) {
+            update_user_meta((int)$m[1], '_okj_deleted_as_customer', 'yes');
+        } elseif ($row && !empty($row['email'])) {
+            $wp_user = get_user_by('email', $row['email']);
+            if ($wp_user) {
+                update_user_meta($wp_user->ID, '_okj_deleted_as_customer', 'yes');
+            }
+        }
 
         $wpdb->delete(OKJ_DB::get_table('customers'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'customer', $id, "Deleted customer: " . $name);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $this->redirect(admin_url('admin.php?page=okj-customers&deleted=1'));
     }
@@ -1101,12 +1116,12 @@ class OKJ_Admin {
     }
 
     public function delete_shortlink() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_shortlink_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_shortlink')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
@@ -1116,6 +1131,11 @@ class OKJ_Admin {
 
         $wpdb->delete(OKJ_DB::get_table('shortlinks'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'shortlink', $id, "Deleted shortlink: " . $title);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $this->redirect(admin_url('admin.php?page=okj-shortlinks&deleted=1'));
     }
@@ -1189,12 +1209,12 @@ class OKJ_Admin {
     }
 
     public function delete_reseller_product() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_reseller_product_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_reseller_product')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
@@ -1204,6 +1224,11 @@ class OKJ_Admin {
 
         $wpdb->delete(OKJ_DB::get_table('reseller_products'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'reseller_product', $id, "Deleted reseller product: " . $name);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $this->redirect(admin_url('admin.php?page=okj-reseller-products&deleted=1'));
     }
@@ -1325,66 +1350,133 @@ class OKJ_Admin {
     }
 
     public function delete_active_product() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_active_product_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_active_product')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
-        $row = $wpdb->get_row($wpdb->prepare("SELECT product_label, customer_name FROM " . OKJ_DB::get_table('active_products') . " WHERE id = %s", $id), ARRAY_A);
+        $t_active = OKJ_DB::get_table('active_products');
+        $row = $wpdb->get_row($wpdb->prepare("SELECT product_label, customer_name, transaction_no FROM {$t_active} WHERE id = %s", $id), ARRAY_A);
         $label = $row ? $row['product_label'] . ' (' . $row['customer_name'] . ')' : $id;
 
-        $wpdb->delete(OKJ_DB::get_table('active_products'), ['id' => $id]);
+        // Mark associated transaction so auto-sync will never resurrect this active product
+        if ($row && !empty($row['transaction_no'])) {
+            $t_trans = OKJ_DB::get_table('pos_transactions');
+            $wpdb->query($wpdb->prepare(
+                "UPDATE {$t_trans} SET notes = CONCAT(COALESCE(notes, ''), ' [AP Deleted]') WHERE (transaction_no = %s OR id = %s) AND (notes IS NULL OR notes NOT LIKE %s)",
+                $row['transaction_no'], $row['transaction_no'], '%[AP Deleted]%'
+            ));
+        }
+
+        $wpdb->delete($t_active, ['id' => $id]);
         $wpdb->delete(OKJ_DB::get_table('active_reminders'), ['active_product_id' => $id]);
         $wpdb->delete(OKJ_DB::get_table('active_product_renewals'), ['active_product_id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'active_product', $id, "Deleted active product, reminders & renewals: " . $label);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $this->redirect(admin_url('admin.php?page=okj-active-products&deleted=1'));
     }
 
     public function delete_pos_transaction() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_pos_transaction_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_pos_transaction')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
-        $row = $wpdb->get_row($wpdb->prepare("SELECT transaction_no FROM " . OKJ_DB::get_table('pos_transactions') . " WHERE id = %s", $id), ARRAY_A);
+        $t_trans = OKJ_DB::get_table('pos_transactions');
+        $row = $wpdb->get_row($wpdb->prepare("SELECT transaction_no, notes FROM {$t_trans} WHERE id = %s", $id), ARRAY_A);
         $tx_no = $row ? $row['transaction_no'] : $id;
 
-        $wpdb->delete(OKJ_DB::get_table('pos_transactions'), ['id' => $id]);
+        // 1. Delete POS transaction items
         $wpdb->delete(OKJ_DB::get_table('pos_transaction_items'), ['transaction_id' => $id]);
+
+        // 2. Also clean up any active products associated with this transaction so no orphan records remain
+        $t_active = OKJ_DB::get_table('active_products');
+        $active_ids = $wpdb->get_col($wpdb->prepare(
+            "SELECT id FROM {$t_active} WHERE transaction_no = %s OR notes LIKE %s OR notes LIKE %s",
+            $tx_no,
+            '%' . $wpdb->esc_like('ID: ' . $id) . '%',
+            '%' . $wpdb->esc_like('(' . $tx_no . ')') . '%'
+        ));
+        if (!empty($active_ids)) {
+            foreach ($active_ids as $aid) {
+                $wpdb->delete(OKJ_DB::get_table('active_reminders'), ['active_product_id' => $aid]);
+                $wpdb->delete(OKJ_DB::get_table('active_product_renewals'), ['active_product_id' => $aid]);
+                $wpdb->delete($t_active, ['id' => $aid]);
+            }
+        }
+
+        // 3. If it is a WooCommerce order, mark the order so it won't be resurrected
+        $wc_order_id = 0;
+        if (preg_match('/^WC-(\d+)/i', $tx_no, $m)) {
+            $wc_order_id = (int)$m[1];
+        } elseif ($row && !empty($row['notes']) && preg_match('/WooCommerce Order #(\d+)/i', $row['notes'], $m)) {
+            $wc_order_id = (int)$m[1];
+        }
+        if ($wc_order_id > 0) {
+            update_post_meta($wc_order_id, '_okj_deleted_in_okj', 'yes');
+            delete_post_meta($wc_order_id, '_okj_pos_transaction_id');
+            if (function_exists('wc_get_order')) {
+                $wc_order = wc_get_order($wc_order_id);
+                if ($wc_order) {
+                    $wc_order->update_meta_data('_okj_deleted_in_okj', 'yes');
+                    $wc_order->delete_meta_data('_okj_pos_transaction_id');
+                    $wc_order->save();
+                }
+            }
+        }
+
+        // 4. Delete the POS transaction itself
+        $wpdb->delete($t_trans, ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'pos_transaction', $id, "Deleted POS transaction: " . $tx_no);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $referer = wp_get_referer();
         if ($referer && strpos($referer, 'okj-transactions') !== false) {
             $this->redirect(admin_url('admin.php?page=okj-transactions&deleted=1'));
-        } else {
+        } elseif ($referer && strpos($referer, 'okj-pos') !== false) {
             $this->redirect(admin_url('admin.php?page=okj-pos&deleted=1#tab-history'));
+        } else {
+            $this->redirect(admin_url('admin.php?page=okj-transactions&deleted=1'));
         }
     }
 
     public function delete_reminder() {
-        $id = !empty($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
-        $nonce = !empty($_GET['_wpnonce']) ? sanitize_text_field($_GET['_wpnonce']) : '';
+        $id = !empty($_REQUEST['id']) ? sanitize_text_field($_REQUEST['id']) : '';
+        $nonce = !empty($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
         if (!wp_verify_nonce($nonce, 'okj_delete_reminder_' . $id) && !wp_verify_nonce($nonce, 'okj_delete_reminder')) {
             wp_die(esc_html__('Sesi keamanan tidak valid atau telah kedaluwarsa. Silakan refresh halaman dan coba lagi.', 'okjualan'), esc_html__('Akses Ditolak', 'okjualan'), ['back_link' => true]);
         }
-        if (!current_user_can('okj_manage')) {
+        if (!current_user_can('okj_manage') && !current_user_can('manage_options')) {
             wp_die(esc_html__('Forbidden', 'okjualan'), esc_html__('Forbidden', 'okjualan'), ['back_link' => true]);
         }
 
         global $wpdb;
         $wpdb->delete(OKJ_DB::get_table('active_reminders'), ['id' => $id]);
         OKJ_Reseller_Manager::log('delete', 'reminder', $id, "Deleted reminder queue ID: " . $id);
+
+        $redirect_to = !empty($_REQUEST['redirect_to']) ? esc_url_raw($_REQUEST['redirect_to']) : '';
+        if (!empty($redirect_to)) {
+            $this->redirect(add_query_arg('deleted', '1', $redirect_to));
+        }
 
         $this->redirect(admin_url('admin.php?page=okj-reminders&deleted=1'));
     }
@@ -2429,6 +2521,7 @@ class OKJ_Admin {
         }
         $tx['formatted_payment_method'] = $raw_method_formatted;
         $tx['payment_method_label'] = $tx['formatted_payment_method'];
+        $tx['delete_url'] = wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-transactions'))), 'okj_delete_pos_transaction_' . $tx['id']);
 
         wp_send_json_success($tx);
     }

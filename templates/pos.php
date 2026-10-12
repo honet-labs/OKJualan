@@ -303,7 +303,7 @@ $qr_url = home_url('/?okj_order=1');
                                                 style="padding: 4px 8px; font-size: 11px;">
                                                 <span class="dashicons dashicons-printer" style="font-size: 14px; width: 14px; height: 14px;"></span> Nota
                                             </button>
-                                            <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id']), 'okj_delete_pos_transaction_' . $tx['id']); ?>" onclick="return confirm('Hapus riwayat transaksi ini?');" title="Hapus Transaksi" style="padding: 4px 6px;">
+                                            <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_pos_transaction&id=' . $tx['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-pos#tab-history'))), 'okj_delete_pos_transaction_' . $tx['id']); ?>" onclick="return confirm('Hapus riwayat transaksi ini?');" title="Hapus Transaksi" style="padding: 4px 6px;">
                                                 <span class="dashicons dashicons-trash" style="font-size: 14px; width: 14px; height: 14px;"></span>
                                             </a>
                                         </div>

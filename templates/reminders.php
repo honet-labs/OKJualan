@@ -115,7 +115,7 @@
                                         <a class="okj-btn okj-btn-secondary okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_send_reminder_manual&id=' . $r['id']), 'okj_send_reminder_' . $r['id']); ?>" onclick="return confirm('Kirim reminder secara manual sekarang juga?');">
                                             <span class="dashicons dashicons-share-alt2"></span> Trigger Now
                                         </a>
-                                        <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_reminder&id=' . $r['id']), 'okj_delete_reminder_' . $r['id']); ?>" onclick="return confirm('Hapus antrean reminder ini?');" title="Hapus Reminder">
+                                        <a class="okj-btn okj-btn-danger okj-btn-small" href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=okj_delete_reminder&id=' . $r['id'] . '&redirect_to=' . urlencode(admin_url('admin.php?page=okj-reminders'))), 'okj_delete_reminder_' . $r['id']); ?>" onclick="return confirm('Hapus antrean reminder ini?');" title="Hapus Reminder">
                                             <span class="dashicons dashicons-trash"></span>
                                         </a>
                                     </div>

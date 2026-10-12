@@ -202,6 +202,11 @@ class OKJ_Reseller_Manager {
             return 0;
         }
 
+        // If the active product for this transaction was previously deleted by the admin, do not re-create
+        if (!empty($tx['notes']) && strpos($tx['notes'], '[AP Deleted]') !== false) {
+            return 0;
+        }
+
         $tx_id = $tx['id'];
         $transaction_no = $tx['transaction_no'];
         $payment_status = strtolower($tx['payment_status'] ?? 'pending');
@@ -368,7 +373,8 @@ class OKJ_Reseller_Manager {
         global $wpdb;
         $t_trans = OKJ_DB::get_table('pos_transactions');
         $paid_txs = $wpdb->get_results($wpdb->prepare(
-            "SELECT id FROM {$t_trans} WHERE payment_status IN ('paid', 'completed', 'processing') ORDER BY created_at DESC LIMIT %d",
+            "SELECT id FROM {$t_trans} WHERE payment_status IN ('paid', 'completed', 'processing') AND (notes IS NULL OR notes NOT LIKE %s) ORDER BY created_at DESC LIMIT %d",
+            '%[AP Deleted]%',
             $limit
         ), ARRAY_A);
 
