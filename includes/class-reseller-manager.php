@@ -40,13 +40,25 @@ class OKJ_Reseller_Manager {
         $active_id = (string)$active_row['id'];
         $customer_id = (string)$active_row['customer_id'];
         $expires_at = (string)$active_row['expires_at'];
+        $status = strtolower($active_row['status'] ?? 'active');
+        $today = wp_date('Y-m-d');
+
+        // If product is expired, cancelled, or its expires_at has already passed,
+        // purge pending reminders for this product so they don't linger in the reminder queue!
+        if (in_array($status, ['expired', 'cancelled'], true) || (!empty($expires_at) && $expires_at !== '2099-12-31' && strtotime($expires_at) < strtotime($today))) {
+            $wpdb->query($wpdb->prepare(
+                "DELETE FROM " . OKJ_DB::get_table('active_reminders') . " WHERE active_product_id = %s AND status = 'pending'",
+                $active_id
+            ));
+            return;
+        }
 
         foreach ($offsets as $d) {
             $d = (int)$d;
             if ($d <= 0) continue;
 
             $reminder_date = wp_date('Y-m-d', strtotime($expires_at . " -{$d} days"));
-            $remaining = (int)floor((strtotime($expires_at) - strtotime(wp_date('Y-m-d'))) / DAY_IN_SECONDS);
+            $remaining = (int)floor((strtotime($expires_at) - strtotime($today)) / DAY_IN_SECONDS);
 
             $existing = $wpdb->get_row($wpdb->prepare(
                 "SELECT id, status FROM " . OKJ_DB::get_table('active_reminders') . " WHERE active_product_id = %s AND offset_days = %d LIMIT 1",
@@ -55,22 +67,26 @@ class OKJ_Reseller_Manager {
 
             if ($existing) {
                 $wpdb->update(OKJ_DB::get_table('active_reminders'), [
-                    'customer_id' => $customer_id,
-                    'reminder_date' => $reminder_date,
+                    'customer_id'    => $customer_id,
+                    'reminder_date'  => $reminder_date,
                     'remaining_days' => $remaining,
-                    'updated_at' => current_time('mysql'),
+                    'status'         => 'pending',
+                    'sent_via'       => '',
+                    'sent_at'        => null,
+                    'last_error'     => null,
+                    'updated_at'     => current_time('mysql'),
                 ], ['id' => $existing['id']]);
             } else {
                 $wpdb->insert(OKJ_DB::get_table('active_reminders'), [
-                    'id' => wp_generate_uuid4(),
+                    'id'             => wp_generate_uuid4(),
                     'active_product_id' => $active_id,
-                    'customer_id' => $customer_id,
-                    'offset_days' => $d,
-                    'reminder_date' => $reminder_date,
+                    'customer_id'    => $customer_id,
+                    'offset_days'    => $d,
+                    'reminder_date'  => $reminder_date,
                     'remaining_days' => $remaining,
-                    'status' => 'pending',
-                    'created_at' => current_time('mysql'),
-                    'updated_at' => current_time('mysql'),
+                    'status'         => 'pending',
+                    'created_at'     => current_time('mysql'),
+                    'updated_at'     => current_time('mysql'),
                 ]);
             }
         }
@@ -79,12 +95,37 @@ class OKJ_Reseller_Manager {
     public static function process_daily_cron() {
         global $wpdb;
         $today = wp_date('Y-m-d');
+        $t_active = OKJ_DB::get_table('active_products');
+        $t_reminders = OKJ_DB::get_table('active_reminders');
+
+        // Self-healing: auto update active products whose expires_at < today to 'expired'
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$t_active} 
+             SET status = 'expired' 
+             WHERE expires_at < %s AND status = 'active' AND expires_at != '2099-12-31'",
+            $today
+        ));
+
+        // Purge pending reminders for expired or cancelled products
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$t_reminders} 
+             WHERE active_product_id IN (
+                 SELECT id FROM {$t_active} 
+                 WHERE status IN ('expired', 'cancelled') OR (expires_at < %s AND expires_at != '2099-12-31')
+             ) AND status = 'pending'",
+            $today
+        ));
+
         $reminders = $wpdb->get_results($wpdb->prepare(
             "SELECT r.*, a.product_label, a.start_date, a.duration_days, a.notes, c.name as customer_name, c.email as customer_email, c.phone as customer_phone, c.telegram as customer_telegram, c.whatsapp as customer_whatsapp, a.expires_at, a.price
-             FROM " . OKJ_DB::get_table('active_reminders') . " r
-             INNER JOIN " . OKJ_DB::get_table('active_products') . " a ON r.active_product_id = a.id
+             FROM {$t_reminders} r
+             INNER JOIN {$t_active} a ON r.active_product_id = a.id
              INNER JOIN " . OKJ_DB::get_table('customers') . " c ON r.customer_id = c.id
-             WHERE r.status = 'pending' AND r.reminder_date <= %s",
+             WHERE r.status = 'pending' 
+               AND r.reminder_date <= %s
+               AND a.status IN ('active', 'process')
+               AND a.expires_at >= %s",
+            $today,
             $today
         ), ARRAY_A);
 

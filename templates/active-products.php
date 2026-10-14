@@ -565,7 +565,8 @@
         <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" enctype="multipart/form-data">
             <?php wp_nonce_field('okj_renew_active_product'); ?>
             <input type="hidden" name="action" value="okj_renew_active_product" />
-            <input type="hidden" name="active_product_id" id="okj_renew_ap_id" value="" />
+            <input type="hidden" name="active_product_id" id="okj_renew_product_id" value="" />
+            <input type="hidden" id="okj_renew_ap_id" value="" />
 
             <div class="okj-modal-header" style="padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #0f172a; display: flex; align-items: center;">
@@ -584,8 +585,8 @@
 
                 <div class="okj-form-group" style="margin-bottom: 14px;">
                     <label class="okj-label">Hitung Mulai Dari</label>
-                    <select name="start_from" class="okj-select" style="width: 100%;">
-                        <option value="old_expiry">Lanjutan Tanggal Expired Lama (Rekomendasi)</option>
+                    <select name="start_from" id="okj_renew_start_from" class="okj-select" style="width: 100%;">
+                        <option value="old_expiry" id="okj_renew_option_old_expiry">Lanjutan Tanggal Expired Lama (Rekomendasi)</option>
                         <option value="today">Hari Ini (Reset Mulai Sekarang)</option>
                     </select>
                 </div>

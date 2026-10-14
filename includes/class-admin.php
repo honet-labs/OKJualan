@@ -585,8 +585,37 @@ class OKJ_Admin {
     public function view_reminders() {
         global $wpdb;
         $today = wp_date('Y-m-d');
+        $t_active = OKJ_DB::get_table('active_products');
+        $t_reminders = OKJ_DB::get_table('active_reminders');
 
-        $all_rows = $wpdb->get_results("SELECT r.*, a.product_label, c.name as customer_name FROM " . OKJ_DB::get_table('active_reminders') . " r INNER JOIN " . OKJ_DB::get_table('active_products') . " a ON r.active_product_id = a.id INNER JOIN " . OKJ_DB::get_table('customers') . " c ON r.customer_id = c.id ORDER BY r.reminder_date ASC", ARRAY_A);
+        // 1. Self-healing: auto update active products whose expires_at < today to 'expired'
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$t_active} 
+             SET status = 'expired' 
+             WHERE expires_at < %s AND status = 'active' AND expires_at != '2099-12-31'", 
+            $today
+        ));
+
+        // 2. Auto-clean pending reminders whose active products have expired or cancelled
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$t_reminders} 
+             WHERE active_product_id IN (
+                 SELECT id FROM {$t_active} 
+                 WHERE status IN ('expired', 'cancelled') OR (expires_at < %s AND expires_at != '2099-12-31')
+             ) AND status = 'pending'",
+            $today
+        ));
+
+        // 3. Query reminders strictly for active/processing products whose expires_at is not expired
+        $all_rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT r.*, a.product_label, a.status as product_status, a.expires_at, c.name as customer_name 
+             FROM {$t_reminders} r 
+             INNER JOIN {$t_active} a ON r.active_product_id = a.id 
+             INNER JOIN " . OKJ_DB::get_table('customers') . " c ON r.customer_id = c.id 
+             WHERE a.status IN ('active', 'process') AND a.expires_at >= %s
+             ORDER BY r.reminder_date ASC",
+            $today
+        ), ARRAY_A);
 
         // For each active_product_id, find the smallest offset_days among
         // pending reminders whose reminder_date has already passed (or is today).
@@ -614,10 +643,14 @@ class OKJ_Admin {
             }
 
             // Past/Due pending → only show the closest one (smallest offset)
-            if (isset($min_past_pending[$apid]) && $offset === $min_past_pending[$apid]) {
+            if (isset($min_past_pending[$apid])) {
+                if ($offset === $min_past_pending[$apid]) {
+                    $rows[] = $r;
+                }
+            } else {
+                // If no milestone has passed yet, show upcoming milestones
                 $rows[] = $r;
             }
-            // else: future pending or superseded past milestone → hide
         }
 
         $this->render_template('reminders', ['rows' => $rows]);
@@ -1486,11 +1519,19 @@ class OKJ_Admin {
         if (!current_user_can('okj_manage')) wp_die('Forbidden');
 
         global $wpdb;
-        $active_product_id = sanitize_text_field($_POST['active_product_id']);
+        $active_product_id = !empty($_POST['active_product_id']) ? sanitize_text_field($_POST['active_product_id']) : (!empty($_POST['id']) ? sanitize_text_field($_POST['id']) : '');
         
         $ap = $wpdb->get_row($wpdb->prepare("SELECT * FROM " . OKJ_DB::get_table('active_products') . " WHERE id = %s", $active_product_id), ARRAY_A);
         if (!$ap) {
-            wp_die('Layanan Produk Aktif tidak ditemukan.');
+            wp_die(
+                '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;padding:24px;max-width:600px;margin:30px auto;background:#fff;border-left:4px solid #ef4444;box-shadow:0 1px 4px rgba(0,0,0,0.1);border-radius:8px;">' .
+                '<h2 style="color:#b91c1c;margin-top:0;">Layanan Produk Aktif Tidak Ditemukan</h2>' .
+                '<p style="color:#475569;">Data layanan produk aktif dengan ID tersebut tidak ditemukan pada sistem. Silakan periksa kembali daftar pembelian produk aktif.</p>' .
+                '<p><a href="' . esc_url(admin_url('admin.php?page=okj-active-products')) . '" class="button button-primary" style="background:#4f46e5;border-color:#4338ca;">Kembali ke Daftar Produk Aktif</a></p>' .
+                '</div>',
+                'Layanan Tidak Ditemukan',
+                ['back_link' => true]
+            );
         }
 
         $duration_days = (int)$_POST['duration_days'];
