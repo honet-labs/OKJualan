@@ -232,6 +232,7 @@
                                     <th style="text-align: center; white-space: nowrap;">Masa Aktif</th>
                                     <th style="text-align: center; white-space: nowrap;">Waktu Expired</th>
                                     <th style="white-space: nowrap;">Tgl Pembelian</th>
+                                    <th style="text-align: center; white-space: nowrap;">Tgl Perpanjangan</th>
                                     <th style="text-align: center; white-space: nowrap;">Qty</th>
                                     <th style="text-align: right; white-space: nowrap;">Total Harga</th>
                                     <th style="text-align: center; white-space: nowrap;">Status Layanan</th>
@@ -343,6 +344,20 @@
                                             <?php endif; ?>
                                         </td>
                                         <td style="white-space: nowrap;"><?php echo esc_html($r['start_date']); ?></td>
+                                        <td style="text-align: center; white-space: nowrap;">
+                                            <?php if (!empty($r['last_renewed_at'])): ?>
+                                                <div style="font-weight: 600; color: #0f172a; font-size: 12.5px;">
+                                                    <?php echo esc_html(wp_date('d M Y, H:i', strtotime($r['last_renewed_at']))); ?>
+                                                </div>
+                                                <div style="margin-top: 2px;">
+                                                    <a href="#" class="okj-renewal-history-btn" data-id="<?php echo esc_attr($r['id']); ?>" style="color: #059669; font-size: 11px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;" title="Lihat Riwayat Lengkap Perpanjangan">
+                                                        <span class="dashicons dashicons-backup" style="font-size: 13px; width: 13px; height: 13px;"></span> Riwayat (<?php echo (int)($r['renewal_count'] ?? 1); ?>x)
+                                                    </a>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="okj-text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td style="text-align: center;"><strong><?php echo $qty_val; ?></strong></td>
                                         <td style="text-align: right; white-space: nowrap;"><strong style="color: #0f172a;">Rp <?php echo number_format_i18n((float)$r['price'], 0); ?></strong></td>
                                         <!-- Status Layanan -->

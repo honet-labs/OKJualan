@@ -529,6 +529,36 @@ class OKJ_Admin {
                 $today
             ));
 
+            $table_renewals = OKJ_DB::get_table('active_product_renewals');
+
+            // Self-healing fix: Ensure active products with renewals have duration_days matching their latest renewal duration instead of accumulated
+            try {
+                $renewed_products = $wpdb->get_results(
+                    "SELECT r.active_product_id, r.duration_days 
+                     FROM {$table_renewals} r
+                     INNER JOIN (
+                         SELECT active_product_id, MAX(renewed_at) as max_renewed
+                         FROM {$table_renewals}
+                         GROUP BY active_product_id
+                     ) latest ON r.active_product_id = latest.active_product_id AND r.renewed_at = latest.max_renewed",
+                    ARRAY_A
+                );
+                if (!empty($renewed_products)) {
+                    foreach ($renewed_products as $rp) {
+                        if (!empty($rp['duration_days'])) {
+                            $wpdb->query($wpdb->prepare(
+                                "UPDATE {$table_ap} SET duration_days = %d WHERE id = %s AND duration_days > %d",
+                                (int)$rp['duration_days'],
+                                $rp['active_product_id'],
+                                (int)$rp['duration_days']
+                            ));
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Silently ignore if table not ready
+            }
+
             // Counts for tabs
             $active_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'active'));
             $process_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_ap} WHERE status = %s", 'process'));
@@ -556,7 +586,14 @@ class OKJ_Admin {
             $total_pages = ceil($total_rows / $per_page);
 
             $rows = $wpdb->get_results($wpdb->prepare(
-                "SELECT a.*, COALESCE(NULLIF(c.name, ''), a.customer_name) as customer_name, c.email as customer_email, c.phone as customer_phone, c.telegram as customer_telegram, c.whatsapp as customer_whatsapp 
+                "SELECT a.*, 
+                        COALESCE(NULLIF(c.name, ''), a.customer_name) as customer_name, 
+                        c.email as customer_email, 
+                        c.phone as customer_phone, 
+                        c.telegram as customer_telegram, 
+                        c.whatsapp as customer_whatsapp,
+                        (SELECT MAX(r.renewed_at) FROM {$table_renewals} r WHERE r.active_product_id = a.id) as last_renewed_at,
+                        (SELECT COUNT(*) FROM {$table_renewals} r WHERE r.active_product_id = a.id) as renewal_count
                  FROM {$table_ap} a 
                  LEFT JOIN {$table_cust} c ON a.customer_id = c.id 
                  WHERE {$where} 
@@ -1587,7 +1624,7 @@ class OKJ_Admin {
         // 2. Update active_products table
         $update_data = [
             'expires_at' => $new_expires_at,
-            'duration_days' => $ap['duration_days'] + $duration_days,
+            'duration_days' => $duration_days,
             'status' => $new_status,
             'payment_status' => $payment_status,
             'updated_at' => current_time('mysql'),
