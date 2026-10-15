@@ -376,14 +376,21 @@
                                                     Belum Bayar
                                                 </span>
                                             <?php endif; ?>
+                                            <?php if (!empty($r['payment_attachments'])): ?>
+                                                <div style="margin-top: 4px;">
+                                                    <a href="<?php echo esc_url($r['payment_attachments']); ?>" target="_blank" style="text-decoration: none; font-size: 11px; color: #4f46e5; display: inline-flex; align-items: center; gap: 2px; font-weight: 600;" title="Lihat Bukti Bayar">
+                                                        <span class="dashicons dashicons-format-image" style="font-size: 13px; width: 13px; height: 13px;"></span> Bukti Bayar
+                                                    </a>
+                                                </div>
+                                            <?php endif; ?>
                                         </td>
                                         <td style="text-align: center;">
                                             <?php if (!empty($r['notes'])): ?>
                                                 <a href="#" class="okj-view-active-notes" 
-                                                   data-name="<?php echo esc_attr($r['product_label']); ?>" 
-                                                   data-notes="<?php echo esc_attr(wp_strip_all_tags($r['notes'])); ?>" 
-                                                   style="text-decoration: none; color: #4338ca; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #e0e7ff; border-radius: 6px;"
-                                                   title="Lihat Keterangan">
+                                                    data-name="<?php echo esc_attr($r['product_label']); ?>" 
+                                                    data-notes="<?php echo esc_attr(wp_strip_all_tags($r['notes'])); ?>" 
+                                                    style="text-decoration: none; color: #4338ca; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #e0e7ff; border-radius: 6px;"
+                                                    title="Lihat Keterangan">
                                                     <span class="dashicons dashicons-visibility" style="font-size: 16px; width: 16px; height: 16px;"></span>
                                                 </a>
                                             <?php else: ?>
@@ -405,7 +412,7 @@
                                                     </div>
                                                 <?php else: ?>
                                                     <div style="display: flex; gap: 6px; align-items: center;">
-                                                        <a class="okj-btn okj-renew-product-btn" href="#" data-id="<?php echo esc_attr($r['id']); ?>" data-name="<?php echo esc_attr($r['product_label']); ?>" data-expiry="<?php echo esc_attr($r['expires_at']); ?>" data-price="<?php echo esc_attr($r['price']); ?>" style="padding: 4px 8px; font-size: 11px; background: #4f46e5; color: #ffffff; border-radius: 4px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
+                                                        <a class="okj-btn okj-renew-product-btn" href="#" data-id="<?php echo esc_attr($r['id']); ?>" data-name="<?php echo esc_attr($r['product_label']); ?>" data-expiry="<?php echo esc_attr($r['expires_at']); ?>" data-price="<?php echo esc_attr($r['price']); ?>" data-attachment="<?php echo !empty($r['payment_attachments']) ? esc_url($r['payment_attachments']) : ''; ?>" style="padding: 4px 8px; font-size: 11px; background: #4f46e5; color: #ffffff; border-radius: 4px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 3px;">
                                                             <span class="dashicons dashicons-update" style="font-size: 13px; width: 13px; height: 13px;"></span> Perpanjang
                                                         </a>
                                                         <a class="okj-renewal-history-btn" href="#" data-id="<?php echo esc_attr($r['id']); ?>" style="color: #059669; font-size: 11px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 2px;" title="Riwayat Renewal">
@@ -607,6 +614,26 @@
                         <option value="paid">Lunas (Paid)</option>
                         <option value="pending">Belum Bayar (Pending)</option>
                     </select>
+                </div>
+
+                <div class="okj-form-group" style="margin-bottom: 14px;">
+                    <label class="okj-label">Bukti Pembayaran Terbaru (Foto / Gambar)</label>
+                    <div style="display: flex; gap: 14px; align-items: center;">
+                        <div id="okj_renew_image_preview_wrap" style="width: 62px; height: 62px; border-radius: 8px; border: 1.5px dashed #cbd5e1; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+                            <span class="dashicons dashicons-format-image" id="okj_renew_image_placeholder" style="font-size: 28px; color: #94a3b8; width: 28px; height: 28px;"></span>
+                            <img src="" id="okj_renew_image_preview" style="display: none; width: 100%; height: 100%; object-fit: cover;" alt="Preview Bukti Bayar" />
+                        </div>
+                        <div style="flex: 1;">
+                            <input type="file" name="payment_attachments" id="okj_renew_attachment_input" accept="image/*" class="okj-input" style="padding: 6px; font-size: 12px;" />
+                            <input type="url" name="payment_attachment_url" id="okj_renew_attachment_url" class="okj-input" style="margin-top: 6px; font-size: 12px;" placeholder="Atau tempel URL gambar bukti bayar (https://...)" />
+                            <div id="okj_renew_existing_proof_link" style="margin-top: 4px; display: none;">
+                                <small style="color: #64748b; font-size: 11px;">
+                                    Bukti sebelumnya: <a href="#" id="okj_renew_existing_proof_a" target="_blank" style="color: #4f46e5; font-weight: 600; text-decoration: none;">Lihat Gambar</a>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <small style="color: #64748b; font-size: 11px; margin-top: 4px; display: block;">Unggah foto struk atau screenshot bukti transfer perpanjangan (format JPG, PNG, WEBP).</small>
                 </div>
 
                 <div class="okj-form-group" style="margin-bottom: 0;">

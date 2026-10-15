@@ -348,6 +348,7 @@ jQuery(document).ready(function($) {
         var name = $(this).data('name');
         var expiry = $(this).data('expiry');
         var price = $(this).data('price');
+        var attachment = $(this).data('attachment') || '';
         
         $('#okj_renew_product_id, #okj_renew_ap_id').val(id);
         $('#okj_renew_product_name').text(name);
@@ -355,7 +356,52 @@ jQuery(document).ready(function($) {
         $('#okj_renew_option_old_expiry').text('Lanjutan Tanggal Expired Lama (' + expiry + ')');
         $('#okj_renew_price').val(price);
         
+        // Reset file input & URL
+        $('#okj_renew_attachment_input').val('');
+        $('#okj_renew_attachment_url').val('');
+        
+        if (attachment) {
+            $('#okj_renew_image_preview').attr('src', attachment).show();
+            $('#okj_renew_image_placeholder').hide();
+            $('#okj_renew_existing_proof_a').attr('href', attachment);
+            $('#okj_renew_existing_proof_link').show();
+        } else {
+            $('#okj_renew_image_preview').attr('src', '').hide();
+            $('#okj_renew_image_placeholder').show();
+            $('#okj_renew_existing_proof_link').hide();
+        }
+        
         $('#okjRenewProductModal').css('display', 'flex');
+    });
+
+    $(document).on('change', '#okj_renew_attachment_input', function() {
+        var input = this;
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                $('#okj_renew_image_preview').attr('src', e.target.result).show();
+                $('#okj_renew_image_placeholder').hide();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    });
+
+    $(document).on('input change', '#okj_renew_attachment_url', function() {
+        var val = $(this).val().trim();
+        if (val) {
+            $('#okj_renew_image_preview').attr('src', val).show();
+            $('#okj_renew_image_placeholder').hide();
+        } else if (!$('#okj_renew_attachment_input').val()) {
+            var currentId = $('#okj_renew_product_id').val();
+            var existing = $('.okj-renew-product-btn[data-id="' + currentId + '"]').data('attachment');
+            if (existing) {
+                $('#okj_renew_image_preview').attr('src', existing).show();
+                $('#okj_renew_image_placeholder').hide();
+            } else {
+                $('#okj_renew_image_preview').attr('src', '').hide();
+                $('#okj_renew_image_placeholder').show();
+            }
+        }
     });
 
     $(document).on('click', '.okj-renew-modal-close, .okj-renew-modal-close-btn', function() {

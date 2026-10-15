@@ -1564,6 +1564,8 @@ class OKJ_Admin {
             if (!is_wp_error($attach_id)) {
                 $attachment_url = wp_get_attachment_url($attach_id);
             }
+        } elseif (!empty($_POST['payment_attachment_url'])) {
+            $attachment_url = esc_url_raw($_POST['payment_attachment_url']);
         }
 
         // 1. Insert into active_product_renewals
