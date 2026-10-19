@@ -350,6 +350,19 @@ jQuery(document).ready(function($) {
         var price = $(this).data('price');
         var attachment = $(this).data('attachment') || '';
         
+        // Reset form submission flag & button state
+        var $form = $('#okjRenewProductModal form, #okjRenewProductForm');
+        $form.data('submitting', false);
+        var $submitBtn = $form.find('#okjRenewSubmitBtn, button[type="submit"]');
+        $submitBtn.prop('disabled', false).removeClass('okj-btn-disabled').css('opacity', '1');
+        $submitBtn.find('.okj-btn-text').text('Konfirmasi Perpanjangan');
+        $submitBtn.find('.dashicons').removeClass('okj-spin okj-spin-animation');
+
+        // Generate unique client token for this modal opening & store expected expiry
+        var uniqueToken = 'rtok_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        $('#okj_renew_submission_token').val(uniqueToken);
+        $('#okj_renew_expected_old_expiry').val(expiry);
+
         $('#okj_renew_product_id, #okj_renew_ap_id').val(id);
         $('#okj_renew_product_name').text(name);
         $('#okj_renew_old_expiry, #okj_renew_current_expiry').text(expiry);
@@ -372,6 +385,21 @@ jQuery(document).ready(function($) {
         }
         
         $('#okjRenewProductModal').css('display', 'flex');
+    });
+
+    // Form submit listener for renewal modal to prevent double submit
+    $(document).on('submit', '#okjRenewProductForm, #okjRenewProductModal form', function(e) {
+        var $form = $(this);
+        if ($form.data('submitting')) {
+            e.preventDefault();
+            return false;
+        }
+        $form.data('submitting', true);
+
+        var $btn = $form.find('#okjRenewSubmitBtn, button[type="submit"]');
+        $btn.prop('disabled', true).addClass('okj-btn-disabled').css('opacity', '0.7');
+        $btn.find('.dashicons').addClass('okj-spin okj-spin-animation');
+        $btn.find('.okj-btn-text').text('Memproses Perpanjangan...');
     });
 
     $(document).on('change', '#okj_renew_attachment_input', function() {
@@ -405,6 +433,12 @@ jQuery(document).ready(function($) {
     });
 
     $(document).on('click', '.okj-renew-modal-close, .okj-renew-modal-close-btn', function() {
+        var $form = $('#okjRenewProductModal form, #okjRenewProductForm');
+        $form.data('submitting', false);
+        var $btn = $form.find('#okjRenewSubmitBtn, button[type="submit"]');
+        $btn.prop('disabled', false).removeClass('okj-btn-disabled').css('opacity', '1');
+        $btn.find('.okj-btn-text').text('Konfirmasi Perpanjangan');
+        $btn.find('.dashicons').removeClass('okj-spin okj-spin-animation');
         $('#okjRenewProductModal').css('display', 'none');
     });
 

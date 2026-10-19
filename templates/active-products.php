@@ -584,11 +584,13 @@
 <!-- Modal Perpanjang Layanan (Renewal) -->
 <div id="okjRenewProductModal" class="okj-modal" style="display: none; position: fixed; z-index: 999999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
     <div class="okj-modal-content" style="background-color: #ffffff; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; margin: auto;">
-        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" enctype="multipart/form-data">
+        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" enctype="multipart/form-data" id="okjRenewProductForm">
             <?php wp_nonce_field('okj_renew_active_product'); ?>
             <input type="hidden" name="action" value="okj_renew_active_product" />
             <input type="hidden" name="active_product_id" id="okj_renew_product_id" value="" />
             <input type="hidden" id="okj_renew_ap_id" value="" />
+            <input type="hidden" name="expected_old_expiry" id="okj_renew_expected_old_expiry" value="" />
+            <input type="hidden" name="renewal_token" id="okj_renew_submission_token" value="" />
 
             <div class="okj-modal-header" style="padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #0f172a; display: flex; align-items: center;">
@@ -658,7 +660,10 @@
             </div>
             <div class="okj-modal-footer" style="padding: 12px 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 8px;">
                 <button type="button" class="okj-btn okj-btn-secondary okj-renew-modal-close-btn">Batal</button>
-                <button type="submit" class="okj-btn okj-btn-primary">Konfirmasi Perpanjangan</button>
+                <button type="submit" id="okjRenewSubmitBtn" class="okj-btn okj-btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="dashicons dashicons-update" style="font-size: 14px; width: 14px; height: 14px;"></span>
+                    <span class="okj-btn-text">Konfirmasi Perpanjangan</span>
+                </button>
             </div>
         </form>
     </div>
