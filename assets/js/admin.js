@@ -469,6 +469,40 @@ jQuery(document).ready(function($) {
         $('#okjRenewalHistoryModal').css('display', 'none');
     });
 
+    // Rollback / Cancel Renewal Handler
+    $(document).on('click', '.okj-rollback-renewal-btn', function(e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var renewalId = $btn.data('renewal-id');
+        var oldExpiry = $btn.data('old-expiry') || '';
+
+        if (!renewalId) return;
+
+        var confirmMsg = 'Batalkan perpanjangan ini? Tanggal kedaluwarsa layanan akan dikembalikan ke tanggal sebelum perpanjangan' + (oldExpiry ? ' (' + oldExpiry + ')' : '') + '.';
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        var origHtml = $btn.html();
+        $btn.prop('disabled', true).css('opacity', '0.6').text('Membatalkan...');
+
+        $.post(safeAjaxUrl, {
+            action: 'okj_rollback_renewal',
+            renewal_id: renewalId
+        }, function(response) {
+            if (response.success) {
+                alert(response.data.message || 'Perpanjangan berhasil dibatalkan!');
+                window.location.reload();
+            } else {
+                $btn.prop('disabled', false).css('opacity', '1').html(origHtml);
+                alert(response.data ? response.data.message : 'Gagal membatalkan perpanjangan.');
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).css('opacity', '1').html(origHtml);
+            alert('Terjadi kesalahan jaringan.');
+        });
+    });
+
     // 1-Click Update Handler
     $('#okj-btn-trigger-update').on('click', function(e) {
         e.preventDefault();

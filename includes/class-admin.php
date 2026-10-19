@@ -46,6 +46,7 @@ class OKJ_Admin {
         add_action('wp_ajax_okj_quick_add_seller', [$this, 'quick_add_seller']);
         add_action('wp_ajax_okj_quick_add_customer', [$this, 'quick_add_customer']);
         add_action('wp_ajax_okj_get_renewal_history', [$this, 'ajax_get_renewal_history']);
+        add_action('wp_ajax_okj_rollback_renewal', [$this, 'ajax_rollback_renewal']);
         add_action('wp_ajax_okj_test_waha', [$this, 'ajax_test_waha']);
         add_action('wp_ajax_okj_test_telegram', [$this, 'ajax_test_telegram']);
         add_action('wp_ajax_okj_test_smtp', [$this, 'ajax_test_smtp']);
@@ -1336,7 +1337,12 @@ class OKJ_Admin {
         $cust = $wpdb->get_row($wpdb->prepare("SELECT name, phone, telegram, whatsapp, email FROM " . OKJ_DB::get_table('customers') . " WHERE id = %s", $customer_id), ARRAY_A);
 
         $start_date = sanitize_text_field($_POST['start_date']);
-        if ($duration > 0) {
+        if (!empty($_POST['expires_at'])) {
+            $expires_at = sanitize_text_field($_POST['expires_at']);
+            if (isset($_POST['duration_days']) && $_POST['duration_days'] !== '') {
+                $duration = max(0, (int)$_POST['duration_days']);
+            }
+        } elseif ($duration > 0) {
             $expires_at = wp_date('Y-m-d', strtotime($start_date . " +{$duration} days"));
         } else {
             $expires_at = wp_date('Y-m-d', strtotime($start_date . " +365 days"));
@@ -1793,10 +1799,11 @@ class OKJ_Admin {
                         <th style="padding: 8px 10px; font-weight: 600; color: #475569;">Biaya</th>
                         <th style="padding: 8px 10px; font-weight: 600; color: #475569;">Status Bayar</th>
                         <th style="padding: 8px 10px; font-weight: 600; color: #475569;">Bukti</th>
+                        <th style="padding: 8px 10px; font-weight: 600; color: #475569; text-align: center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($renewals as $r): ?>
+                    <?php foreach ($renewals as $idx => $r): ?>
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 8px 10px;"><?php echo esc_html(wp_date(get_option('date_format') . ' H:i', strtotime($r['renewed_at']))); ?></td>
                             <td style="padding: 8px 10px;"><strong><?php echo esc_html($r['duration_days']); ?> Hari</strong></td>
@@ -1824,10 +1831,19 @@ class OKJ_Admin {
                                     <span style="color: #94a3b8;">-</span>
                                 <?php endif; ?>
                             </td>
+                            <td style="padding: 8px 10px; text-align: center;">
+                                <?php if ($idx === 0): ?>
+                                    <button type="button" class="okj-btn okj-rollback-renewal-btn" data-renewal-id="<?php echo esc_attr($r['id']); ?>" data-old-expiry="<?php echo esc_attr($r['old_expires_at']); ?>" style="padding: 3px 8px; font-size: 11px; color: #b91c1c; border: 1px solid #fecaca; background: #fef2f2; font-weight: 600; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="Batalkan perpanjangan ini dan kembalikan masa aktif ke tanggal sebelum perpanjangan">
+                                        <span class="dashicons dashicons-undo" style="font-size: 12px; width: 12px; height: 12px;"></span> Batalkan
+                                    </button>
+                                <?php else: ?>
+                                    <span style="color: #cbd5e1; font-size: 11px;">-</span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php if (!empty($r['notes'])): ?>
                             <tr style="background: #fcfdfe; border-bottom: 1px solid #f1f5f9;">
-                                <td colspan="6" style="padding: 6px 10px; font-size: 11px; color: #64748b; font-style: italic;">
+                                <td colspan="7" style="padding: 6px 10px; font-size: 11px; color: #64748b; font-style: italic;">
                                     <strong>Catatan:</strong> <?php echo esc_html($r['notes']); ?>
                                 </td>
                             </tr>
@@ -1840,6 +1856,111 @@ class OKJ_Admin {
         $html = ob_get_clean();
 
         wp_send_json_success(['html' => $html]);
+    }
+
+    public function ajax_rollback_renewal() {
+        if (!current_user_can('okj_manage')) {
+            wp_send_json_error(['message' => 'Forbidden']);
+        }
+
+        $renewal_id = !empty($_POST['renewal_id']) ? sanitize_text_field($_POST['renewal_id']) : '';
+        if (empty($renewal_id)) {
+            wp_send_json_error(['message' => 'ID perpanjangan tidak valid.']);
+        }
+
+        global $wpdb;
+        $t_renewals = OKJ_DB::get_table('active_product_renewals');
+        $t_active   = OKJ_DB::get_table('active_products');
+
+        $renewal = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_renewals} WHERE id = %s", $renewal_id), ARRAY_A);
+        if (!$renewal) {
+            wp_send_json_error(['message' => 'Data riwayat perpanjangan tidak ditemukan.']);
+        }
+
+        $active_product_id = $renewal['active_product_id'];
+        $ap = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_active} WHERE id = %s", $active_product_id), ARRAY_A);
+        if (!$ap) {
+            wp_send_json_error(['message' => 'Data layanan produk aktif tidak ditemukan.']);
+        }
+
+        // Check if this renewal is the latest renewal for this active product
+        $latest_renewal = $wpdb->get_row($wpdb->prepare(
+            "SELECT id FROM {$t_renewals} WHERE active_product_id = %s ORDER BY renewed_at DESC, id DESC LIMIT 1",
+            $active_product_id
+        ), ARRAY_A);
+
+        $is_latest = ($latest_renewal && $latest_renewal['id'] === $renewal_id);
+
+        // Delete this renewal record
+        $wpdb->delete($t_renewals, ['id' => $renewal_id]);
+
+        if ($is_latest) {
+            // Revert expires_at to old_expires_at
+            $reverted_expires_at = $renewal['old_expires_at'];
+            $today = wp_date('Y-m-d');
+            $new_status = (strtotime($reverted_expires_at) < strtotime($today)) ? 'expired' : 'active';
+
+            // Find previous renewal duration or calculate based on start_date
+            $prev_renewal = $wpdb->get_row($wpdb->prepare(
+                "SELECT duration_days, payment_attachments FROM {$t_renewals} WHERE active_product_id = %s ORDER BY renewed_at DESC, id DESC LIMIT 1",
+                $active_product_id
+            ), ARRAY_A);
+
+            if ($prev_renewal && !empty($prev_renewal['duration_days'])) {
+                $reverted_duration = (int)$prev_renewal['duration_days'];
+            } else {
+                // Fallback to original product duration
+                $reverted_duration = 30;
+                if (!empty($ap['product_id'])) {
+                    $pp = $wpdb->get_row($wpdb->prepare("SELECT duration_days FROM " . OKJ_DB::get_table('product_prices') . " WHERE id = %s", $ap['product_id']), ARRAY_A);
+                    if ($pp && !empty($pp['duration_days'])) {
+                        $reverted_duration = (int)$pp['duration_days'];
+                    }
+                }
+            }
+
+            $update_data = [
+                'expires_at'    => $reverted_expires_at,
+                'duration_days' => $reverted_duration,
+                'status'        => $new_status,
+                'updated_at'    => current_time('mysql'),
+                'updated_by'    => get_current_user_id()
+            ];
+
+            // Revert payment proof to previous renewal attachment if available
+            if ($prev_renewal && !empty($prev_renewal['payment_attachments'])) {
+                $update_data['payment_attachments'] = $prev_renewal['payment_attachments'];
+            }
+
+            $wpdb->update($t_active, $update_data, ['id' => $active_product_id]);
+
+            // Sync reminders
+            $updated_ap = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$t_active} WHERE id = %s", $active_product_id), ARRAY_A);
+            if ($updated_ap) {
+                OKJ_Reseller_Manager::sync_reminders($updated_ap);
+            }
+
+            OKJ_Reseller_Manager::log(
+                'rollback_renewal',
+                'active_product',
+                $active_product_id,
+                "Batalkan perpanjangan ID {$renewal_id} untuk {$ap['product_label']} ({$ap['customer_name']}). Masa aktif dikembalikan dari {$renewal['new_expires_at']} ke {$reverted_expires_at}."
+            );
+
+            wp_send_json_success([
+                'message' => 'Perpanjangan berhasil dibatalkan. Tanggal kedaluwarsa dikembalikan ke ' . $reverted_expires_at . ' (' . $reverted_duration . ' Hari).'
+            ]);
+        } else {
+            OKJ_Reseller_Manager::log(
+                'delete_renewal_log',
+                'active_product',
+                $active_product_id,
+                "Hapus log perpanjangan lama ID {$renewal_id} untuk {$ap['product_label']}."
+            );
+            wp_send_json_success([
+                'message' => 'Catatan riwayat perpanjangan berhasil dihapus.'
+            ]);
+        }
     }
 
     public function save_settings() {

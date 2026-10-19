@@ -74,6 +74,20 @@
                             <input type="date" name="start_date" class="okj-input" value="<?php echo $row ? esc_attr($row['start_date']) : wp_date('Y-m-d'); ?>" required />
                         </div>
 
+                        <?php if ($action === 'edit' && $row): ?>
+                            <div class="okj-form-group">
+                                <label class="okj-label">Masa Aktif (Durasi Hari)</label>
+                                <input type="number" name="duration_days" class="okj-input" value="<?php echo !empty($row['duration_days']) ? esc_attr($row['duration_days']) : '30'; ?>" min="1" />
+                                <small style="color: #64748b; font-size: 11px;">Masa aktif layanan dalam hitungan hari. Ubah angka ini jika ingin downgrade/penyesuaian.</small>
+                            </div>
+
+                            <div class="okj-form-group">
+                                <label class="okj-label">Tanggal Kedaluwarsa (Expired) <span class="okj-required">*</span></label>
+                                <input type="date" name="expires_at" class="okj-input" value="<?php echo !empty($row['expires_at']) ? esc_attr($row['expires_at']) : wp_date('Y-m-d'); ?>" required />
+                                <small style="color: #64748b; font-size: 11px;">Tanggal jatuh tempo layanan. Ubah tanggal ini jika ingin memajukan atau memundurkan batas aktif.</small>
+                            </div>
+                        <?php endif; ?>
+
                         <div class="okj-form-group">
                             <label class="okj-label">Qty (Jumlah Pembelian)</label>
                             <input type="number" name="qty" class="okj-input" value="<?php echo $row && !empty($row['qty']) ? esc_attr($row['qty']) : '1'; ?>" min="1" required />
